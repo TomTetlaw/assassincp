@@ -70,7 +70,7 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>E:\stuff\code\game\include\nanovg;E:\stuff\code\game\include\nanogui;E:\stuff\code\game\include\;$(IncludePath)</IncludePath>
+    <IncludePath>$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -90,8 +90,12 @@
       <PrecompiledHeaderFile>precompiled.h</PrecompiledHeaderFile>
     </ClCompile>
     <PostBuildEvent>
-      <Command>copy "E:\stuff\code\game\misc\x64\Debug\game.exe" "E:\stuff\code\game\build\game.exe"</Command>
+      <Command>
+      </Command>
     </PostBuildEvent>
+    <Link>
+      <OutputFile>../../build/game.exe</OutputFile>
+    </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
