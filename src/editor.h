@@ -32,6 +32,7 @@ struct Editor_Thing_Property {
 		Vec3 *vec3_dest;
 		Vec4 *vec4_dest;
 		Texture **texture_dest;
+		dstr *dstr_dest;
 	};
 
 	union {
@@ -130,15 +131,20 @@ inline Editor_Thing_Property editor_thing_property_texture(const char *name, Tex
 	return prop;
 }
 
-inline Editor_Thing_Property editor_thing_property_entity_type() {
+inline Editor_Thing_Property editor_thing_property_entity_type(dstr *dest) {
 	Editor_Thing_Property prop;
 	prop.name = "Entity Type";
 	prop.type = THING_PROPERTY_ENTITY_TYPE;
+	prop.dstr_dest = dest;
 	return prop;
 }
 
 class Editor_Thing {
 public:
+	Editor_Thing();
+
+	const char *type_name = nullptr;
+
 	int index = -1;
 
 	Vec2 position;
@@ -155,26 +161,20 @@ public:
 
 	bool draggable = true;
 
+	Array<Editor_Thing_Property> properties;
+
 	virtual void on_select() {}
 	virtual void on_hover() {}
 	virtual void render();
-	virtual void add_properties(Array<Editor_Thing_Property> &properties);
 	virtual void update() {}
+
+	// @hack: stored here so we have the selected type for each individual entity
+	int current_entity_type_num = 0;
 };
 
 class Editor_Entity : public Editor_Thing {
 public:
-	Editor_Entity() {
-		hover_colour = Vec4(0, 0.2f, 0, 1);
-		hover_size = Vec2(32, 32);
-		select_colour = Vec4(0, 1, 0, 1);
-		select_size = Vec2(32, 32);
-		normal_colour = Vec4(1, 1, 1, 1);
-		normal_size = Vec2(32, 32);
-		size = Vec2(32, 32);
-		scale = Vec2(1, 1);
-		colour = Vec4(1, 1, 1, 1);
-	}
+	Editor_Entity();
 
 	dstr entity_name;
 	dstr name;
@@ -208,6 +208,8 @@ struct Editor {
 
 	Array<Editor_Thing *> things;
 	Array<Editor_Thing *> selected_things;
+
+	Array<const char *> entity_type_names; // create on init because no new types after startup
 
 	struct nk_context *context = nullptr;
 

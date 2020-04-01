@@ -248,16 +248,27 @@ void Editor_Thing::render() {
 	renderer.centered_box(false, position.x, position.y, size.x, size.y, colour);
 }
 
-void Editor_Thing::add_properties(Array<Editor_Thing_Property> &properties) {
+Editor_Thing::Editor_Thing() {
+	type_name = "thing";
 	properties.append(Editor_Thing_Property("Position", &position, Vec2(-10000, -10000), Vec2(10000, 10000), Vec2(1, 1), Vec2(0.5f, 0.5f)));
 }
 
-void Editor_Entity::add_properties(Array<Editor_Thing_Property> &properties) {
-	Editor_Thing::add_properties(properties);
+Editor_Entity::Editor_Entity() {
+	type_name = "entity";
+
+	hover_colour = Vec4(0, 0.2f, 0, 1);
+	hover_size = Vec2(32, 32);
+	select_colour = Vec4(0, 1, 0, 1);
+	select_size = Vec2(32, 32);
+	normal_colour = Vec4(1, 1, 1, 1);
+	normal_size = Vec2(32, 32);
+	size = Vec2(32, 32);
+	scale = Vec2(1, 1);
+	colour = Vec4(1, 1, 1, 1);
+
 	properties.append(Editor_Thing_Property("Size", &size, Vec2(-10000, -10000), Vec2(10000, 10000), Vec2(1, 1), Vec2(0.5f, 0.5f)));
 	properties.append(Editor_Thing_Property("Scale", &scale, Vec2(-10000, -10000), Vec2(10000, 10000), Vec2(1, 1), Vec2(0.5f, 0.5f)));
-	properties.append(Editor_Thing_Property("Entity Type", &entity_name.data));
-	properties.append(editor_thing_property_entity_type());
+	properties.append(editor_thing_property_entity_type(&entity_name));
 	properties.append(editor_thing_property_texture("Texture", &texture));
 	properties.append(Editor_Thing_Property("Colour", &colour, Vec4(0, 0, 0, 0), Vec4(1, 1, 1, 1), Vec4(0.1f, 0.1f, 0.1f, 0.1f), Vec4(0.05f, 0.05f, 0.05f, 0.05f)));
 }
@@ -270,7 +281,8 @@ void Editor_Entity::render() {
 	rt.texture = texture;
 	renderer.texture(&rt);
 
-	Editor_Thing::render();
+	Vec4 colour = editor.colour_for_thing(this);
+	renderer.centered_box(false, position.x, position.y, size.x*scale.x, size.y*scale.y, colour);
 }
 
 void Editor::gui_begin_input() {
@@ -307,6 +319,10 @@ void Editor::init() {
 
 	edit_window_position = Vec2(128 - 16, 0);
 	edit_window_size = Vec2(1920 - 456, 1080 - 80);
+
+	for (int i = 0; i < entity_manager.entity_types.num; i++) {
+		entity_type_names.append(entity_manager.entity_types[i]->name);
+	}
 }
 
 char buffer[2048] = { 0 };
@@ -334,51 +350,54 @@ void Editor::update() {
 	nk_end(context);
 
 	nk_begin(context, "Properties", nk_rect(1920 - 340 - 1, 10, 356, 1080 - 66 - 64), NK_WINDOW_BORDER | NK_WINDOW_TITLE);
-	if (mode == EDITOR_SELECT) {
-		if (selected_things.num == 1) {
-			Array<Editor_Thing_Property> properties;
-			selected_things[0]->add_properties(properties);
-			
-			For(properties) {
-				nk_layout_row_dynamic(context, 30, 1);
 
-				Editor_Thing_Property *prop = it;
-				if (it->type == THING_PROPERTY_INT) {
-					nk_label(context, it->name, NK_LEFT);
-					nk_property_int(context, it->name, it->int_min, it->int_dest, it->int_max, it->int_step, it->int_inc);
-				}
-				else if (it->type == THING_PROPERTY_FLOAT) {
-					nk_label(context, it->name, NK_LEFT);
-					nk_property_float(context, it->name, it->float_min, it->float_dest, it->float_max, it->float_step, it->float_inc);
-				}
-				else if (it->type == THING_PROPERTY_STRING) {
-					nk_label(context, it->name, NK_LEFT);
-					nk_edit_string_zero_terminated(context, NK_EDIT_FIELD, *it->string_dest, 2048, nullptr);
-				}
-				else if (it->type == THING_PROPERTY_BOOL) {
-					nk_checkbox_label(context, it->name, (int*)it->bool_dest);
-				}
-				else if (it->type == THING_PROPERTY_VEC2) {
-					nk_label(context, it->name, NK_LEFT);
+	int tree_id = 1;
+	if (selected_things.num == 1) {
+		For(selected_things[0]->properties) {
+			nk_layout_row_dynamic(context, 20, 1);
+
+			Editor_Thing_Property *prop = it;
+			if (it->type == THING_PROPERTY_INT) {
+				nk_label(context, it->name, NK_LEFT);
+				nk_property_int(context, it->name, it->int_min, it->int_dest, it->int_max, it->int_step, it->int_inc);
+			}
+			else if (it->type == THING_PROPERTY_FLOAT) {
+				nk_label(context, it->name, NK_LEFT);
+				nk_property_float(context, it->name, it->float_min, it->float_dest, it->float_max, it->float_step, it->float_inc);
+			}
+			else if (it->type == THING_PROPERTY_STRING) {
+				nk_label(context, it->name, NK_LEFT);
+				nk_edit_string_zero_terminated(context, NK_EDIT_FIELD, *it->string_dest, 2048, nullptr);
+			}
+			else if (it->type == THING_PROPERTY_BOOL) {
+				nk_checkbox_label(context, it->name, (int*)it->bool_dest);
+			}
+			else if (it->type == THING_PROPERTY_VEC2) {
+				if (nk_tree_push_id(context, NK_TREE_TAB, it->name, NK_MINIMIZED, tree_id++)) {
 					nk_property_float(context, "#x", it->vec2_min.x, &(it->vec2_dest->x), it->vec2_max.x, it->vec2_step.x, it->vec2_inc.x);
 					nk_property_float(context, "#y", it->vec2_min.y, &(it->vec2_dest->y), it->vec2_max.y, it->vec2_step.y, it->vec2_inc.y);
+					nk_tree_pop(context);
 				}
-				else if (it->type == THING_PROPERTY_VEC3) {
-					nk_label(context, it->name, NK_LEFT);
+			}
+			else if (it->type == THING_PROPERTY_VEC3) {
+				if (nk_tree_push_id(context, NK_TREE_TAB, it->name, NK_MINIMIZED, tree_id++)) {
 					nk_property_float(context, "#x", it->vec3_min.x, &(it->vec3_dest->x), it->vec3_max.x, it->vec3_step.x, it->vec3_inc.x);
 					nk_property_float(context, "#y", it->vec3_min.y, &(it->vec3_dest->y), it->vec3_max.y, it->vec3_step.y, it->vec3_inc.y);
 					nk_property_float(context, "#z", it->vec3_min.z, &(it->vec3_dest->z), it->vec3_max.z, it->vec3_step.z, it->vec3_inc.z);
+					nk_tree_pop(context);
 				}
-				else if (it->type == THING_PROPERTY_VEC4) {
-					nk_label(context, it->name, NK_LEFT);
+			}
+			else if (it->type == THING_PROPERTY_VEC4) {
+				if (nk_tree_push_id(context, NK_TREE_TAB, it->name, NK_MINIMIZED, tree_id++)) {
 					nk_property_float(context, "#x", it->vec4_min.x, &(it->vec4_dest->x), it->vec4_max.x, it->vec4_step.x, it->vec4_inc.x);
 					nk_property_float(context, "#y", it->vec4_min.y, &(it->vec4_dest->y), it->vec4_max.y, it->vec4_step.y, it->vec4_inc.y);
 					nk_property_float(context, "#z", it->vec4_min.z, &(it->vec4_dest->z), it->vec4_max.z, it->vec4_step.z, it->vec4_inc.z);
 					nk_property_float(context, "#w", it->vec4_min.w, &(it->vec4_dest->w), it->vec4_max.w, it->vec4_step.w, it->vec4_inc.w);
+					nk_tree_pop(context);
 				}
-				else if (it->type == THING_PROPERTY_TEXTURE) {
-					nk_label(context, it->name, NK_LEFT);
-
+			}
+			else if (it->type == THING_PROPERTY_TEXTURE) {
+				if (nk_tree_push_id(context, NK_TREE_TAB, it->name, NK_MINIMIZED, tree_id++)) {
 					if ((*prop->texture_dest)) {
 						nk_layout_row_static(context, 64, 64, 1);
 						nk_button_image(context, nk_image_id((*prop->texture_dest)->api_object));
@@ -397,15 +416,18 @@ void Editor::update() {
 							*prop->texture_dest = tex.load(out.data);
 						}
 					}
-				}
-				else if (it->type == THING_PROPERTY_ENTITY_TYPE) {
-					
+					nk_tree_pop(context);
 				}
 			}
+			else if (it->type == THING_PROPERTY_ENTITY_TYPE) {
+				if (nk_tree_push_id(context, NK_TREE_TAB, it->name, NK_MINIMIZED, tree_id++)) {
+					selected_things[0]->current_entity_type_num = nk_combo(
+						context, entity_type_names.data, entity_type_names.num, selected_things[0]->current_entity_type_num, 25, nk_vec2(200, 200));
+					nk_tree_pop(context);
+				}
+				strcpy(it->dstr_dest->data, entity_type_names[selected_things[0]->current_entity_type_num]);
+			}
 		}
-	}
-	else if (mode == EDITOR_ENTITY) {
-
 	}
 
 	nk_end(context);
@@ -602,6 +624,8 @@ void Editor::handle_mouse_press(int mouse_button, bool down, Vec2 position, bool
 				Editor_Entity *new_entity = new Editor_Entity;
 				new_entity->position = renderer.to_world_pos(position);
 				add_thing(new_entity);
+				clear_selected_things();
+				selected_things.append(new_entity);
 			}
 		}
 	}
@@ -665,6 +689,50 @@ void Editor::handle_mouse_wheel(int amount) {
 }
 
 void Editor::save(const char *file_name) {
+	FILE *out = nullptr;
+	int err = fopen_s(&out, file_name, "w");
+
+	if (!out) {
+		return;
+	}
+
+	For(things) {
+		fprintf(out, "%s\n", (*it)->type_name);
+		For2((*it)->properties, prop) {
+			if (prop->type == THING_PROPERTY_INT) {
+				fprintf(out, "%s %d\n", prop->name, *prop->int_dest);
+			}
+			else if (prop->type == THING_PROPERTY_FLOAT) {
+				fprintf(out, "%s %f\n", prop->name, *prop->float_dest);
+			}
+			else if (prop->type == THING_PROPERTY_STRING) {
+				fprintf(out, "%s %s\n", prop->name, *prop->string_dest);
+			}
+			else if(prop->type == THING_PROPERTY_BOOL) {
+				fprintf(out, "%s %d\n", prop->name, *prop->bool_dest);
+			}
+			else if (prop->type == THING_PROPERTY_VEC2) {
+				fprintf(out, "%s (%f %f)\n", prop->name, prop->vec2_dest->x, prop->vec2_dest->y);
+			}
+			else if (prop->type == THING_PROPERTY_VEC3) {
+				fprintf(out, "%s (%f %f %f)\n", prop->name, prop->vec3_dest->x, prop->vec3_dest->y, prop->vec3_dest->z);
+			}
+			else if (prop->type == THING_PROPERTY_VEC4) {
+				fprintf(out, "%s (%f %f %f %f)\n", prop->name, prop->vec4_dest->x, prop->vec4_dest->y, prop->vec4_dest->z, prop->vec4_dest->z);
+			}
+			else if (prop->type == THING_PROPERTY_TEXTURE) {
+				if ((*prop->texture_dest)) {
+					fprintf(out, "%s %s\n", prop->name, (*prop->texture_dest)->filename.data);
+				}
+				else {
+					fprintf(out, "%s \"\"\n", prop->name);
+				}
+			}
+			else if(prop->type == THING_PROPERTY_ENTITY_TYPE) {
+				fprintf(out, "%s %s\n", prop->name, *prop->string_dest);
+			}
+		}
+	}
 }
 
 void Editor::add_static_things() {

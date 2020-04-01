@@ -12,6 +12,7 @@ int main(int argc, char *argv[]) {
 	input.target = INPUT_EDITOR;
 	editor.load_map_into_editor("data/levels/test.acp");
 
+	system("cd");
 	SDL_Event ev;
 	while(sys.running) {
 		editor.gui_begin_input();
@@ -90,7 +91,9 @@ int main(int argc, char *argv[]) {
 
 		sys.frame_num++;
 
-		editor.update();
+		if (use_editor) {
+			editor.update();
+		}
 		game.update();
 		entity_manager.update(game.delta_time);
 		renderer.update(game.delta_time);
