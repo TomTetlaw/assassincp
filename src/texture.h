@@ -2,7 +2,7 @@
 #define __TEXTURE_H__
 
 struct Texture {
-	dstr filename;
+	char filename[256] = { 0 };
 	bool used = false;
 	bool never_unload = false;
 	unsigned int api_object = 0;

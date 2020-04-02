@@ -105,3 +105,108 @@ Load_File_Result load_file(const char *filename) {
 	result.length = len;
 	return result;
 }
+
+Save_File::~Save_File() {
+	if (handle != nullptr) {
+		console.printf("Warning: didn't close save file at end of scope!\n");
+	}
+}
+
+bool save_open_write(const char *file_name, Save_File *file) {
+	fopen_s(&file->handle, file_name, "w");
+	return file->handle != nullptr;
+}
+
+bool save_open_read(const char *file_name, Save_File *file) {
+	fopen_s(&file->handle, file_name, "r");
+	return file->handle != nullptr;
+}
+
+void save_close(Save_File *file) {
+	if (!file->handle) {
+		return;
+	}
+
+	fclose(file->handle);
+	file->handle = nullptr;
+}
+
+void save_write(Save_File *file, const void *data, int size) {
+	if (!file->handle) {
+		return;
+	}
+
+	fwrite(data, 1, size, file->handle);
+}
+
+void save_write_int(Save_File *file, int value) {
+	save_write(file, (const void *)&value, sizeof(int));
+}
+
+void save_write_float(Save_File *file, float value) {
+	save_write(file, (const void *)&value, sizeof(float));
+}
+
+void save_write_vec2(Save_File *file, Vec2 value) {
+	save_write_float(file, value.x);
+	save_write_float(file, value.y);
+}
+
+void save_write_vec3(Save_File *file, Vec3 value) {
+	save_write_float(file, value.x);
+	save_write_float(file, value.y);
+	save_write_float(file, value.z);
+}
+
+void save_write_vec4(Save_File *file, Vec4 value) {
+	save_write_float(file, value.x);
+	save_write_float(file, value.y);
+	save_write_float(file, value.z);
+	save_write_float(file, value.w);
+}
+
+void save_write_string(Save_File *file, const char *value) {
+	int len = strlen(value);
+	save_write_int(file, len);
+	save_write(file, (const void *)value, len);
+}
+
+void save_read(Save_File *file, void *data, int size) {
+	if (!file->handle) {
+		return;
+	}
+
+	fread(data, 1, size, file->handle);
+}
+
+void save_read_int(Save_File *file, int *value) {
+	save_read(file, (void *)value, sizeof(int));
+}
+
+void save_read_float(Save_File *file, float *value) {
+	save_read(file, (void *)value, sizeof(float));
+}
+
+void save_read_vec2(Save_File *file, Vec2 *value) {
+	save_read_float(file, &value->x);
+	save_read_float(file, &value->y);
+}
+
+void save_read_vec3(Save_File *file, Vec3 *value) {
+	save_read_float(file, &value->x);
+	save_read_float(file, &value->y);
+	save_read_float(file, &value->z);
+}
+
+void save_read_vec4(Save_File *file, Vec4 *value) {
+	save_read_float(file, &value->x);
+	save_read_float(file, &value->y);
+	save_read_float(file, &value->z);
+	save_read_float(file, &value->w);
+}
+
+void save_read_string(Save_File *file, char *value) {
+	int len = 0;
+	save_read_int(file, &len);
+	save_read(file, (void *)value, len);
+}

@@ -218,59 +218,39 @@ void Editor_Polygon::calculate_properties() {
 }
 */
 
-struct Editor_Mode_Select_Button : public UI_Button {
-	Editor_Mode_Select_Button() {
-		off_texture = tex.load("data/textures/editor/select_mode_off.png");
-		on_texture = tex.load("data/textures/editor/select_mode_on.png");
-		size = Vec2(32, 32);
-	}
-
-	void on_click() {
-		editor.mode = EDITOR_SELECT;
-	}
-};
-
-struct Editor_Mode_Entity_Button : public UI_Button {
-	Editor_Mode_Entity_Button() {
-		off_texture = tex.load("data/textures/editor/entity_mode_off.png");
-		on_texture = tex.load("data/textures/editor/entity_mode_on.png");
-		size = Vec2(32, 32);
-	}
-
-	void on_click() {
-		editor.mode = EDITOR_ENTITY;
-	}
-};
-
-void Editor_Thing::render() {
-	Vec2 size = editor.size_for_thing(this);
-	Vec4 colour = editor.colour_for_thing(this);
-	renderer.centered_box(false, position.x, position.y, size.x, size.y, colour);
-}
-
-Editor_Thing::Editor_Thing() {
-	type_name = "thing";
-	properties.append(Editor_Thing_Property("Position", &position, Vec2(-10000, -10000), Vec2(10000, 10000), Vec2(1, 1), Vec2(0.5f, 0.5f)));
-}
-
 Editor_Entity::Editor_Entity() {
-	type_name = "entity";
+	type_name[0] = 0;
+	name[0] = 0;
+	texture_name[0] = 0;
 
-	hover_colour = Vec4(0, 0.2f, 0, 1);
-	hover_size = Vec2(32, 32);
-	select_colour = Vec4(0, 1, 0, 1);
-	select_size = Vec2(32, 32);
-	normal_colour = Vec4(1, 1, 1, 1);
-	normal_size = Vec2(32, 32);
 	size = Vec2(32, 32);
 	scale = Vec2(1, 1);
 	colour = Vec4(1, 1, 1, 1);
 
-	properties.append(Editor_Thing_Property("Size", &size, Vec2(-10000, -10000), Vec2(10000, 10000), Vec2(1, 1), Vec2(0.5f, 0.5f)));
-	properties.append(Editor_Thing_Property("Scale", &scale, Vec2(-10000, -10000), Vec2(10000, 10000), Vec2(1, 1), Vec2(0.5f, 0.5f)));
-	properties.append(editor_thing_property_entity_type(&entity_name));
-	properties.append(editor_thing_property_texture("Texture", &texture));
-	properties.append(Editor_Thing_Property("Colour", &colour, Vec4(0, 0, 0, 0), Vec4(1, 1, 1, 1), Vec4(0.1f, 0.1f, 0.1f, 0.1f), Vec4(0.05f, 0.05f, 0.05f, 0.05f)));
+	strcpy(type_name, "Entity");
+	strcpy(texture_name, "data/textures/default.png");
+}
+
+void Editor_Entity::write_save(Save_File *file) {
+	// !!!!! if you add anything to this you must increment map_file_version in editor.h !!!!!
+
+	save_write_string(file, type_name);
+	save_write_string(file, name);
+	save_write_string(file, texture_name);
+	save_write_vec2(file, position);
+	save_write_vec2(file, size);
+	save_write_vec2(file, scale);
+	save_write_vec4(file, colour);
+}
+
+void Editor_Entity::read_save(Save_File *file) {
+	save_read_string(file, type_name);
+	save_read_string(file, name);
+	save_read_string(file, texture_name);
+	save_read_vec2(file, &position);
+	save_read_vec2(file, &size);
+	save_read_vec2(file, &scale);
+	save_read_vec4(file, &colour);
 }
 
 void Editor_Entity::render() {
@@ -279,10 +259,17 @@ void Editor_Entity::render() {
 	rt.size = size;
 	rt.scale = scale;
 	rt.texture = texture;
+	rt.centered = true;
 	renderer.texture(&rt);
 
-	Vec4 colour = editor.colour_for_thing(this);
-	renderer.centered_box(false, position.x, position.y, size.x*scale.x, size.y*scale.y, colour);
+	Vec4 c = Vec4(1, 1, 1, 1);
+	if (editor.selected_entities.find(this) || hovered) {
+		c = Vec4(0, 1, 0, 1);
+	}
+
+	float hw = size.x / 2;
+	float hh = size.y / 2;
+	renderer.box(false, position.x-hw, position.y-hh, size.x*scale.x, size.y*scale.y, c);
 }
 
 void Editor::gui_begin_input() {
@@ -309,7 +296,7 @@ void Editor::init() {
 	struct nk_font_atlas *atlas;
 	nk_sdl_font_stash_begin(&atlas);
 	struct nk_font *font = nk_font_atlas_add_from_file(atlas, "data/fonts/consolas.ttf", 16, nullptr);
-	nk_sdl_font_stash_end();	
+	nk_sdl_font_stash_end();
 	nk_style_set_font(context, &font->handle);
 
 	select_mode_on_image = nk_image_id(tex.load("data/textures/editor/select_mode_on.png")->api_object);
@@ -325,9 +312,18 @@ void Editor::init() {
 	}
 }
 
-char buffer[2048] = { 0 };
+void Editor::shutdown() {
+	nk_sdl_shutdown();
+	remove_all();
+}
 
 void Editor::update() {
+	For(entities) {
+		if ((*it)->texture_name[0]) {
+			(*it)->texture = tex.load((*it)->texture_name);
+		}
+	}
+
 	nk_begin(context, "Mode", nk_rect(10, 10, 96, 1080 - 66-64), NK_WINDOW_BORDER | NK_WINDOW_TITLE);
 	nk_layout_row_static(context, 64, 64, 1);
 	if (nk_button_image(context, select_mode_off_image)) {
@@ -341,164 +337,109 @@ void Editor::update() {
 
 	nk_begin(context, "", nk_rect(10, 1080 - 10 - 64, 1920 - 10 - 10, 64), NK_WINDOW_BORDER | NK_WINDOW_NO_SCROLLBAR);
 	nk_layout_row_dynamic(context, 64, 1);
-	if (mode == EDITOR_SELECT) {
-		nk_label(context, "Mode: select", NK_TEXT_LEFT);
-	}
-	else {
-		nk_label(context, "Mode: entity", NK_TEXT_LEFT);
-	}
+	nk_labelf(context, NK_TEXT_LEFT, "Mode: %s (zoom: %f)", mode == EDITOR_SELECT ? "select" : "entity", renderer.scale_for_zoom_level(renderer.zoom_level));
 	nk_end(context);
 
 	nk_begin(context, "Properties", nk_rect(1920 - 340 - 1, 10, 356, 1080 - 66 - 64), NK_WINDOW_BORDER | NK_WINDOW_TITLE);
 
 	int tree_id = 1;
-	if (selected_things.num == 1) {
-		For(selected_things[0]->properties) {
-			nk_layout_row_dynamic(context, 20, 1);
+	if (selected_entities.num == 1) {
+		Editor_Entity *entity = selected_entities[0];
 
-			Editor_Thing_Property *prop = it;
-			if (it->type == THING_PROPERTY_INT) {
-				nk_label(context, it->name, NK_LEFT);
-				nk_property_int(context, it->name, it->int_min, it->int_dest, it->int_max, it->int_step, it->int_inc);
-			}
-			else if (it->type == THING_PROPERTY_FLOAT) {
-				nk_label(context, it->name, NK_LEFT);
-				nk_property_float(context, it->name, it->float_min, it->float_dest, it->float_max, it->float_step, it->float_inc);
-			}
-			else if (it->type == THING_PROPERTY_STRING) {
-				nk_label(context, it->name, NK_LEFT);
-				nk_edit_string_zero_terminated(context, NK_EDIT_FIELD, *it->string_dest, 2048, nullptr);
-			}
-			else if (it->type == THING_PROPERTY_BOOL) {
-				nk_checkbox_label(context, it->name, (int*)it->bool_dest);
-			}
-			else if (it->type == THING_PROPERTY_VEC2) {
-				if (nk_tree_push_id(context, NK_TREE_TAB, it->name, NK_MINIMIZED, tree_id++)) {
-					nk_property_float(context, "#x", it->vec2_min.x, &(it->vec2_dest->x), it->vec2_max.x, it->vec2_step.x, it->vec2_inc.x);
-					nk_property_float(context, "#y", it->vec2_min.y, &(it->vec2_dest->y), it->vec2_max.y, it->vec2_step.y, it->vec2_inc.y);
-					nk_tree_pop(context);
-				}
-			}
-			else if (it->type == THING_PROPERTY_VEC3) {
-				if (nk_tree_push_id(context, NK_TREE_TAB, it->name, NK_MINIMIZED, tree_id++)) {
-					nk_property_float(context, "#x", it->vec3_min.x, &(it->vec3_dest->x), it->vec3_max.x, it->vec3_step.x, it->vec3_inc.x);
-					nk_property_float(context, "#y", it->vec3_min.y, &(it->vec3_dest->y), it->vec3_max.y, it->vec3_step.y, it->vec3_inc.y);
-					nk_property_float(context, "#z", it->vec3_min.z, &(it->vec3_dest->z), it->vec3_max.z, it->vec3_step.z, it->vec3_inc.z);
-					nk_tree_pop(context);
-				}
-			}
-			else if (it->type == THING_PROPERTY_VEC4) {
-				if (nk_tree_push_id(context, NK_TREE_TAB, it->name, NK_MINIMIZED, tree_id++)) {
-					nk_property_float(context, "#x", it->vec4_min.x, &(it->vec4_dest->x), it->vec4_max.x, it->vec4_step.x, it->vec4_inc.x);
-					nk_property_float(context, "#y", it->vec4_min.y, &(it->vec4_dest->y), it->vec4_max.y, it->vec4_step.y, it->vec4_inc.y);
-					nk_property_float(context, "#z", it->vec4_min.z, &(it->vec4_dest->z), it->vec4_max.z, it->vec4_step.z, it->vec4_inc.z);
-					nk_property_float(context, "#w", it->vec4_min.w, &(it->vec4_dest->w), it->vec4_max.w, it->vec4_step.w, it->vec4_inc.w);
-					nk_tree_pop(context);
-				}
-			}
-			else if (it->type == THING_PROPERTY_TEXTURE) {
-				if (nk_tree_push_id(context, NK_TREE_TAB, it->name, NK_MINIMIZED, tree_id++)) {
-					if ((*prop->texture_dest)) {
-						nk_layout_row_static(context, 64, 64, 1);
-						nk_button_image(context, nk_image_id((*prop->texture_dest)->api_object));
-						nk_layout_row_dynamic(context, 30, 1);
-					}
-					else {
-						nk_layout_row_static(context, 64, 64, 1);
-						nk_button_image(context, nk_image_id(-1));
-						nk_layout_row_dynamic(context, 30, 1);
-					}
+		nk_layout_row_dynamic(context, 20, 1);
 
-					if (nk_button_label(context, "Find texture...")) {
-						dstr out;
-						sys.open_file_dialogue(".\\data\\textures\\", "PNG Files\0*.png\0\0", &out);
-						if (out.data[0]) {
-							*prop->texture_dest = tex.load(out.data);
-						}
-					}
-					nk_tree_pop(context);
-				}
+		// type
+		if (nk_tree_push_id(context, NK_TREE_TAB, "Type", NK_MINIMIZED, tree_id++)) {
+			entity->current_entity_type_num = nk_combo(
+				context, entity_type_names.data, entity_type_names.num, entity->current_entity_type_num, 25, nk_vec2(200, 200));
+			strcpy(entity->type_name, entity_type_names[entity->current_entity_type_num]);
+			nk_tree_pop(context);
+		}
+
+		// name
+		nk_label(context, "Name", NK_LEFT);
+		nk_edit_string_zero_terminated(context, NK_EDIT_FIELD, entity->name, 256, nullptr);
+
+		// texture
+		if (nk_tree_push_id(context, NK_TREE_TAB, "Texture", NK_MINIMIZED, tree_id++)) {
+			nk_layout_row_static(context, 64, 64, 1);
+			if (entity->texture) {
+				nk_button_image(context, nk_image_id(entity->texture->api_object));
 			}
-			else if (it->type == THING_PROPERTY_ENTITY_TYPE) {
-				if (nk_tree_push_id(context, NK_TREE_TAB, it->name, NK_MINIMIZED, tree_id++)) {
-					selected_things[0]->current_entity_type_num = nk_combo(
-						context, entity_type_names.data, entity_type_names.num, selected_things[0]->current_entity_type_num, 25, nk_vec2(200, 200));
-					nk_tree_pop(context);
-				}
-				strcpy(it->dstr_dest->data, entity_type_names[selected_things[0]->current_entity_type_num]);
+			else {
+				nk_button_image(context, nk_image_id(-1));
 			}
+			nk_layout_row_dynamic(context, 30, 1);
+
+			if (nk_button_label(context, "Find texture...")) {
+				sys.open_file_dialogue("data/textures/", "PNG Files\0*.png\0\0", entity->texture_name);
+			}
+			nk_tree_pop(context);
+		}
+
+		// position
+		if (nk_tree_push_id(context, NK_TREE_TAB, "Position", NK_MINIMIZED, tree_id++)) {
+			nk_property_float(context, "#x", -10000, &entity->position.x, 10000, 1, 1);
+			nk_property_float(context, "#y", -10000, &entity->position.y, 10000, 1, 1);
+			nk_tree_pop(context);
+		}
+
+		// size
+		if (nk_tree_push_id(context, NK_TREE_TAB, "Size", NK_MINIMIZED, tree_id++)) {
+			nk_property_float(context, "#x", -10000, &entity->size.x, 10000, 1, 1);
+			nk_property_float(context, "#y", -10000, &entity->size.y, 10000, 1, 1);
+			nk_tree_pop(context);
+		}
+
+		// scale
+		if (nk_tree_push_id(context, NK_TREE_TAB, "Scale", NK_MINIMIZED, tree_id++)) {
+			nk_property_float(context, "#x", -10000, &entity->scale.x, 10000, 1, 1);
+			nk_property_float(context, "#y", -10000, &entity->scale.y, 10000, 1, 1);
+			nk_tree_pop(context);
+		}
+		
+		// colour
+		if (nk_tree_push_id(context, NK_TREE_TAB, "Colour", NK_MINIMIZED, tree_id++)) {
+			nk_property_float(context, "#r", 0, &entity->colour.x, 1, 0.01f, 0.01f);
+			nk_property_float(context, "#g", 0, &entity->colour.y, 1, 0.01f, 0.01f);
+			nk_property_float(context, "#b", 0, &entity->colour.y, 1, 0.01f, 0.01f);
+			nk_property_float(context, "#a", 0, &entity->colour.y, 1, 0.01f, 0.01f);
+			nk_tree_pop(context);
 		}
 	}
 
 	nk_end(context);
-
-	For(things) {
-		(*it)->update();
-	}
-}
-
-void Editor::shutdown() {
-	nk_sdl_shutdown();
-	remove_all();
 }
 
 void Editor::remove_all() {
-	for (int i = 0; i < things.num; i++) {
-		delete things[i];
+	for (int i = 0; i < entities.num; i++) {
+		delete entities[i];
 	}
 
-	things.num = 0;
-	clear_selected_things();
+	entities.num = 0;
+	clear_selected_entities();
 }
 
-Vec2 Editor::size_for_thing(Editor_Thing *thing) {
-	Vec2 size = Vec2(0, 0);
-	if (thing->hovered) {
-		size = thing->hover_size;
-	}
-	if (!thing->hovered && !selected_things.find(thing)) {
-		size = thing->normal_size;
-	}
-	if (selected_things.find(thing)) {
-		size = thing->select_size;
-	}
-	return size;
+void Editor::add_entity(Editor_Entity *entity) {
+	entity->index = entities.num;
+	entities.append(entity);
 }
 
-Vec4 Editor::colour_for_thing(Editor_Thing *thing) {
-	Vec4 colour;
-	if (thing->hovered) {
-		colour = thing->hover_colour;
-	}
-	if (!thing->hovered && !selected_things.find(thing)) {
-		colour = thing->normal_colour;
-	}
-	if (selected_things.find(thing)) {
-		colour = thing->select_colour;
-	}
-	return colour;
-}
-
-void Editor::add_thing(Editor_Thing *thing) {
-	thing->index = things.num;
-	things.append(thing);
-}
-
-void Editor::delete_thing(Editor_Thing *thing) {
-	if (thing->index < 0) {
+void Editor::delete_entity(Editor_Entity *entity) {
+	if (entity->index < 0) {
 		return;
 	}
 
-	things.remove(thing->index);
-	delete thing;
+	entities.remove(entity->index);
+	delete entity;
 
-	For(things) {
+	For(entities) {
 		(*it)->index = it_index;
 	}
 }
 
-void Editor::clear_selected_things() {
-	selected_things.num = 0;
+void Editor::clear_selected_entities() {
+	selected_entities.num = 0;
 }
 
 void Editor::render() {
@@ -507,39 +448,46 @@ void Editor::render() {
 	glEnable(GL_SCISSOR_TEST);
 	glScissor(edit_window_position.x, edit_window_position.y + (1080 - edit_window_size.y), edit_window_size.x, edit_window_size.y);
 
-	For2(things, t) {
-		Vec4 colour = colour_for_thing(*t);
-		Vec2 size = size_for_thing(*t);
-		(*t)->render();
-	}
+	renderer.use_zoom = true;
 
-	//////////////////////////////
+	For(entities) {
+		(*it)->render();
+	}
 
 	if (drag_select) {
 		renderer.box(false, drag_start_point.x, drag_start_point.y, drag_size.x, drag_size.y, Vec4(0, 1, 0, 1));
 	}
 
-	//////////////////////////////
+	glMatrixMode(GL_MODELVIEW);
+	glLoadIdentity();
+	glPushMatrix();
+
+	renderer.setup_render();
+
+	glColor4f(1, 1, 1, 0.1f);
+	glBegin(GL_LINES);
+
+	int grid_size = 32;
+	int num_x = 10000 / grid_size;
+	int num_y = 10000 / grid_size;
+	for (int x = -num_x; x < num_x; x++) {
+		glVertex2f(x * grid_size, -10000);
+		glVertex2f(x * grid_size, 10000);
+	}
+	for (int y = -num_y; y < num_y; y++) {
+		glVertex2f(-10000, y * grid_size);
+		glVertex2f(10000, y * grid_size);
+	}
+
+	glEnd();
+
+	glPopMatrix();
 
 	glDisable(GL_SCISSOR_TEST);
 
 	renderer.use_camera = false;
 	renderer.use_zoom = false;
 	renderer.box(false, 128-16, 0, 1920 - 456, 1080 - 80, Vec4(1, 1, 1, 1));
-	renderer.use_zoom = true;
-
-	if (debug_draw) {
-		renderer.debug_string("%d", mode);
-		renderer.debug_string("zoom_level: %d", renderer.zoom_level);
-	}
-}
-
-bool point_intersects_panel(Vec2 position, UI_Panel *panel) {
-	return point_intersects_box(position, ui_get_absolute_position(panel), panel->size);
-}
-
-bool point_intersects_button(Vec2 position, UI_Button *button) {
-	return point_intersects_box(position, ui_get_absolute_position(button), button->size);
 }
 
 void Editor::handle_mouse_press(int mouse_button, bool down, Vec2 position, bool is_double_click) {
@@ -557,14 +505,14 @@ void Editor::handle_mouse_press(int mouse_button, bool down, Vec2 position, bool
 	if (mode == EDITOR_SELECT) {
 		if (mouse_button == SDL_BUTTON_LEFT) {
 			if (down) {
-				Editor_Thing *thing = nullptr;
-				For(things) { // don't start drag select if dragging a thing
-					if (point_intersects_centered_box(renderer.to_world_pos(position), (*it)->position, size_for_thing(*it))) {
-						thing = *it;
+				Editor_Entity *entity = nullptr;
+				For(entities) { // don't start drag select if dragging a thing
+					if (point_intersects_centered_box(renderer.to_world_pos(position), (*it)->position, (*it)->size)) {
+						entity = *it;
 						break;
 					}
 				}
-				if (thing && selected_things.find(thing)) {
+				if (entity && selected_entities.find(entity)) {
 					dragging_thing = true;
 				}
 				else {
@@ -584,11 +532,11 @@ void Editor::handle_mouse_press(int mouse_button, bool down, Vec2 position, bool
 					if (drag_start_point.y == 0) {
 						drag_start_point.y = renderer.to_world_pos(position).y;
 					}
+
+					// if drawing a box to the left or above where initially clicked
 					if (drag_size.x == 0) {
 						drag_size.x = 1;
 					}
-
-					// if drawing a box to the left or above where initially clicked
 					else if (drag_size.x < 0) {
 						drag_size.x = drag_size.x * -1;
 						drag_start_point.x = drag_start_point.x - drag_size.x;
@@ -602,12 +550,12 @@ void Editor::handle_mouse_press(int mouse_button, bool down, Vec2 position, bool
 					}
 
 					if (!shift_down) {
-						clear_selected_things();
+						clear_selected_entities();
 					}
 
-					For(things) {
-						if (box_intersects_centered_box(drag_start_point, drag_size, (*it)->position, size_for_thing(*it))) {
-							selected_things.append(*it);
+					For(entities) {
+						if (box_intersects_centered_box(drag_start_point, drag_size, (*it)->position, (*it)->size)) {
+							selected_entities.append(*it);
 						}
 					}
 
@@ -623,9 +571,9 @@ void Editor::handle_mouse_press(int mouse_button, bool down, Vec2 position, bool
 			if (down) {
 				Editor_Entity *new_entity = new Editor_Entity;
 				new_entity->position = renderer.to_world_pos(position);
-				add_thing(new_entity);
-				clear_selected_things();
-				selected_things.append(new_entity);
+				add_entity(new_entity);
+				clear_selected_entities();
+				selected_entities.append(new_entity);
 			}
 		}
 	}
@@ -642,24 +590,64 @@ void Editor::handle_mouse_move(int relx, int rely) {
 
 	if (mode == EDITOR_SELECT) {
 		if (dragging_thing) {
-			For(selected_things) {
+			For(selected_entities) {
 				if ((*it)->draggable) {
-					(*it)->position = (*it)->position + Vec2(relx, rely);
+					(*it)->position = (*it)->position + (Vec2(relx, rely) * renderer.inverse_scale_for_zoom_level(renderer.zoom_level));
 				}
 			}
 		}
 
 		if (drag_select) {
 			drag_size = renderer.to_world_pos(sys.cursor_position) - drag_start_point;
-		}
 
-		For(things) {
-			Vec2 size = size_for_thing(*it);
-			if (point_intersects_centered_box(sys.cursor_position, (*it)->position, size)) {
-				(*it)->hovered = true;
+			Vec2 start_point = drag_start_point;
+			Vec2 size = drag_size;
+
+			// if clicked and didn't move mouse
+			if (start_point.x == 0) {
+				start_point.x = renderer.to_world_pos(sys.cursor_position).x;
 			}
-			else {
-				(*it)->hovered = false;
+			if (start_point.y == 0) {
+				start_point.y = renderer.to_world_pos(sys.cursor_position).y;
+			}
+
+			// if drawing a box to the left or above where initially clicked
+			if (size.x == 0) {
+				size.x = 1;
+			}
+			else if (size.x < 0) {
+				size.x = size.x * -1;
+				start_point.x = start_point.x - size.x;
+			}
+			if (size.y == 0) {
+				size.y = 1;
+			}
+			else if (size.y < 0) {
+				size.y = size.y * -1;
+				start_point.y = start_point.y - size.y;
+			}
+
+			For(entities) {
+				float hw = ((*it)->size.x / 2);
+				float hh = ((*it)->size.y / 2);
+				if (box_intersects_box(start_point, size, (*it)->position - Vec2(hw, hh), (*it)->size)) {
+					(*it)->hovered = true;
+				}
+				else {
+					(*it)->hovered = false;
+				}
+			}
+		}
+		else {
+			For(entities) {
+				float hw = ((*it)->size.x / 2);
+				float hh = ((*it)->size.y / 2);
+				if (point_intersects_box(renderer.to_world_pos(sys.cursor_position), (*it)->position - Vec2(hw, hh), (*it)->size)) {
+					(*it)->hovered = true;
+				}
+				else {
+					(*it)->hovered = false;
+				}
 			}
 		}
 	}
@@ -674,117 +662,73 @@ void Editor::handle_key_press(SDL_Scancode scancode, bool down, int mods) {
 
 	if (mode == EDITOR_SELECT) {
 		if (down && scancode == SDL_SCANCODE_DELETE) {
-			if (selected_things.num > 0) {
-				For(selected_things) {
-					delete_thing((*it));
+			if (selected_entities.num > 0) {
+				For(selected_entities) {
+					delete_entity((*it));
 				}
-				clear_selected_things();
+				clear_selected_entities();
 			}
 		}
 	}
 }
 
 void Editor::handle_mouse_wheel(int amount) {
-	renderer.zoom_level += amount;
+	//renderer.zoom_level += amount;
+	Vec2 diff = ((sys.window_size * 0.5f) - (sys.cursor_position)) * renderer.scale_for_zoom_level(renderer.zoom_level);
+	if (amount > 0) {
+		renderer.camera_position = renderer.camera_position - diff;
+	}
+	else {
+		renderer.camera_position = renderer.camera_position + diff;
+	}
+	console.printf("added (%.2f, %.2f)\n", diff.x, diff.y);
 }
 
 void Editor::save(const char *file_name) {
-	FILE *out = nullptr;
-	int err = fopen_s(&out, file_name, "w");
+	// !!!!! if you add anything to this you must increment map_file_version in editor.h !!!!!
 
-	if (!out) {
+	Save_File file;
+	if (!save_open_write(file_name, &file)) {
+		console.printf("Failed to open map file for writing from editor: %d\n", errno);
 		return;
 	}
 
-	For(things) {
-		fprintf(out, "%s\n", (*it)->type_name);
-		For2((*it)->properties, prop) {
-			if (prop->type == THING_PROPERTY_INT) {
-				fprintf(out, "%s %d\n", prop->name, *prop->int_dest);
-			}
-			else if (prop->type == THING_PROPERTY_FLOAT) {
-				fprintf(out, "%s %f\n", prop->name, *prop->float_dest);
-			}
-			else if (prop->type == THING_PROPERTY_STRING) {
-				fprintf(out, "%s %s\n", prop->name, *prop->string_dest);
-			}
-			else if(prop->type == THING_PROPERTY_BOOL) {
-				fprintf(out, "%s %d\n", prop->name, *prop->bool_dest);
-			}
-			else if (prop->type == THING_PROPERTY_VEC2) {
-				fprintf(out, "%s (%f %f)\n", prop->name, prop->vec2_dest->x, prop->vec2_dest->y);
-			}
-			else if (prop->type == THING_PROPERTY_VEC3) {
-				fprintf(out, "%s (%f %f %f)\n", prop->name, prop->vec3_dest->x, prop->vec3_dest->y, prop->vec3_dest->z);
-			}
-			else if (prop->type == THING_PROPERTY_VEC4) {
-				fprintf(out, "%s (%f %f %f %f)\n", prop->name, prop->vec4_dest->x, prop->vec4_dest->y, prop->vec4_dest->z, prop->vec4_dest->z);
-			}
-			else if (prop->type == THING_PROPERTY_TEXTURE) {
-				if ((*prop->texture_dest)) {
-					fprintf(out, "%s %s\n", prop->name, (*prop->texture_dest)->filename.data);
-				}
-				else {
-					fprintf(out, "%s \"\"\n", prop->name);
-				}
-			}
-			else if(prop->type == THING_PROPERTY_ENTITY_TYPE) {
-				fprintf(out, "%s %s\n", prop->name, *prop->string_dest);
-			}
-		}
+	save_write_int(&file, map_file_version);
+
+	save_write_int(&file, entities.num);
+	For(entities) {
+		(*it)->write_save(&file);
 	}
+
+	save_close(&file);
 }
 
-void Editor::add_static_things() {
-	Editor_Thing *thing1 = new Editor_Thing;
-	thing1->position = Vec2(100, 100);
-	thing1->normal_colour = Vec4(0, 0, 1, 1);
-	thing1->normal_size = Vec2(10, 10);
-	thing1->hover_colour = Vec4(1, 0, 1, 1);
-	thing1->hover_size = Vec2(15, 15);
-	thing1->select_colour = Vec4(1, 1, 1, 1);
-	thing1->select_size = Vec2(20, 20);
+void Editor::load_map_into_editor(const char *file_name) {
+	Save_File file;
+	if (!save_open_read(file_name, &file)) {
+		console.printf("Failed to open map file for reading from editor: %d\n", errno);
+		return;
+	}
 
-	Editor_Thing *thing2 = new Editor_Thing;
-	thing2->position = Vec2(200, 200);
-	thing2->normal_colour = Vec4(1, 0, 0, 1);
-	thing2->normal_size = Vec2(10, 10);
-	thing2->hover_colour = Vec4(1, 0, 1, 1);
-	thing2->hover_size = Vec2(15, 15);
-	thing2->select_colour = Vec4(1, 1, 1, 1);
-	thing2->select_size = Vec2(20, 20);
+	int version = 0;
+	save_read_int(&file, &version);
+	if (version != map_file_version) {
+		console.printf("Attempting to open map file with old version from editor (wanted %d, got %d): %s\n", map_file_version, version, file_name);
+		save_close(&file);
+		return;
+	}
 
-	Editor_Thing *thing3 = new Editor_Thing;
-	thing3->position = Vec2(300, 300);
-	thing3->normal_colour = Vec4(0, 1, 0, 1);
-	thing3->normal_size = Vec2(10, 10);
-	thing3->hover_colour = Vec4(1, 0, 1, 1);
-	thing3->hover_size = Vec2(15, 15);
-	thing3->select_colour = Vec4(1, 1, 1, 1);
-	thing3->select_size = Vec2(20, 20);
+	int num = 0;
+	save_read_int(&file, &num);
+	for (int i = 0; i < num; i++) {
+		Editor_Entity *entity = new Editor_Entity;
+		entity->read_save(&file);
+		add_entity(entity);
+	}
 
-	add_thing(thing1);
-	add_thing(thing2);
-	add_thing(thing3);
+	save_close(&file);
 }
 
 void Editor::on_level_load() {
 	remove_all();
-
-	add_static_things();
-}
-
-void Editor::load_map_into_editor(const char *file_name) {
-	Load_File_Result in = load_file(file_name);
-	char token[2048] = { 0 };
-	const char *text_position = in.data;
-
-	if (!text_position) {
-		return;
-	}
-
-	remove_all();
-	game.on_level_load();
-
-	delete[] in.data;
 }

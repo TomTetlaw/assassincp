@@ -142,7 +142,6 @@
     <ClInclude Include="..\..\src\render.h" />
     <ClInclude Include="..\..\src\system.h" />
     <ClInclude Include="..\..\src\texture.h" />
-    <ClInclude Include="..\..\src\ui_render.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\common.cpp" />
@@ -162,7 +161,6 @@
     <ClCompile Include="..\..\src\render.cpp" />
     <ClCompile Include="..\..\src\system.cpp" />
     <ClCompile Include="..\..\src\texture.cpp" />
-    <ClCompile Include="..\..\src\ui_render.cpp" />
     <ClCompile Include="..\..\src\win_hotload.cpp" />
     <ClCompile Include="..\..\src\win_system.cpp" />
   </ItemGroup>

@@ -1,5 +1,10 @@
 #include "precompiled.h"
 
+class info_player_start : public Entity {
+};
+
+declare_entity_type(info_player_start, ENTITY_INFO_PLAYER_START);
+
 class Player : public Entity {
 	cpPivotJoint *joint = nullptr;
 	cpBody *move_anchor = nullptr;
@@ -8,7 +13,6 @@ class Player : public Entity {
 	Field_Of_View fov;
 
 	void spawn() {
-		set_texture("data/textures/player.png");
 		velocity_ramp_speed = 1000;
 		fov.init();
 	}
@@ -35,7 +39,7 @@ class Player : public Entity {
 
 		cpBodySetPosition(move_anchor, cpv(anchor_pos.x, anchor_pos.y));
 
-		renderer.camera_position = position - Vec2(1920 / 2, 1080 / 2);
+		renderer.camera_position = position;
 
 		//angle = position.angle_to(sys.cursor_position + renderer.camera_position);
 

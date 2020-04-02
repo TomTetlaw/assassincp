@@ -11,17 +11,30 @@ struct Load_File_Result {
 
 Load_File_Result load_file(const char *filename);
 
-struct dstr {
-	char *data = nullptr;
+struct Save_File {
+	FILE *handle = nullptr;
 
-	dstr() {
-		data = new char[2048];
-		memset(data, 0, 2048);
-	}
-
-	~dstr() {
-		delete[] data;
-	}
+	~Save_File();
 };
+
+bool save_open_write(const char *file_name, Save_File *file);
+bool save_open_read(const char *file_name, Save_File *file);
+void save_close(Save_File *file);
+
+void save_write(Save_File *file, const void *data, int size);
+void save_write_int(Save_File *file, int value);
+void save_write_float(Save_File *file, float value);
+void save_write_vec2(Save_File *file, Vec2 value);
+void save_write_vec3(Save_File *file, Vec3 value);
+void save_write_vec4(Save_File *file, Vec4 value);
+void save_write_string(Save_File *file, const char *value);
+
+void save_read(Save_File *file, void *data, int size);
+void save_read_int(Save_File *file, int *value);
+void save_read_float(Save_File *file, float *value);
+void save_read_vec2(Save_File *file, Vec2 *value);
+void save_read_vec3(Save_File *file, Vec3 *value);
+void save_read_vec4(Save_File *file, Vec4 *value);
+void save_read_string(Save_File *file, char *value);
 
 #endif

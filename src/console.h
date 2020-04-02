@@ -2,6 +2,8 @@
 #define __CONSOLE_H__
 
 struct Console {
+	void init();
+
 	void printf(const char *text, ...);
 };
 

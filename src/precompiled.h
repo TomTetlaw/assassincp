@@ -39,8 +39,8 @@
 
 #define break_point(x) { *(int *)0 = 0; }
 
-#include "common.h"
 #include "mathlib.h"
+#include "common.h"
 #include "array.h"
 #include "input.h"
 #include "hotload.h"
@@ -52,9 +52,7 @@
 #include "render.h"
 #include "entity.h"
 #include "game.h"
-#include "ui_render.h"
 #include "editor.h"
-
 #include "fov.h"
 
 #endif

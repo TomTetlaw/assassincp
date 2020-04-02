@@ -5,6 +5,7 @@ enum Entity_Classify {
 	ENTITY_BASE = 0,
 	ENTITY_PLAYER = 1,
 	ENTITY_POLYGON = 2,
+	ENTITY_INFO_PLAYER_START = 3,
 
 	ENTITY_NUM_TYPES,
 };
@@ -31,7 +32,7 @@ struct Entity {
 	int num_in_type = -1;
 	Entity_Type_Decl *type = nullptr;
 	Entity_Classify classify = ENTITY_BASE;
-	const char *name = nullptr;
+	char name[256] = { 0 };
 
 	float think_time = 0.0f;
 

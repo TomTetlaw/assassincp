@@ -15,7 +15,7 @@ struct System {
 	void quit();
 	void error(const char *text, ...);
 
-	void open_file_dialogue(const char *dir, const char *filters, dstr *out);
+	void open_file_dialogue(const char *dir, const char *filters, char *out);
 };
 
 extern System sys;

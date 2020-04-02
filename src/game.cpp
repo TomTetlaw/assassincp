@@ -83,17 +83,9 @@ void Game::on_level_load() {
 	current_level = nullptr;
 }
 
+void process_level();
+
 void Game::load_level(const char *file_name) {
-	Load_File_Result in = load_file(file_name);
-	char token[2048] = { 0 };
-	const char *text_position = in.data;
-
-	if (!in.data) {
-		return;
-	}
-
-	on_level_load();
-
 	current_level = new Level;
 
 	Vec2 p[] = {
@@ -107,5 +99,65 @@ void Game::load_level(const char *file_name) {
 		current_level->fov_check_points.append(p[i]);
 	}
 
-	delete[] in.data;
+	Save_File file;
+	if (!save_open_read(file_name, &file)) {
+		console.printf("Failed to open map file for reading from game: %d", errno);
+		return;
+	}
+
+	int version = 0;
+	save_read_int(&file, &version);
+	if (version != map_file_version) {
+		console.printf("Attempting to open map file with old version from game (wanted %d, got %d): %s\n", map_file_version, version, file_name);
+		save_close(&file);
+		return;
+	}
+
+	int num = 0;
+	save_read_int(&file, &num);
+	for (int i = 0; i < num; i++) {
+		Editor_Entity entity;
+		entity.read_save(&file);
+
+		Entity *ent = entity_manager.create_entity(entity.type_name, entity.name, false, false);
+		if (ent) {
+			ent->set_position(entity.position);
+			ent->size = entity.size;
+			ent->rt.scale = entity.scale;
+			ent->set_texture(entity.texture_name, false);
+			ent->colour = entity.colour;
+			entity_manager.spawn_entity(ent);
+		}
+	}
+
+	save_close(&file);
+
+	process_level();
+}
+
+void process_level() {
+	bool has_one_player_start = true;
+	Entity *player_start = nullptr;
+
+	if (entity_manager.entity_types[ENTITY_INFO_PLAYER_START]->entities.num == 0) {
+		console.printf("Warning: no info_player_start found!\n");
+		has_one_player_start = false;
+	}
+	if (entity_manager.entity_types[ENTITY_INFO_PLAYER_START]->entities.num > 1) {
+		console.printf("Warning: more than one info_player_start found!\n");
+		has_one_player_start = true;
+	}
+
+	if (has_one_player_start) {
+		player_start = entity_manager.entity_types[ENTITY_INFO_PLAYER_START]->entities[0];
+
+		Entity *player = entity_manager.create_entity("Player", nullptr, false, false);
+		player->position = player_start->position;
+		player->set_texture("data/textures/player.png");
+		entity_manager.spawn_entity(player);
+
+		input.player = player;
+
+		entity_manager.delete_entity(player_start);
+	}
 }

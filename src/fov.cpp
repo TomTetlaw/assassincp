@@ -65,22 +65,22 @@ void Field_Of_View::shutdown() {
 }
 
 void Field_Of_View::render() {
-	glMatrixMode(GL_MODELVIEW);
-	glPushMatrix();
-	glLoadIdentity();
-	renderer.setup_render();
-	glColor4f(1, 1, 1, 1);
-	glBegin(GL_TRIANGLES);
-	for (int i = 0; i < num_verts - 1; i++) {
-		glVertex2f(position.x, position.y);
-		glVertex2f(sorted[i].position.x, sorted[i].position.y);
-		glVertex2f(sorted[i + 1].position.x, sorted[i + 1].position.y);
-	}
-	glVertex2f(position.x, position.y);
-	glVertex2f(sorted[0].position.x, sorted[0].position.y);
-	glVertex2f(sorted[num_verts - 1].position.x, sorted[num_verts - 1].position.y);
-	glEnd();
-	glPopMatrix();
+	//glMatrixMode(GL_MODELVIEW);
+	//glPushMatrix();
+	//glLoadIdentity();
+	//renderer.setup_render();
+	//glColor4f(1, 1, 1, 1);
+	//glBegin(GL_TRIANGLES);
+	//for (int i = 0; i < num_verts - 1; i++) {
+	//	glVertex2f(position.x, position.y);
+	//	glVertex2f(sorted[i].position.x, sorted[i].position.y);
+	//	glVertex2f(sorted[i + 1].position.x, sorted[i + 1].position.y);
+	//}
+	//glVertex2f(position.x, position.y);
+	//glVertex2f(sorted[0].position.x, sorted[0].position.y);
+	//glVertex2f(sorted[num_verts - 1].position.x, sorted[num_verts - 1].position.y);
+	//glEnd();
+	//glPopMatrix();
 
 	glMatrixMode(GL_MODELVIEW);
 	glPushMatrix();

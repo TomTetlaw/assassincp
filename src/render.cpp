@@ -31,7 +31,7 @@ void Render::init() {
 	config.register_var("renderer_draw_debug", &debug_draw);
 
 	FILE *f = nullptr;
-	fopen_s(&f, "data/logs/opengl_debug.txt", "w");
+	fopen_s(&f, "data/opengl.log", "w");
 	if(f) {
 		fclose(f);
 	}
@@ -71,7 +71,8 @@ void Render::shutdown() {
 }
 
 void Render::on_level_load() {
-	renderer.camera_position = Vec2(0, 0);
+	camera_position = Vec2(0, 0);
+	zoom_level = 0;
 }
 
 void Render::begin_frame() {
@@ -85,6 +86,7 @@ void Render::begin_frame() {
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
 	glOrtho(0.0, sys.window_size.x, sys.window_size.y, 0.0, 0.0, 1.0);
+
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 
@@ -104,10 +106,10 @@ float Render::scale_for_zoom_level(int level) {
 		scale = 1.0f;
 	}
 	else if (level < 0) {
-		scale = 1.0f / ((level*-1) + 1);
+		scale = 1.0f / (((level * 0.25f)*-1) + 1);
 	}
 	else if (level > 0) {
-		scale = level + 1;
+		scale = (level * 0.25f) + 1;
 	}
 	return scale;
 }
@@ -118,10 +120,10 @@ float Render::inverse_scale_for_zoom_level(int level) {
 		scale = 1.0f;
 	}
 	else if (level < 0) {
-		scale = (level * -1) + 1;
+		scale = ((level * 0.25f) * -1) + 1;
 	}
 	else if (level > 0) {
-		scale = 1.0f / (level + 1);
+		scale = 1.0f / ((level * 0.25f) + 1);
 	}
 	return scale;
 }
@@ -404,7 +406,7 @@ Vec2 Render::get_string_size(const char *s) {
 
 void opengl_debug_output_to_file(unsigned int source, unsigned int type, unsigned int id, unsigned int severity, const char* message, bool should_print) {
        FILE* f = nullptr;
-       fopen_s(&f, "data/logs/opengl_debug.txt", "a");
+       fopen_s(&f, "data/opengl.log", "a");
        if(f) {
 			char debSource[16] = {};
 			char debType[20] = {};

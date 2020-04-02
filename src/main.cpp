@@ -32,27 +32,30 @@ int main(int argc, char *argv[]) {
 						use_editor = !use_editor;
 						if (use_editor) {
 							input.target = INPUT_EDITOR;
+							game.on_level_load();
 							editor.load_map_into_editor("data/levels/test.acp");
 						}
 						else {
 							editor.save("data/levels/test.acp");
 							input.target = INPUT_GAME;
+							game.on_level_load();
 							game.load_level("data/levels/test.acp");
 						}
 					}
 					else if (ev.key.keysym.scancode == SDL_SCANCODE_ESCAPE) {
 						sys.running = false;
-						break;
 					}
-				}
-								  break;
+					else if (ev.key.keysym.scancode == SDL_SCANCODE_T) {
+						renderer.camera_position = Vec2(0, 0);
+						renderer.zoom_level = 0;
+					}
+				} break;
 				case SDL_KEYUP: {
 					bool ctrl_pressed = (ev.key.keysym.mod & KMOD_CTRL) > 0;
 					bool alt_pressed = (ev.key.keysym.mod & KMOD_ALT) > 0;
 					bool shift_pressed = (ev.key.keysym.mod & KMOD_SHIFT) > 0;
 					input.handle_key_press(ev.key.keysym.scancode, false, ctrl_pressed, alt_pressed, shift_pressed);
-				}
-								break;
+				} break;
 				case SDL_MOUSEMOTION:
 					sys.cursor_position = Vec2((float)ev.motion.x, (float)ev.motion.y);
 					input.handle_mouse_move(ev.motion.xrel, ev.motion.yrel);
@@ -94,6 +97,7 @@ int main(int argc, char *argv[]) {
 		if (use_editor) {
 			editor.update();
 		}
+
 		game.update();
 		entity_manager.update(game.delta_time);
 		renderer.update(game.delta_time);
@@ -109,13 +113,21 @@ int main(int argc, char *argv[]) {
 			renderer.use_camera = true;
 			editor.render();
 		}
-		else {
-			renderer.use_camera = false;
-			renderer.debug_string("game.game_time: %f", game.game_time);
-			renderer.debug_string("game.delta_time: %f", game.delta_time);
-			renderer.debug_string("entity_manager.entities.num: %d", entity_manager.entities.num);
-		}
 
+		renderer.use_camera = false;
+		renderer.use_zoom = false;
+		renderer.debug_string("game.game_time: %f", game.game_time);
+		renderer.debug_string("game.delta_time: %f", game.delta_time);
+		renderer.debug_string("entity_manager.entities.num: %d", entity_manager.entities.num);
+		renderer.debug_string("editor.entities.num: %d", editor.entities.num);
+		renderer.debug_string("renderer.camera_position: (%.2f, %.2f)", renderer.camera_position.x, renderer.camera_position.y);
+		renderer.debug_string("sys.cursor_position: (%.2f, %.2f)", sys.cursor_position.x, sys.cursor_position.y);
+
+		//renderer.use_camera = true;
+		//renderer.use_zoom = true;
+		Vec2 a = (sys.window_size * 0.5f) + renderer.camera_position;
+		Vec2 b = (sys.window_size * 0.5f) - ((sys.window_size * 0.5f) - sys.cursor_position);
+		renderer.line(a, b, Vec4(1, 1, 1, 1));
 		renderer.end_frame();
 	}
 

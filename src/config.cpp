@@ -122,7 +122,7 @@ void Config::shutdown() {
 }
 
 void Config::set_var_from_string(Config_Var *var, const char *string) {
-	printf("setting var %s to %s\n", var->name, string);
+	console.printf("setting var %s to %s\n", var->name, string);
 	
 	switch (var->type) {
 	case VAR_FLOAT:

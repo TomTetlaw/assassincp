@@ -36,7 +36,7 @@ void Texture_Manager::end_level_load() {
 }
 
 bool load_texture_data(Texture *texture) {
-	SDL_Surface *surf = IMG_Load(texture->filename.data);
+	SDL_Surface *surf = IMG_Load(texture->filename);
 	if (!surf) {
 		return false;
 	}
@@ -69,7 +69,7 @@ bool load_texture_data(Texture *texture) {
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, surf->w, surf->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, surf->pixels);
-	glObjectLabel(GL_TEXTURE, t, -1, texture->filename.data);
+	glObjectLabel(GL_TEXTURE, t, -1, texture->filename);
 
 	texture->width = surf->w;
 	texture->height = surf->h;
@@ -89,7 +89,7 @@ void create_texture_data(Texture *texture, const unsigned char *data, int width,
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, (void *)data);
-	glObjectLabel(GL_TEXTURE, t, -1, texture->filename.data);
+	glObjectLabel(GL_TEXTURE, t, -1, texture->filename);
 
 	texture->width = width;
 	texture->height = height;
@@ -129,14 +129,14 @@ void create_texture_data_from_surface(Texture *texture, SDL_Surface *surf) {
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, surf->w, surf->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, surf->pixels);
-	glObjectLabel(GL_TEXTURE, t, -1, texture->filename.data);
+	glObjectLabel(GL_TEXTURE, t, -1, texture->filename);
 
 	SDL_FreeSurface(surf);
 
 	texture->width = surf->w;
 	texture->height = surf->h;
 	if (texture->width <= 0 || texture->height <= 0) {
-		printf("Texture with zero width but valid SDL surface! [%s: (%d %d) (%d %d)]\n", texture->filename.data, texture->width, texture->height, surf->clip_rect.w, surf->clip_rect.h);
+		console.printf("Texture with zero width but valid SDL surface! [%s: (%d, %d) (%d, %d)]\n", texture->filename, texture->width, texture->height, surf->clip_rect.w, surf->clip_rect.h);
 		texture->width = surf->clip_rect.w;
 		texture->height = surf->clip_rect.h;
 	}
@@ -155,7 +155,7 @@ Texture *Texture_Manager::load(const char *filename) {
 	}
 
 	For(textures) {
-		if (!strcmp((*it)->filename.data, filename)) {
+		if (!strcmp((*it)->filename, filename)) {
 			(*it)->used = true;
 			if (!(*it)->api_object) {
 				load_texture_data(*it);
@@ -165,7 +165,7 @@ Texture *Texture_Manager::load(const char *filename) {
 	}
 
 	Texture *texture = new Texture;
-	strcpy(texture->filename.data, filename);
+	strcpy(texture->filename, filename);
 	if (load_texture_data(texture)) {
 		texture->used = true;
 		tex.textures.append(texture);
@@ -183,7 +183,7 @@ Texture *Texture_Manager::load(const char *filename) {
 
 Texture *Texture_Manager::create(const char *name, const unsigned char *data, int width, int height) {
 	Texture *texture = new Texture;
-	strcpy(texture->filename.data, name);
+	strcpy(texture->filename, name);
 	texture->used = true;
 	texture->never_unload = true;
 	textures.append(texture);
@@ -195,7 +195,7 @@ Texture *Texture_Manager::create(const char *name, const unsigned char *data, in
 
 Texture *Texture_Manager::create_from_surface(const char *name, SDL_Surface *surface) {
 	Texture *texture = new Texture;
-	strcpy(texture->filename.data, name);
+	strcpy(texture->filename, name);
 	texture->used = true;
 	texture->never_unload = true;
 	textures.append(texture);

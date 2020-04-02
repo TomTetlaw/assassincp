@@ -60,6 +60,7 @@ void System::init(int argc, char *argv[]) {
 		error("Failed to initialize SDL_IMG: %s", IMG_GetError());
 	}
 
+	console.init();
 	hotload.init();
 	config.init();
 	renderer.init();

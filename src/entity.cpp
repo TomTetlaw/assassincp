@@ -103,10 +103,11 @@ void Entity_Manager::on_level_load() {
 }
 
 void Entity_Manager::render() {
-	for (int i = 0; i < entity_manager.entity_types[ENTITY_PLAYER]->entities.num; i++) {
-		Entity *entity = entity_manager.entity_types[ENTITY_PLAYER]->entities[i];
-		renderer.texture(&entity->rt);
-		entity->render();
+	For(entities) {
+		if ((*it)) {
+			renderer.texture(&(*it)->rt);
+			(*it)->render();
+		}
 	}
 }
 
@@ -214,6 +215,7 @@ void Entity_Manager::spawn_entity(Entity *entity) {
 		cpBodySetUserData(entity->body, (void *)entity);
 	}
 }
+
 Entity *Entity_Manager::create_entity(const char *type_name, const char *name, bool spawn, bool add) {
 	if (!type_name) {
 		return nullptr;
@@ -225,7 +227,9 @@ Entity *Entity_Manager::create_entity(const char *type_name, const char *name, b
 		if (!strcmp(type_name, type->name)) {
 			Entity *entity = type->callback();
 			entity->type = type;
-			entity->name = name;
+			if (name) {
+				strcpy(entity->name, name);
+			}
 			entity->classify = type->classify;
 
 			if (add) {
