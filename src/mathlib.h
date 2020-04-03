@@ -75,8 +75,10 @@ inline float random_float(float min_value, float max_value) {
 #define V2PARMS(v) v.x, v.y
 struct Vec2 {
 	float x = 0, y = 0;
+	float *data = nullptr;
 
 	Vec2() {
+		data = &x;
 		x = 0;
 		y = 0;
 	}
@@ -156,8 +158,10 @@ inline Vec2 approach(Vec2 current, Vec2 goal, float dt) {
 #define V4PARMS(v) v.x,v.y,v.z,v.w
 struct Vec4 {
 	float x = 0, y = 0, z = 0, w = 0;
+	float *data = nullptr;
 
 	Vec4() {
+		data = &x;
 		x = 0;
 		y = 0;
 		z = 0;
@@ -212,8 +216,10 @@ inline Vec4 approach(Vec4 current, Vec4 goal, float dt) {
 #define V3PARMS(v) v.x,v.y,v.z
 struct Vec3 {
 	float x = 0, y = 0, z = 0;
+	float *data = nullptr;
 
 	Vec3() {
+		data = &x;
 		x = 0;
 		y = 0;
 		z = 0;

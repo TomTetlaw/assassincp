@@ -37,6 +37,7 @@ void Render::init() {
 	}
 
 	default_font = font_manager.load("data/fonts/consolas.ttf", 16);
+	debug_string_position = Vec2(-sys.window_size.x, -sys.window_size.y);
 
 	options.drawCircle = cp_debug_draw_circle;
 	options.drawSegment = cp_debug_draw_segment;
@@ -85,12 +86,14 @@ void Render::begin_frame() {
 
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
-	glOrtho(0.0, sys.window_size.x, sys.window_size.y, 0.0, 0.0, 1.0);
+	float hw = sys.window_size.x / 2;
+	float hh = sys.window_size.y / 2;
+	glOrtho(-hw, hw, hh, -hh, 0.0, 1.0);
 
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 
-	debug_string_position = Vec2(10, (float)default_font->line_skip);
+	debug_string_position = Vec2(-(sys.window_size.x / 2) + 10, -(sys.window_size.y / 2) + (float)default_font->line_skip);
 }
 
 void Render::end_frame() {
@@ -106,7 +109,7 @@ float Render::scale_for_zoom_level(int level) {
 		scale = 1.0f;
 	}
 	else if (level < 0) {
-		scale = 1.0f / (((level * 0.25f)*-1) + 1);
+		scale = 1.0f / (((level * 0.125f)*-1) + 1);
 	}
 	else if (level > 0) {
 		scale = (level * 0.25f) + 1;
@@ -120,7 +123,7 @@ float Render::inverse_scale_for_zoom_level(int level) {
 		scale = 1.0f;
 	}
 	else if (level < 0) {
-		scale = ((level * 0.25f) * -1) + 1;
+		scale = ((level * 0.125f) * -1) + 1;
 	}
 	else if (level > 0) {
 		scale = 1.0f / ((level * 0.25f) + 1);

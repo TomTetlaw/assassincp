@@ -15,8 +15,6 @@ int main(int argc, char *argv[]) {
 	system("cd");
 	SDL_Event ev;
 	while(sys.running) {
-		editor.gui_begin_input();
-
 		while (SDL_PollEvent(&ev)) {
 			if (!editor.gui_handle_event(&ev)) {
 				switch (ev.type) {
@@ -57,7 +55,7 @@ int main(int argc, char *argv[]) {
 					input.handle_key_press(ev.key.keysym.scancode, false, ctrl_pressed, alt_pressed, shift_pressed);
 				} break;
 				case SDL_MOUSEMOTION:
-					sys.cursor_position = Vec2((float)ev.motion.x, (float)ev.motion.y);
+					sys.cursor_position = Vec2((float)ev.motion.x, (float)ev.motion.y) - (sys.window_size * 0.5f);
 					input.handle_mouse_move(ev.motion.xrel, ev.motion.yrel);
 					break;
 				case SDL_MOUSEBUTTONDOWN:
@@ -72,8 +70,6 @@ int main(int argc, char *argv[]) {
 				}
 			}
 		}
-
-		editor.gui_end_input();
 
 		if(!sys.running) {
 			break;
@@ -122,12 +118,6 @@ int main(int argc, char *argv[]) {
 		renderer.debug_string("editor.entities.num: %d", editor.entities.num);
 		renderer.debug_string("renderer.camera_position: (%.2f, %.2f)", renderer.camera_position.x, renderer.camera_position.y);
 		renderer.debug_string("sys.cursor_position: (%.2f, %.2f)", sys.cursor_position.x, sys.cursor_position.y);
-
-		//renderer.use_camera = true;
-		//renderer.use_zoom = true;
-		Vec2 a = (sys.window_size * 0.5f) + renderer.camera_position;
-		Vec2 b = (sys.window_size * 0.5f) - ((sys.window_size * 0.5f) - sys.cursor_position);
-		renderer.line(a, b, Vec4(1, 1, 1, 1));
 		renderer.end_frame();
 	}
 

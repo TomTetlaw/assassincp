@@ -4,6 +4,7 @@
 enum Editor_Mode {
 	EDITOR_SELECT,
 	EDITOR_ENTITY,
+	EDITOR_POLYGON,
 };
 
 class Editor_Entity {
@@ -33,7 +34,7 @@ public:
 	void read_save(Save_File *file);
 };
 
-#define map_file_version 1
+#define map_file_version 2
 
 struct Editor {
 	bool left_button_down = false;
@@ -42,8 +43,10 @@ struct Editor {
 
 	bool dragging_thing = false;
 
-	Vec2 edit_window_position;
-	Vec2 edit_window_size;
+	float edit_window_top = 0.0f;
+	float edit_window_left = 0.0f;
+	float edit_window_bottom = 0.0f;
+	float edit_window_right = 0.0f;
 
 	bool drag_select = false;
 	Vec2 drag_start_point;
@@ -67,8 +70,6 @@ struct Editor {
 	void delete_entity(Editor_Entity *entity);
 	void clear_selected_entities();
 
-	void gui_begin_input();
-	void gui_end_input();
 	bool gui_handle_event(SDL_Event *ev);
 
 	void handle_mouse_press(int mouse_button, bool down, Vec2 position, bool is_double_click);

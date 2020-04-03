@@ -10,6 +10,7 @@
 #include <time.h>
 #include <stdlib.h>
 #include <errno.h>
+#include <filesystem>
 
 #define SDL_MAIN_HANDLED 1
 #include "../include/sdl2/SDL.h"

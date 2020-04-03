@@ -1,16 +1,9 @@
 #include "precompiled.h"
 
-#define NK_INCLUDE_FIXED_TYPES
-#define NK_INCLUDE_STANDARD_IO
-#define NK_INCLUDE_STANDARD_VARARGS
-#define NK_INCLUDE_DEFAULT_ALLOCATOR
-#define NK_INCLUDE_VERTEX_BUFFER_OUTPUT
-#define NK_INCLUDE_FONT_BAKING
-#define NK_INCLUDE_DEFAULT_FONT
-#define NK_IMPLEMENTATION
-#define NK_SDL_GL2_IMPLEMENTATION
-#include "../include/nuklear/nuklear.h"
-#include "../include/nuklear/nuklear_sdl_gl2.h"
+#define IMGUI_IMPL_OPENGL_LOADER_GLEW
+#include "imgui/imgui.h"
+#include "imgui/imgui_impl_sdl.h"
+#include "imgui/imgui_impl_opengl3.h"
 
 Editor editor;
 
@@ -241,6 +234,7 @@ void Editor_Entity::write_save(Save_File *file) {
 	save_write_vec2(file, size);
 	save_write_vec2(file, scale);
 	save_write_vec4(file, colour);
+	save_write_int(file, current_entity_type_num);
 }
 
 void Editor_Entity::read_save(Save_File *file) {
@@ -251,6 +245,7 @@ void Editor_Entity::read_save(Save_File *file) {
 	save_read_vec2(file, &size);
 	save_read_vec2(file, &scale);
 	save_read_vec4(file, &colour);
+	save_read_int(file, &current_entity_type_num);
 }
 
 void Editor_Entity::render() {
@@ -272,40 +267,37 @@ void Editor_Entity::render() {
 	renderer.box(false, position.x-hw, position.y-hh, size.x*scale.x, size.y*scale.y, c);
 }
 
-void Editor::gui_begin_input() {
-	nk_input_begin(context);
-}
-
-void Editor::gui_end_input() {
-	nk_input_end(context);
-}
-
 bool Editor::gui_handle_event(SDL_Event *ev) {
-	nk_sdl_handle_event(ev);
+	ImGui_ImplSDL2_ProcessEvent(ev);
 	return false;
 }
 
-struct nk_image select_mode_on_image;
-struct nk_image select_mode_off_image;
-struct nk_image entity_mode_on_image;
-struct nk_image entity_mode_off_image;
+Texture *select_mode_on_image = nullptr;
+Texture *select_mode_off_image = nullptr;
+Texture *entity_mode_on_image = nullptr;
+Texture *entity_mode_off_image = nullptr;
+Texture *polygon_mode_on_image = nullptr;
+Texture *polygon_mode_off_image = nullptr;
 
 void Editor::init() {
-	context = nk_sdl_init(sys.window);
+	ImGui::CreateContext();
+	ImGuiIO &io = ImGui::GetIO();
+	ImGui::StyleColorsDark();
 
-	struct nk_font_atlas *atlas;
-	nk_sdl_font_stash_begin(&atlas);
-	struct nk_font *font = nk_font_atlas_add_from_file(atlas, "data/fonts/consolas.ttf", 16, nullptr);
-	nk_sdl_font_stash_end();
-	nk_style_set_font(context, &font->handle);
+	ImGui_ImplSDL2_InitForOpenGL(sys.window, sys.context);
+	ImGui_ImplOpenGL3_Init();
 
-	select_mode_on_image = nk_image_id(tex.load("data/textures/editor/select_mode_on.png")->api_object);
-	select_mode_off_image = nk_image_id(tex.load("data/textures/editor/select_mode_off.png")->api_object);
-	entity_mode_on_image = nk_image_id(tex.load("data/textures/editor/entity_mode_on.png")->api_object);
-	entity_mode_off_image = nk_image_id(tex.load("data/textures/editor/entity_mode_off.png")->api_object);
+	select_mode_on_image = tex.load("data/textures/editor/select_mode_on.png");
+	select_mode_off_image = tex.load("data/textures/editor/select_mode_off.png");
+	entity_mode_on_image = tex.load("data/textures/editor/entity_mode_on.png");
+	entity_mode_off_image = tex.load("data/textures/editor/entity_mode_off.png");
+	polygon_mode_on_image = tex.load("data/textures/editor/polygon_mode_on.png");
+	polygon_mode_off_image = tex.load("data/textures/editor/polygon_mode_off.png");
 
-	edit_window_position = Vec2(128 - 16, 0);
-	edit_window_size = Vec2(1920 - 456, 1080 - 80);
+	edit_window_top = -(sys.window_size.y / 2);
+	edit_window_left = -(sys.window_size.x / 2) + 110;
+	edit_window_bottom = sys.window_size.y / 2 - 100 + 16 + 7;
+	edit_window_right = (sys.window_size.x / 2) - 345;
 
 	for (int i = 0; i < entity_manager.entity_types.num; i++) {
 		entity_type_names.append(entity_manager.entity_types[i]->name);
@@ -313,102 +305,94 @@ void Editor::init() {
 }
 
 void Editor::shutdown() {
-	nk_sdl_shutdown();
+	ImGui_ImplOpenGL3_Shutdown();
+	ImGui_ImplSDL2_Shutdown();
+	ImGui::DestroyContext();
+
 	remove_all();
 }
 
 void Editor::update() {
 	For(entities) {
-		if ((*it)->texture_name[0]) {
-			(*it)->texture = tex.load((*it)->texture_name);
+		if (!strcmp((*it)->type_name, "info_player_start")) {
+			(*it)->texture = tex.load("data/textures/editor/info_player_start.png");
+		}
+		else {
+			if ((*it)->texture_name[0]) {
+				(*it)->texture = tex.load((*it)->texture_name);
+			}
 		}
 	}
 
-	nk_begin(context, "Mode", nk_rect(10, 10, 96, 1080 - 66-64), NK_WINDOW_BORDER | NK_WINDOW_TITLE);
-	nk_layout_row_static(context, 64, 64, 1);
-	if (nk_button_image(context, select_mode_off_image)) {
+	ImGui_ImplOpenGL3_NewFrame();
+	ImGui_ImplSDL2_NewFrame(sys.window);
+	ImGui::NewFrame();
+
+	ImGui::Begin("Mode", nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDecoration);
+	if (ImGui::ImageButton((ImTextureID)select_mode_off_image->api_object, ImVec2(64, 64))) {
 		mode = EDITOR_SELECT;
 	}
-	nk_layout_row_static(context, 64, 64, 1);
-	if (nk_button_image(context, entity_mode_off_image)) {
+	if (ImGui::ImageButton((ImTextureID)entity_mode_off_image->api_object, ImVec2(64, 64))) {
 		mode = EDITOR_ENTITY;
 	}
-	nk_end(context);
+	if (ImGui::ImageButton((ImTextureID)polygon_mode_off_image->api_object, ImVec2(64, 64))) {
+		mode = EDITOR_POLYGON;
+	}
+	ImGui::End();
 
-	nk_begin(context, "", nk_rect(10, 1080 - 10 - 64, 1920 - 10 - 10, 64), NK_WINDOW_BORDER | NK_WINDOW_NO_SCROLLBAR);
-	nk_layout_row_dynamic(context, 64, 1);
-	nk_labelf(context, NK_TEXT_LEFT, "Mode: %s (zoom: %f)", mode == EDITOR_SELECT ? "select" : "entity", renderer.scale_for_zoom_level(renderer.zoom_level));
-	nk_end(context);
-
-	nk_begin(context, "Properties", nk_rect(1920 - 340 - 1, 10, 356, 1080 - 66 - 64), NK_WINDOW_BORDER | NK_WINDOW_TITLE);
-
-	int tree_id = 1;
+	ImGui::Begin("Properties");
 	if (selected_entities.num == 1) {
 		Editor_Entity *entity = selected_entities[0];
-
-		nk_layout_row_dynamic(context, 20, 1);
-
-		// type
-		if (nk_tree_push_id(context, NK_TREE_TAB, "Type", NK_MINIMIZED, tree_id++)) {
-			entity->current_entity_type_num = nk_combo(
-				context, entity_type_names.data, entity_type_names.num, entity->current_entity_type_num, 25, nk_vec2(200, 200));
-			strcpy(entity->type_name, entity_type_names[entity->current_entity_type_num]);
-			nk_tree_pop(context);
-		}
-
-		// name
-		nk_label(context, "Name", NK_LEFT);
-		nk_edit_string_zero_terminated(context, NK_EDIT_FIELD, entity->name, 256, nullptr);
-
-		// texture
-		if (nk_tree_push_id(context, NK_TREE_TAB, "Texture", NK_MINIMIZED, tree_id++)) {
-			nk_layout_row_static(context, 64, 64, 1);
-			if (entity->texture) {
-				nk_button_image(context, nk_image_id(entity->texture->api_object));
-			}
-			else {
-				nk_button_image(context, nk_image_id(-1));
-			}
-			nk_layout_row_dynamic(context, 30, 1);
-
-			if (nk_button_label(context, "Find texture...")) {
-				sys.open_file_dialogue("data/textures/", "PNG Files\0*.png\0\0", entity->texture_name);
-			}
-			nk_tree_pop(context);
-		}
-
-		// position
-		if (nk_tree_push_id(context, NK_TREE_TAB, "Position", NK_MINIMIZED, tree_id++)) {
-			nk_property_float(context, "#x", -10000, &entity->position.x, 10000, 1, 1);
-			nk_property_float(context, "#y", -10000, &entity->position.y, 10000, 1, 1);
-			nk_tree_pop(context);
-		}
-
-		// size
-		if (nk_tree_push_id(context, NK_TREE_TAB, "Size", NK_MINIMIZED, tree_id++)) {
-			nk_property_float(context, "#x", -10000, &entity->size.x, 10000, 1, 1);
-			nk_property_float(context, "#y", -10000, &entity->size.y, 10000, 1, 1);
-			nk_tree_pop(context);
-		}
-
-		// scale
-		if (nk_tree_push_id(context, NK_TREE_TAB, "Scale", NK_MINIMIZED, tree_id++)) {
-			nk_property_float(context, "#x", -10000, &entity->scale.x, 10000, 1, 1);
-			nk_property_float(context, "#y", -10000, &entity->scale.y, 10000, 1, 1);
-			nk_tree_pop(context);
-		}
 		
-		// colour
-		if (nk_tree_push_id(context, NK_TREE_TAB, "Colour", NK_MINIMIZED, tree_id++)) {
-			nk_property_float(context, "#r", 0, &entity->colour.x, 1, 0.01f, 0.01f);
-			nk_property_float(context, "#g", 0, &entity->colour.y, 1, 0.01f, 0.01f);
-			nk_property_float(context, "#b", 0, &entity->colour.y, 1, 0.01f, 0.01f);
-			nk_property_float(context, "#a", 0, &entity->colour.y, 1, 0.01f, 0.01f);
-			nk_tree_pop(context);
+		ImGui::InputText("Name", entity->name, 256);
+
+		ImGui::Combo("Type", &entity->current_entity_type_num, entity_type_names.data, entity_type_names.num);
+
+		{
+			float data[2] = { entity->position.x, entity->position.y };
+			if (ImGui::DragFloat2("Position", data)) {
+				entity->position.x = data[0];
+				entity->position.y = data[1];
+			}
+		}
+
+		{
+			float data[2] = { entity->size.x, entity->size.y };
+			if (ImGui::DragFloat2("Size", data)) {
+				entity->size.x = data[0];
+				entity->size.y = data[1];
+			}
+		}
+
+		{
+			float data[2] = { entity->scale.x, entity->scale.y };
+			if (ImGui::DragFloat2("Scale", data)) {
+				entity->scale.x = data[0];
+				entity->scale.y = data[1];
+			}
+		}
+
+		{
+			float data[4] = { entity->colour.x, entity->colour.y, entity->colour.z, entity->colour.w };
+			if (ImGui::DragFloat4("Colour", data)) {
+				entity->colour.x = data[0];
+				entity->colour.y = data[1];
+				entity->colour.z = data[1];
+				entity->colour.w = data[1];
+			}
+		}
+
+		int id = entity->texture ? entity->texture->api_object : -1;
+		if (ImGui::ImageButton((ImTextureID)id, ImVec2(32, 32))) {
+			sys.open_file_dialogue("data/textures/", "PNG Files\0*.png\0\0", entity->texture_name);
 		}
 	}
+	ImGui::End();
 
-	nk_end(context);
+	//static bool show_demo_window = true;
+	//if (show_demo_window) {
+	//	ImGui::ShowDemoWindow(&show_demo_window);
+	//}
 }
 
 void Editor::remove_all() {
@@ -443,10 +427,11 @@ void Editor::clear_selected_entities() {
 }
 
 void Editor::render() {
-	nk_sdl_render(NK_ANTI_ALIASING_OFF);
+	ImGui::Render();
+	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
 	glEnable(GL_SCISSOR_TEST);
-	glScissor(edit_window_position.x, edit_window_position.y + (1080 - edit_window_size.y), edit_window_size.x, edit_window_size.y);
+	glScissor(edit_window_left + (sys.window_size.x/2), -edit_window_bottom + (sys.window_size.y / 2), edit_window_right - edit_window_left, edit_window_bottom - edit_window_top);
 
 	renderer.use_zoom = true;
 
@@ -487,10 +472,26 @@ void Editor::render() {
 
 	renderer.use_camera = false;
 	renderer.use_zoom = false;
-	renderer.box(false, 128-16, 0, 1920 - 456, 1080 - 80, Vec4(1, 1, 1, 1));
+
+	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+	glColor4f(1, 1, 1, 1);
+	glBegin(GL_QUADS);
+
+	glVertex2f(edit_window_right, edit_window_top);
+	glVertex2f(edit_window_left, edit_window_top);
+	glVertex2f(edit_window_left, edit_window_bottom);
+	glVertex2f(edit_window_right, edit_window_bottom);
+
+	glEnd();
+	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+
+	glPointSize(5);
+	glBegin(GL_POINTS);
+	glVertex2f(0, 0);
+	glEnd();
 }
 
-void Editor::handle_mouse_press(int mouse_button, bool down, Vec2 position, bool is_double_click) {
+void Editor::handle_mouse_press(int mouse_button, bool down, Vec2 _, bool is_double_click) {
 	if (mouse_button == SDL_BUTTON_LEFT) {
 		left_button_down = down;
 	}
@@ -498,7 +499,16 @@ void Editor::handle_mouse_press(int mouse_button, bool down, Vec2 position, bool
 		middle_button_down = down;
 	}
 
-	if (!point_intersects_box(position, edit_window_position, edit_window_size)) {
+	if (sys.cursor_position.x < edit_window_left) {
+		return;
+	}
+	if (sys.cursor_position.x > edit_window_right) {
+		return;
+	}
+	if (sys.cursor_position.y < edit_window_top) {
+		return;
+	}
+	if (sys.cursor_position.y > edit_window_bottom) {
 		return;
 	}
 
@@ -507,7 +517,7 @@ void Editor::handle_mouse_press(int mouse_button, bool down, Vec2 position, bool
 			if (down) {
 				Editor_Entity *entity = nullptr;
 				For(entities) { // don't start drag select if dragging a thing
-					if (point_intersects_centered_box(renderer.to_world_pos(position), (*it)->position, (*it)->size)) {
+					if (point_intersects_centered_box(renderer.to_world_pos(sys.cursor_position), (*it)->position, (*it)->size)) {
 						entity = *it;
 						break;
 					}
@@ -517,7 +527,7 @@ void Editor::handle_mouse_press(int mouse_button, bool down, Vec2 position, bool
 				}
 				else {
 					drag_select = true;
-					drag_start_point = renderer.to_world_pos(position);
+					drag_start_point = renderer.to_world_pos(sys.cursor_position);
 				}
 			}
 			else {
@@ -527,10 +537,10 @@ void Editor::handle_mouse_press(int mouse_button, bool down, Vec2 position, bool
 				else {
 					// if clicked and didn't move mouse
 					if (drag_start_point.x == 0) {
-						drag_start_point.x = renderer.to_world_pos(position).x;
+						drag_start_point.x = renderer.to_world_pos(sys.cursor_position).x;
 					}
 					if (drag_start_point.y == 0) {
-						drag_start_point.y = renderer.to_world_pos(position).y;
+						drag_start_point.y = renderer.to_world_pos(sys.cursor_position).y;
 					}
 
 					// if drawing a box to the left or above where initially clicked
@@ -570,7 +580,8 @@ void Editor::handle_mouse_press(int mouse_button, bool down, Vec2 position, bool
 		if (mouse_button == SDL_BUTTON_LEFT) {
 			if (down) {
 				Editor_Entity *new_entity = new Editor_Entity;
-				new_entity->position = renderer.to_world_pos(position);
+				//console.printf("added editor entity\n");
+				new_entity->position = renderer.to_world_pos(sys.cursor_position);
 				add_entity(new_entity);
 				clear_selected_entities();
 				selected_entities.append(new_entity);
@@ -580,10 +591,6 @@ void Editor::handle_mouse_press(int mouse_button, bool down, Vec2 position, bool
 }
 
 void Editor::handle_mouse_move(int relx, int rely) {
-	if (!point_intersects_box(sys.cursor_position, edit_window_position, edit_window_size)) {
-		return;
-	}
-
 	if (middle_button_down) {
 		renderer.camera_position = renderer.camera_position - Vec2(relx, rely);
 	}
@@ -673,15 +680,9 @@ void Editor::handle_key_press(SDL_Scancode scancode, bool down, int mods) {
 }
 
 void Editor::handle_mouse_wheel(int amount) {
-	//renderer.zoom_level += amount;
-	Vec2 diff = ((sys.window_size * 0.5f) - (sys.cursor_position)) * renderer.scale_for_zoom_level(renderer.zoom_level);
-	if (amount > 0) {
-		renderer.camera_position = renderer.camera_position - diff;
-	}
-	else {
-		renderer.camera_position = renderer.camera_position + diff;
-	}
-	console.printf("added (%.2f, %.2f)\n", diff.x, diff.y);
+	//@todo: zoom to mouse position
+	//renderer.camera_position = renderer.to_world_pos(sys.cursor_position);
+	renderer.zoom_level += amount;
 }
 
 void Editor::save(const char *file_name) {
@@ -697,6 +698,7 @@ void Editor::save(const char *file_name) {
 
 	save_write_int(&file, entities.num);
 	For(entities) {
+		//printf("saved: %d\n", (*it)->current_entity_type_num);
 		(*it)->write_save(&file);
 	}
 
@@ -723,6 +725,7 @@ void Editor::load_map_into_editor(const char *file_name) {
 	for (int i = 0; i < num; i++) {
 		Editor_Entity *entity = new Editor_Entity;
 		entity->read_save(&file);
+		//printf("loaded: %d\n", entity->current_entity_type_num);
 		add_entity(entity);
 	}
 

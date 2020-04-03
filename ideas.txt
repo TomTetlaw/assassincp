@@ -1,0 +1,5 @@
+gameplay:
+
+hacking (controlling using wasd keys, can still aim while hacking)
+augment to see through walls (enemy location or sihlouet)
+recon drone (deploy under a vent, fly through vents, shows room layout)

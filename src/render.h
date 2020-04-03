@@ -40,7 +40,7 @@ struct Render {
 	float inverse_scale_for_zoom_level(int level);
 
 	Vec2 to_world_pos(Vec2 a) { 
-		return (a + camera_position) * (1.0f/scale_for_zoom_level(zoom_level));
+		return (a + camera_position) * inverse_scale_for_zoom_level(zoom_level);
 	}
 
 	void on_level_load();
