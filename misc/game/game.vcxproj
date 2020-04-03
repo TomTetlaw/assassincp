@@ -178,6 +178,9 @@
     <ClCompile Include="..\..\src\win_hotload.cpp" />
     <ClCompile Include="..\..\src\win_system.cpp" />
   </ItemGroup>
+  <ItemGroup>
+    <Text Include="..\..\build\data\todo.txt" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

@@ -377,8 +377,8 @@ void Editor::update() {
 			if (ImGui::DragFloat4("Colour", data)) {
 				entity->colour.x = data[0];
 				entity->colour.y = data[1];
-				entity->colour.z = data[1];
-				entity->colour.w = data[1];
+				entity->colour.z = data[2];
+				entity->colour.w = data[3];
 			}
 		}
 

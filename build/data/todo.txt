@@ -1,0 +1,4 @@
+editor bug still exists where entities get messed up. reproduce by creating heaps of entities and then switching
+to game, then back to editor
+
+hotloading of config.txt isn't working for some reason

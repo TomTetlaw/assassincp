@@ -1,4 +1,4 @@
 renderer_clear_colour (0.000000 0.000000 0.000000 0.000000)
 renderer_should_clear true
 renderer_draw_debug true
-gravity (0 100) 
+gravity (0 100)     
