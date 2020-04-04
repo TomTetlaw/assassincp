@@ -93,9 +93,9 @@ struct Entity_Type_Decl {
 	}
 };
 
-#define declare_entity_type(class_name, classify) \
+#define declare_entity_type(class_name, type_name, classify) \
 	Entity *class_name##_creation_callback() { return new class_name; } \
-	Entity_Type_Decl class_name##_type_decl(#class_name, class_name##_creation_callback, classify)
+	Entity_Type_Decl class_name##_type_decl(type_name, class_name##_creation_callback, classify)
 
 struct Entity_Manager {
 	Array<Entity_Type_Decl *> entity_types;
@@ -119,6 +119,6 @@ struct Entity_Manager {
 
 extern Entity_Manager entity_manager;
 
-declare_entity_type(Entity, ENTITY_BASE);
+declare_entity_type(Entity, "ent_base", ENTITY_BASE);
 
 #endif

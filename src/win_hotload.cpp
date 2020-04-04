@@ -11,9 +11,9 @@ void Hotload::init() {
 void Hotload::shutdown() {
 	FindCloseChangeNotification(dir_change_notification);
 
-	For(files) {
-		delete *it;
-	}
+	For(files, {
+		delete it;
+	});
 }
 
 void Hotload::add_file(const char *filename, void *data, Hotload_Callback callback) {
@@ -33,8 +33,8 @@ void Hotload::add_file(const char *filename, void *data, Hotload_Callback callba
 
 void Hotload::check_files_non_blocking() {
 	if (WaitForSingleObject(dir_change_notification, 0) == WAIT_OBJECT_0) {
-		For(files) {
-			HANDLE file_handle = CreateFile((*it)->filename, GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+		For(files, {
+			HANDLE file_handle = CreateFile(it->filename, GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 			if (file_handle == INVALID_HANDLE_VALUE) { // could fail if an editor program is still holding onto the file
 				continue;
 			} 
@@ -45,20 +45,20 @@ void Hotload::check_files_non_blocking() {
 
 			if (success) {
 				FILETIME last_write_time;
-				last_write_time.dwLowDateTime = (*it)->last_write_low;
-				last_write_time.dwHighDateTime = (*it)->last_write_high;
+				last_write_time.dwLowDateTime = it->last_write_low;
+				last_write_time.dwHighDateTime = it->last_write_high;
 				
 				int res = CompareFileTime(&file_time, &last_write_time);
 				if(res) {
-					console.printf("Hotloading %s\n", (*it)->filename);
-					(*it)->last_write_low = file_time.dwLowDateTime;
-					(*it)->last_write_high = file_time.dwHighDateTime;
-					(*it)->callback((*it)->filename, (*it)->data);
+					console.printf("Hotloading %s\n", it->filename);
+					it->last_write_low = file_time.dwLowDateTime;
+					it->last_write_high = file_time.dwHighDateTime;
+					it->callback(it->filename, it->data);
 					break;
 				} 
 
 				FindNextChangeNotification(dir_change_notification);
 			}
-		}
+		});
 	}
 }

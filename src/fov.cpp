@@ -18,7 +18,7 @@ int compare_fov_vert(const void *a, const void *b) {
 	return 0;
 }
 
-const int num_rays = 5;
+const int num_rays = 3;
 
 void Field_Of_View::init() {
 	num_verts = (game.current_level->fov_check_points.num * num_rays);
@@ -36,11 +36,9 @@ void Field_Of_View::update() {
 		for (int j = 0; j < num_rays; j++) {
 			Vec2 points[num_rays];
 			points[0] = game.current_level->fov_check_points[i];
-			points[1] = position + Vec2::from_angle(position.angle_to(game.current_level->fov_check_points[i]) - deg2rad(1)) * 10000;
-			points[2] = position + Vec2::from_angle(position.angle_to(game.current_level->fov_check_points[i]) + deg2rad(1)) * 10000;
-			points[3] = position + Vec2::from_angle(position.angle_to(game.current_level->fov_check_points[i]) - deg2rad(2)) * 10000;
-			points[4] = position + Vec2::from_angle(position.angle_to(game.current_level->fov_check_points[i]) + deg2rad(2)) * 10000;
-			if (cpSpaceSegmentQueryFirst(entity_manager.space, cpv(position.x, position.y), cpv(points[j].x, points[j].y), 1, filter, &info[j])) {
+			points[1] = position + Vec2::from_angle(position.angle_to(game.current_level->fov_check_points[i]) - 0.00001f) * 10000;
+			points[2] = position + Vec2::from_angle(position.angle_to(game.current_level->fov_check_points[i]) + 0.00001f) * 10000;
+			if (cpSpaceSegmentQueryFirst(entity_manager.space, cpv(position.x, position.y), cpv(points[j].x, points[j].y), 0.00001f, filter, &info[j])) {
 				verts[vert_num] = Vec2(info[j].point.x, info[j].point.y);
 			}
 			else {
@@ -65,22 +63,25 @@ void Field_Of_View::shutdown() {
 }
 
 void Field_Of_View::render() {
-	//glMatrixMode(GL_MODELVIEW);
-	//glPushMatrix();
-	//glLoadIdentity();
-	//renderer.setup_render();
-	//glColor4f(1, 1, 1, 1);
-	//glBegin(GL_TRIANGLES);
-	//for (int i = 0; i < num_verts - 1; i++) {
-	//	glVertex2f(position.x, position.y);
-	//	glVertex2f(sorted[i].position.x, sorted[i].position.y);
-	//	glVertex2f(sorted[i + 1].position.x, sorted[i + 1].position.y);
-	//}
-	//glVertex2f(position.x, position.y);
-	//glVertex2f(sorted[0].position.x, sorted[0].position.y);
-	//glVertex2f(sorted[num_verts - 1].position.x, sorted[num_verts - 1].position.y);
-	//glEnd();
-	//glPopMatrix();
+	glMatrixMode(GL_MODELVIEW);
+	glPushMatrix();
+	glLoadIdentity();
+	renderer.setup_render();
+	glBegin(GL_TRIANGLES);
+	for (int i = 0; i < num_verts - 1; i++) {
+		glVertex2f(position.x, position.y);
+		glVertex2f(sorted[i].position.x, sorted[i].position.y);
+		glVertex2f(sorted[i + 1].position.x, sorted[i + 1].position.y);
+	}
+	glVertex2f(position.x, position.y);
+	glVertex2f(sorted[0].position.x, sorted[0].position.y);
+	glVertex2f(sorted[num_verts - 1].position.x, sorted[num_verts - 1].position.y);
+	glEnd();
+	glPopMatrix();
+
+	if (!renderer.debug_draw) {
+		return;
+	}
 
 	glMatrixMode(GL_MODELVIEW);
 	glPushMatrix();

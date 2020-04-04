@@ -112,13 +112,13 @@ void Config::register_var(const char *name, Vec4 *var, Config_Var_Callback callb
 }
 
 void Config::shutdown() {
-	For(vars) {
-		if ((*it)->string_data) {
-			delete[] (*it)->string_data;
-			delete[] (*it)->print_string;
+	For(vars, {
+		if (it->string_data) {
+			delete[] it->string_data;
+			delete[] it->print_string;
 		}
-		delete *it;
-	}
+		delete it;
+	});
 }
 
 void Config::set_var_from_string(Config_Var *var, const char *string) {
@@ -203,31 +203,31 @@ void Config::write_file(const char *filename) {
 		return;
 	}
 
-	For(vars) {
-		switch ((*it)->type) {
+	For(vars, {
+		switch (it->type) {
 		case VAR_FLOAT:
-			fprintf_s(file, "%s %f\n", (*it)->name, *(*it)->float_dest);
+			fprintf_s(file, "%s %f\n", it->name, *it->float_dest);
 			break;
 		case VAR_INT:
-			fprintf_s(file, "%s %d\n", (*it)->name, *(*it)->int_dest);
+			fprintf_s(file, "%s %d\n", it->name, *it->int_dest);
 			break;
 		case VAR_BOOL:
-			fprintf_s(file, "%s %s\n", (*it)->name, *(*it)->bool_dest ? "true" : "false");
+			fprintf_s(file, "%s %s\n", it->name, *it->bool_dest ? "true" : "false");
 			break;
 		case VAR_STRING:
-			fprintf_s(file, "%s %s\n", (*it)->name, (*it)->string_data);
+			fprintf_s(file, "%s %s\n", it->name, it->string_data);
 			break;
 		case VAR_VEC2:
-			fprintf_s(file, "%s (%f %f)\n", (*it)->name, (*it)->vec2_dest->x, (*it)->vec2_dest->y);
+			fprintf_s(file, "%s (%f %f)\n", it->name, it->vec2_dest->x, it->vec2_dest->y);
 			break;
 		case VAR_VEC3:
-			fprintf_s(file, "%s (%f %f %f)\n", (*it)->name, (*it)->vec3_dest->x, (*it)->vec3_dest->y, (*it)->vec3_dest->z);
+			fprintf_s(file, "%s (%f %f %f)\n", it->name, it->vec3_dest->x, it->vec3_dest->y, it->vec3_dest->z);
 			break;
 		case VAR_VEC4:
-			fprintf_s(file, "%s (%f %f %f %f)\n", (*it)->name, (*it)->vec4_dest->x, (*it)->vec4_dest->y, (*it)->vec4_dest->z, (*it)->vec4_dest->w);
+			fprintf_s(file, "%s (%f %f %f %f)\n", it->name, it->vec4_dest->x, it->vec4_dest->y, it->vec4_dest->z, it->vec4_dest->w);
 			break;
 		}
-	}
+	});
 
 	fclose(file);
 }

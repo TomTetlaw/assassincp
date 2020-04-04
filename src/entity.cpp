@@ -103,12 +103,12 @@ void Entity_Manager::on_level_load() {
 }
 
 void Entity_Manager::render() {
-	For(entities) {
-		if ((*it)) {
-			renderer.texture(&(*it)->rt);
-			(*it)->render();
+	For(entities, {
+		if (it) {
+			renderer.texture(&it->rt);
+			it->render();
 		}
-	}
+	});
 }
 
 void Entity_Manager::update(float dt) {
@@ -124,7 +124,6 @@ void Entity_Manager::update(float dt) {
 			cpVect physics_position = cpBodyGetPosition(entity->body);
 			entity->position.x = physics_position.x;
 			entity->position.y = physics_position.y;
-			entity->angle = cpBodyGetAngle(entity->body);
 
 			//@fixme: figure out how to properly make movement type customizable (angle, x velocity)
 			entity->velocity = approach(entity->velocity, entity->goal_velocity, dt * entity->velocity_ramp_speed);

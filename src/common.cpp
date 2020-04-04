@@ -171,6 +171,10 @@ void save_write_string(Save_File *file, const char *value) {
 	save_write(file, (const void *)value, len);
 }
 
+void save_write_bool(Save_File *file, bool value) {
+	save_write_int(file, value ? 1 : 0);
+}
+
 void save_read(Save_File *file, void *data, int size) {
 	if (!file->handle) {
 		return;
@@ -209,4 +213,10 @@ void save_read_string(Save_File *file, char *value) {
 	int len = 0;
 	save_read_int(file, &len);
 	save_read(file, (void *)value, len);
+}
+
+void save_read_bool(Save_File *file, bool *value) {
+	int v = 0;
+	save_read_int(file, &v);
+	*value = v == 1 ? true : false;
 }

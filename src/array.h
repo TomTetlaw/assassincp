@@ -13,9 +13,10 @@ struct Array {
 	void remove(int i);
 	T *alloc();
 	T &operator[](int index) { return data[index]; }
-	T *first() { return &data[0]; }
-	T *last() { if (num <= 0) return nullptr; else return &data[num - 1]; }
+	T &first() { return data[0]; }
+	//T *last() { if (num <= 0) return nullptr; else return &data[num - 1]; }
 	bool find(const T &val);
+	int find_index(const T &val);
 };
 
 template<typename T>
@@ -49,7 +50,7 @@ void Array<T>::append(const T &value) {
 
 template<typename T>
 void Array<T>::remove(int index) {
-	if (index < 0 || index > num) {
+	if (index < 0 || index >= num) {
 		return;
 	}
 
@@ -78,22 +79,20 @@ T *Array<T>::alloc() {
 
 template<typename T>
 bool Array<T>::find(const T &val) {
+	return find_index(val) != -1;
+}
+
+template<typename T>
+int Array<T>::find_index(const T &val) {
 	for (int i = 0; i < num; i++) {
 		if (val == data[i]) {
-			return true;
+			return i;
 		}
 	}
 
-	return false;
+	return -1;
 }
 
-#define For(x) \
-	auto it = x.first(); \
-	for(int it_index = 0; it_index < x.num; it_index++, it = &x[it_index]) \
-
-#define For2(x, name) \
-	auto name = x.first(); \
-	for(int name##_index = 0; name##_index < x.num; name##_index++, name = &x[name##_index]) \
-
+#define For(x, code) { if(x.num > 0) { auto it = x.first(); for (int it_index = 0; it_index < x.num; it_index++, it = x[it_index]) code } }
 
 #endif

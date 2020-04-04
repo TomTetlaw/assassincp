@@ -1,9 +1,9 @@
 #include "precompiled.h"
 
-class info_player_start : public Entity {
+class PlayerStart : public Entity {
 };
 
-declare_entity_type(info_player_start, ENTITY_INFO_PLAYER_START);
+declare_entity_type(PlayerStart, "info_player_start", ENTITY_INFO_PLAYER_START);
 
 class Player : public Entity {
 	cpPivotJoint *joint = nullptr;
@@ -41,7 +41,7 @@ class Player : public Entity {
 
 		renderer.camera_position = position;
 
-		//angle = position.angle_to(sys.cursor_position + renderer.camera_position);
+		angle = position.angle_to(renderer.to_world_pos(sys.cursor_position));
 
 		fov.position = position;
 		fov.update();
@@ -51,7 +51,7 @@ class Player : public Entity {
 	}
 
 	void render() {
-		fov.render();
+		//fov.render();
 	}
 
 	void setup_physics(cpSpace *space) {
@@ -82,4 +82,4 @@ class Player : public Entity {
 	}
 };
 
-declare_entity_type(Player, ENTITY_PLAYER);
+declare_entity_type(Player, "ent_player", ENTITY_PLAYER);

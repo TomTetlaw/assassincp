@@ -62,6 +62,12 @@ public:
 
 		cpTransform transform = cpTransformIdentity;
 		shape = cpPolyShapeNew(body, verts.num, cp_verts, transform, 0.000001f);
+		
+		int count = cpPolyShapeGetCount(shape);
+		for (int i = 0; i < count; i++) {
+			cpVect v = cpPolyShapeGetVert(shape, i);
+			game.current_level->fov_check_points.append(Vec2(v.x, v.y));
+		}
 
 		cpSpaceAddShape(space, shape);
 		cpSpaceAddBody(space, body);
@@ -73,7 +79,7 @@ public:
 	}
 };
 
-declare_entity_type(Poly, ENTITY_POLYGON);
+declare_entity_type(Poly, "info_polygon", ENTITY_POLYGON);
 
 void Game::on_level_load() {
 	renderer.on_level_load();
@@ -116,17 +122,31 @@ void Game::load_level(const char *file_name) {
 	int num = 0;
 	save_read_int(&file, &num);
 	for (int i = 0; i < num; i++) {
-		Editor_Entity entity;
-		entity.read_save(&file);
+		int type = 0;
+		save_read_int(&file, &type);
+		if (type == EDITOR_ENTITY_ENTITY) {
+			Editor_Entity entity;
+			entity.read_save(&file);
 
-		Entity *ent = entity_manager.create_entity(entity.type_name, entity.name, false, false);
-		if (ent) {
-			ent->set_position(entity.position);
-			ent->size = entity.size;
-			ent->rt.scale = entity.scale;
-			ent->set_texture(entity.texture_name, false);
-			ent->colour = entity.colour;
-			entity_manager.spawn_entity(ent);
+			Entity *ent = entity_manager.create_entity(entity.type_name, entity.name, false, false);
+			if (ent) {
+				ent->set_position(entity.position);
+				ent->size = entity.size;
+				ent->rt.scale = entity.scale;
+				ent->set_texture(entity.texture_name, false);
+				ent->colour = entity.colour;
+				entity_manager.spawn_entity(ent);
+			}
+		}
+		else if (type == EDITOR_ENTITY_POLYGON) {
+			Editor_Polygon polygon;
+			polygon.read_save(&file);
+
+			Poly *poly = (Poly *)entity_manager.create_entity("info_polygon", nullptr, false, false);
+			For(polygon.points, {
+				poly->verts.append(it->position);
+			});
+			entity_manager.spawn_entity(poly);
 		}
 	}
 
@@ -145,13 +165,12 @@ void process_level() {
 	}
 	if (entity_manager.entity_types[ENTITY_INFO_PLAYER_START]->entities.num > 1) {
 		console.printf("Warning: more than one info_player_start found!\n");
-		has_one_player_start = true;
 	}
 
 	if (has_one_player_start) {
 		player_start = entity_manager.entity_types[ENTITY_INFO_PLAYER_START]->entities[0];
 
-		Entity *player = entity_manager.create_entity("Player", nullptr, false, false);
+		Entity *player = entity_manager.create_entity("ent_player", nullptr, false, false);
 		player->position = player_start->position;
 		player->set_texture("data/textures/player.png");
 		entity_manager.spawn_entity(player);

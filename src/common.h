@@ -28,6 +28,7 @@ void save_write_vec2(Save_File *file, Vec2 value);
 void save_write_vec3(Save_File *file, Vec3 value);
 void save_write_vec4(Save_File *file, Vec4 value);
 void save_write_string(Save_File *file, const char *value);
+void save_write_bool(Save_File *file, bool value);
 
 void save_read(Save_File *file, void *data, int size);
 void save_read_int(Save_File *file, int *value);
@@ -36,5 +37,6 @@ void save_read_vec2(Save_File *file, Vec2 *value);
 void save_read_vec3(Save_File *file, Vec3 *value);
 void save_read_vec4(Save_File *file, Vec4 *value);
 void save_read_string(Save_File *file, char *value);
+void save_read_bool(Save_File *file, bool *value);
 
 #endif
