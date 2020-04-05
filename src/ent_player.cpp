@@ -13,6 +13,7 @@ class Player : public Entity {
 	Field_Of_View fov;
 
 	void spawn() {
+		set_texture("data/textures/player.png");
 		velocity_ramp_speed = 1000;
 		fov.init();
 	}

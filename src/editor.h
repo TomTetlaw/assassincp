@@ -69,7 +69,7 @@ public:
 	Array<Editor_Polygon_Point *> points;
 	bool closed = false;
 
-	Editor_Polygon() { current_entity_type_num = 2; strcpy(type_name, "info_polygon"); type = EDITOR_ENTITY_POLYGON; size = Vec2(5, 5); }
+	Editor_Polygon() { current_entity_type_num = ENTITY_INFO_POLYGON; strcpy(type_name, "info_polygon"); type = EDITOR_ENTITY_POLYGON; size = Vec2(5, 5); }
 
 	void calculate_properties();
 	void on_drag(Vec2 amount);

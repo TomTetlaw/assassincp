@@ -28,7 +28,98 @@ void Game::update() {
 	}
 }
 
+struct Nav_Path {
+	Array<Nav_Mesh_Point> points;
+};
+
+int grid_index_plus(int index, int x, int y, int width) {
+	return index + x + (-y * width);
+}
+
+void get_neighbours(int index, Nav_Mesh_Point neighbours[8]) {
+	int offsets[8][2] = {
+		{1,0},
+		{-1,0},
+		{0,1},
+		{0,-1},
+
+		{-1,-1},
+		{1,-1},
+		{1,1},
+		{-1,1}
+	};
+
+	for (int i = 0; i < 8; i++) {
+		int neighbour_index = index + (offsets[i][1] * game.current_level->nav_points_width) + (offsets[i][0]);
+		if (neighbour_index > 0 && neighbour_index < game.current_level->nav_points.num) {
+			neighbours[i] = game.current_level->nav_points[neighbour_index];
+		}
+		else {
+			neighbours[i].valid = false;
+		}
+	}
+}
+
+void make_path(Nav_Path *path, Vec2 from, Vec2 to) {
+	int width = game.current_level->nav_points_width;
+	int height = game.current_level->nav_points_height;
+	int num = game.current_level->nav_points.num;
+
+	int grid_index_x = (int)(from.x / game.current_level->nav_points_size);
+	grid_index_x += (width / 2);
+	if (grid_index_x < 0) grid_index_x += width;
+
+	int grid_index_y = (int)(from.y / game.current_level->nav_points_size);
+	grid_index_y += (height / 2);
+	if (grid_index_y < 0) grid_index_y += height;
+
+	int grid_index = (grid_index_y * width) + grid_index_x;
+
+	Nav_Mesh_Point neighbours[8];
+	get_neighbours(grid_index, neighbours);
+	
+	for (int i = 0; i < 8; i++) {
+		if (neighbours[i].valid) {
+			path->points.append(neighbours[i]);
+		}
+	}
+}
+
 void Game::render() {
+	if (!current_level) return;
+
+	glMatrixMode(GL_MODELVIEW);
+	glLoadIdentity();
+	glPushMatrix();
+	renderer.setup_render();
+
+	glPointSize(10.0f);
+	glColor4f(1, 1, 1, 0.1f);
+	glBegin(GL_POINTS);
+	For(current_level->nav_points, {
+		if (it.valid) {
+			glVertex2f(it.point.x, it.point.y);
+		}
+	});
+	glEnd();
+
+	Nav_Path path;
+	make_path(&path, game.player->position, renderer.to_world_pos(sys.cursor_position));
+
+	glPointSize(10.0f);
+	glColor4f(1, 0, 0, 1);
+	glBegin(GL_POINTS);
+	For(path.points, {
+		if (it.valid) {
+			glVertex2f(it.point.x, it.point.y);
+		}
+	});
+	glEnd();
+
+	glPopMatrix();
+
+	renderer.use_camera = false;
+	renderer.use_zoom = false;
 }
 
 void Game::toggle_paused() {
@@ -79,7 +170,12 @@ public:
 	}
 };
 
-declare_entity_type(Poly, "info_polygon", ENTITY_POLYGON);
+declare_entity_type(Poly, "info_polygon", ENTITY_INFO_POLYGON);
+
+class Poly_Point : public Entity {
+};
+
+declare_entity_type(Poly_Point, "info_poly_point", ENTITY_INFO_POLYGON_POINT);
 
 void Game::on_level_load() {
 	renderer.on_level_load();
@@ -155,6 +251,47 @@ void Game::load_level(const char *file_name) {
 	process_level();
 }
 
+bool check_nav_point(Vec2 point) {
+	cpSegmentQueryInfo info[8];
+	float offset = game.current_level->nav_points_size / 2;
+	Vec2 points[8] = {
+		point + Vec2(offset, 0),
+		point + Vec2(-offset, 0),
+		point + Vec2(0, offset),
+		point + Vec2(0, -offset),
+
+		point + Vec2(-offset, -offset),
+		point + Vec2(offset, -offset),
+		point + Vec2(-offset, offset),
+		point + Vec2(offset, offset),
+	};
+
+	for (int i = 0; i < 8; i++) {
+		cpShapeFilter filter;
+		filter.categories = 1;
+		if (cpSpaceSegmentQueryFirst(entity_manager.space, cpv(point.x, point.y), cpv(points[i].x, points[i].y), 1, filter, &info[i])) {
+			return false;
+		}
+	}
+
+	return true;
+}
+
+void generate_nav_points() {
+	int grid_size = game.current_level->nav_points_size;
+	int num_x = 1000 / grid_size;
+	int num_y = 1000 / grid_size;
+	game.current_level->nav_points_width = num_x * 2;
+	game.current_level->nav_points_height = num_y * 2;
+	for (int y = -num_y; y < num_y; y++) {
+		for (int x = -num_x; x < num_x; x++) {
+			Vec2 p = Vec2(x * grid_size, y * grid_size);
+			Nav_Mesh_Point point = { p, check_nav_point(p) };
+			game.current_level->nav_points.append(point);
+		}
+	}
+}
+
 void process_level() {
 	bool has_one_player_start = true;
 	Entity *player_start = nullptr;
@@ -172,11 +309,13 @@ void process_level() {
 
 		Entity *player = entity_manager.create_entity("ent_player", nullptr, false, false);
 		player->position = player_start->position;
-		player->set_texture("data/textures/player.png");
 		entity_manager.spawn_entity(player);
 
 		input.player = player;
+		game.player = player;
 
 		entity_manager.delete_entity(player_start);
 	}
+
+	generate_nav_points();
 }

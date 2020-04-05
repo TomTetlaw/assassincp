@@ -103,6 +103,8 @@ void Entity_Manager::on_level_load() {
 }
 
 void Entity_Manager::render() {
+	renderer.use_camera = true;
+	
 	For(entities, {
 		if (it) {
 			renderer.texture(&it->rt);

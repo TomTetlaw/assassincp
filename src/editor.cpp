@@ -343,6 +343,7 @@ void Editor_Polygon::write_save(Save_File *file) {
 }
 
 void Editor_Polygon::read_save(Save_File *file) {
+	strcpy(type_name, "info_polygon");
 	save_read_bool(file, &closed);
 
 	int num = 0;
@@ -351,6 +352,8 @@ void Editor_Polygon::read_save(Save_File *file) {
 		Vec2 v;
 		save_read_vec2(file, &v);
 		Editor_Polygon_Point *point = new Editor_Polygon_Point;
+		point->current_entity_type_num = ENTITY_INFO_POLYGON_POINT;
+		strcpy(point->type_name, "info_poly_point");
 		point->parent = this;
 		point->position = v;
 		editor.add_entity(point);
@@ -755,6 +758,7 @@ void Editor::handle_mouse_press(int mouse_button, bool down, Vec2 _, bool is_dou
 					Editor_Polygon_Point *point = new Editor_Polygon_Point;
 					point->parent = currently_editing_polygon;
 					point->position = renderer.to_world_pos(sys.cursor_position);
+					point->current_entity_type_num = ENTITY_INFO_POLYGON_POINT;
 					editor.add_entity(point);
 					currently_editing_polygon->points.append(point);
 					currently_editing_polygon->calculate_properties();
@@ -764,6 +768,7 @@ void Editor::handle_mouse_press(int mouse_button, bool down, Vec2 _, bool is_dou
 				Editor_Polygon *polygon = new Editor_Polygon;
 				currently_editing_polygon = polygon;
 				Editor_Polygon_Point *point = new Editor_Polygon_Point;
+				point->current_entity_type_num = ENTITY_INFO_POLYGON_POINT;
 				point->parent = polygon;
 				point->position = renderer.to_world_pos(sys.cursor_position);
 				editor.add_entity(point);

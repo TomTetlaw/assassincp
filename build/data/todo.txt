@@ -6,6 +6,7 @@ hotloading of config.txt isn't working for some reason
 zoom towards mouse cursor
 
 editor causes a crash if trying to delete a polygon + one of its points at the same time
+(probably solve by having children entities and have the polygon manage its own children instead of the editor)
 
 this causes wrong angles:
 angle = position.angle_to(renderer.to_world_pos(sys.cursor_position));

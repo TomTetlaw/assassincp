@@ -4,8 +4,17 @@
 struct Debug_Draw;
 struct Contact_Listener;
 
+struct Nav_Mesh_Point {
+	Vec2 point;
+	bool valid = false;
+};
+
 struct Level {
 	Array<Vec2> fov_check_points;
+	Array<Nav_Mesh_Point> nav_points;
+	float nav_points_size = 64.0f;
+	int nav_points_width = 0;
+	int nav_points_height = 0;
 	const char *file_name = nullptr;
 };
 
@@ -28,6 +37,7 @@ struct Game {
 	void set_paused(bool paused);
 
 	Level *current_level = nullptr;
+	Entity *player = nullptr;
 	void on_level_load();
 	void load_level(const char *file_name);
 };
