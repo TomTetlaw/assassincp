@@ -7,6 +7,8 @@ struct Contact_Listener;
 struct Nav_Mesh_Point {
 	Vec2 point;
 	bool valid = false;
+	bool visited = false;
+	int grid_index = -1;
 };
 
 struct Level {

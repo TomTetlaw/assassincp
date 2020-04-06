@@ -1,5 +1,4 @@
 #include "precompiled.h"
-
 Game game;
 
 void Game::init() {
@@ -16,7 +15,6 @@ void Game::update() {
 		game.game_time = game.real_time - game.total_time_paused;
 	}
 
-
 	game.real_delta_time = game.last_time - temp;
 	game.real_time += game.delta_time;
 
@@ -29,14 +27,14 @@ void Game::update() {
 }
 
 struct Nav_Path {
-	Array<Nav_Mesh_Point> points;
+	Array<Nav_Mesh_Point *> points;
 };
 
 int grid_index_plus(int index, int x, int y, int width) {
 	return index + x + (-y * width);
 }
 
-void get_neighbours(int index, Nav_Mesh_Point neighbours[8]) {
+void get_neighbours(int index, Nav_Mesh_Point *neighbours[8]) {
 	int offsets[8][2] = {
 		{1,0},
 		{-1,0},
@@ -52,37 +50,85 @@ void get_neighbours(int index, Nav_Mesh_Point neighbours[8]) {
 	for (int i = 0; i < 8; i++) {
 		int neighbour_index = index + (offsets[i][1] * game.current_level->nav_points_width) + (offsets[i][0]);
 		if (neighbour_index > 0 && neighbour_index < game.current_level->nav_points.num) {
-			neighbours[i] = game.current_level->nav_points[neighbour_index];
+			neighbours[i] = &game.current_level->nav_points[neighbour_index];
 		}
 		else {
-			neighbours[i].valid = false;
+			neighbours[i] = nullptr;
 		}
 	}
 }
 
-void make_path(Nav_Path *path, Vec2 from, Vec2 to) {
-	int width = game.current_level->nav_points_width;
-	int height = game.current_level->nav_points_height;
+void position_to_grid_index(Vec2 position, int *grid_x, int *grid_y) {
+	int grid_index_x = (int)(position.x / game.current_level->nav_points_size);
+	grid_index_x += (game.current_level->nav_points_width / 2);
+	if (grid_index_x < 0) grid_index_x += game.current_level->nav_points_width;
+	*grid_x = grid_index_x;
+
+	int grid_index_y = (int)(position.y / game.current_level->nav_points_size);
+	grid_index_y += (game.current_level->nav_points_height / 2);
+	if (grid_index_y < 0) grid_index_y += game.current_level->nav_points_height;
+	*grid_y = grid_index_y;
+}
+
+bool make_path(Nav_Path *path, Vec2 from, Vec2 to) {
 	int num = game.current_level->nav_points.num;
 
-	int grid_index_x = (int)(from.x / game.current_level->nav_points_size);
-	grid_index_x += (width / 2);
-	if (grid_index_x < 0) grid_index_x += width;
-
-	int grid_index_y = (int)(from.y / game.current_level->nav_points_size);
-	grid_index_y += (height / 2);
-	if (grid_index_y < 0) grid_index_y += height;
-
-	int grid_index = (grid_index_y * width) + grid_index_x;
-
-	Nav_Mesh_Point neighbours[8];
-	get_neighbours(grid_index, neighbours);
-	
-	for (int i = 0; i < 8; i++) {
-		if (neighbours[i].valid) {
-			path->points.append(neighbours[i]);
-		}
+	for (int i = 0; i < game.current_level->nav_points.num; i++) {
+		game.current_level->nav_points[i].visited = false;
 	}
+
+	int grid_from_x = 0;
+	int grid_from_y = 0;
+	position_to_grid_index(from, &grid_from_x, &grid_from_y);
+
+	int grid_to_x = 0;
+	int grid_to_y = 0;
+	position_to_grid_index(to, &grid_to_x, &grid_to_y);
+
+	int grid_index_from = (grid_from_y * game.current_level->nav_points_width) + grid_from_x;
+	int grid_index_to = (grid_to_y * game.current_level->nav_points_width) + grid_to_x;
+	Vec2 goal_pos = game.current_level->nav_points[grid_index_to].point;
+
+	int current = grid_index_from;
+	while (current != grid_index_to) {
+		Nav_Mesh_Point *neighbours[8] = { 0 };
+		get_neighbours(current, neighbours);
+
+		int lowest_index = -1;
+		float lowest = 10000.0f;
+		for (int i = 0; i < 8; i++) {
+			if (!neighbours[i]) {
+				//printf("neighbour %d was nullptr\n", i);
+				continue;
+			}
+			if (!neighbours[i]->valid) {
+				printf("neighbour %d was not valid\n", i);
+				continue;
+			}
+			if (neighbours[i]->visited) {
+				printf("neighbour %d was visited\n", i);
+				continue;
+			}
+
+			Vec2 next_pos = neighbours[i]->point;
+			float dist = next_pos.distance_to(goal_pos);
+			if (dist < lowest) {
+				lowest = dist;
+				lowest_index = i;
+			}
+
+			neighbours[i]->visited = true;
+		}
+
+		if (lowest_index == -1) {
+			return false;
+		}
+
+		path->points.append(neighbours[lowest_index]);
+		current = neighbours[lowest_index]->grid_index;
+	}
+
+	return true;
 }
 
 void Game::render() {
@@ -104,22 +150,18 @@ void Game::render() {
 	glEnd();
 
 	Nav_Path path;
-	make_path(&path, game.player->position, renderer.to_world_pos(sys.cursor_position));
-
-	glPointSize(10.0f);
-	glColor4f(1, 0, 0, 1);
-	glBegin(GL_POINTS);
-	For(path.points, {
-		if (it.valid) {
-			glVertex2f(it.point.x, it.point.y);
-		}
-	});
-	glEnd();
+	if (make_path(&path, game.player->position, renderer.to_world_pos(sys.cursor_position))) {
+		printf("Path found: %d\n", path.points.num);
+		glColor4f(1, 0, 0, 1);
+		glPointSize(10.0f);
+		glBegin(GL_POINTS);
+		For(path.points, {
+			glVertex2f(it->point.x, it->point.y);
+		});
+		glEnd();
+	}
 
 	glPopMatrix();
-
-	renderer.use_camera = false;
-	renderer.use_zoom = false;
 }
 
 void Game::toggle_paused() {
@@ -286,7 +328,11 @@ void generate_nav_points() {
 	for (int y = -num_y; y < num_y; y++) {
 		for (int x = -num_x; x < num_x; x++) {
 			Vec2 p = Vec2(x * grid_size, y * grid_size);
-			Nav_Mesh_Point point = { p, check_nav_point(p) };
+			Nav_Mesh_Point point;
+			point.point = p;
+			point.valid = check_nav_point(p);
+			point.grid_index = game.current_level->nav_points.num;
+
 			game.current_level->nav_points.append(point);
 		}
 	}

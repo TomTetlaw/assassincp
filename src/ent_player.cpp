@@ -45,7 +45,7 @@ class Player : public Entity {
 		angle = position.angle_to(renderer.to_world_pos(sys.cursor_position));
 
 		fov.position = position;
-		fov.update();
+		//fov.update();
 	}
 
 	void handle_key_press(SDL_Scancode scancode, bool down, int mods) {

@@ -10,3 +10,9 @@ editor causes a crash if trying to delete a polygon + one of its points at the s
 
 this causes wrong angles:
 angle = position.angle_to(renderer.to_world_pos(sys.cursor_position));
+
+
+this caused only the first point to get updated:
+	//For(game.current_level->nav_points, {
+	//	it.visited = false;
+	//});

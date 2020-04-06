@@ -93,7 +93,7 @@ int main(int argc, char *argv[]) {
 		if (use_editor) {
 			editor.update();
 		}
-
+		
 		game.update();
 		entity_manager.update(game.delta_time);
 		renderer.update(game.delta_time);
@@ -104,20 +104,15 @@ int main(int argc, char *argv[]) {
 		game.render();
 		entity_manager.render();
 		renderer.render_physics_debug();
-
+		
 		if (use_editor) {
 			renderer.use_camera = true;
 			editor.render();
 		}
-
+		
 		renderer.use_camera = false;
 		renderer.use_zoom = false;
-		renderer.debug_string("game.game_time: %f", game.game_time);
-		renderer.debug_string("game.delta_time: %f", game.delta_time);
-		renderer.debug_string("entity_manager.entities.num: %d", entity_manager.entities.num);
-		renderer.debug_string("editor.entities.num: %d", editor.entities.num);
-		renderer.debug_string("renderer.camera_position: (%.2f, %.2f)", renderer.camera_position.x, renderer.camera_position.y);
-		renderer.debug_string("sys.cursor_position: (%.2f, %.2f)", sys.cursor_position.x, sys.cursor_position.y);
+
 		renderer.end_frame();
 	}
 
