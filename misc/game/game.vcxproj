@@ -157,6 +157,7 @@
     <ClCompile Include="..\..\src\console.cpp" />
     <ClCompile Include="..\..\src\editor.cpp" />
     <ClCompile Include="..\..\src\entity.cpp" />
+    <ClCompile Include="..\..\src\ent_badguy.cpp" />
     <ClCompile Include="..\..\src\font.cpp" />
     <ClCompile Include="..\..\src\fov.cpp" />
     <ClCompile Include="..\..\src\game.cpp" />

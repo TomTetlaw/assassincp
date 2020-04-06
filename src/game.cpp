@@ -26,14 +26,6 @@ void Game::update() {
 	}
 }
 
-struct Nav_Path {
-	Array<Nav_Mesh_Point *> points;
-};
-
-int grid_index_plus(int index, int x, int y, int width) {
-	return index + x + (-y * width);
-}
-
 void get_neighbours(int index, Nav_Mesh_Point *neighbours[8]) {
 	int offsets[8][2] = {
 		{1,0},
@@ -97,18 +89,9 @@ bool make_path(Nav_Path *path, Vec2 from, Vec2 to) {
 		int lowest_index = -1;
 		float lowest = 10000.0f;
 		for (int i = 0; i < 8; i++) {
-			if (!neighbours[i]) {
-				//printf("neighbour %d was nullptr\n", i);
-				continue;
-			}
-			if (!neighbours[i]->valid) {
-				printf("neighbour %d was not valid\n", i);
-				continue;
-			}
-			if (neighbours[i]->visited) {
-				printf("neighbour %d was visited\n", i);
-				continue;
-			}
+			if (!neighbours[i]) continue;
+			if (!neighbours[i]->valid) continue;
+			if (neighbours[i]->visited) continue;
 
 			Vec2 next_pos = neighbours[i]->point;
 			float dist = next_pos.distance_to(goal_pos);
@@ -148,18 +131,6 @@ void Game::render() {
 		}
 	});
 	glEnd();
-
-	Nav_Path path;
-	if (make_path(&path, game.player->position, renderer.to_world_pos(sys.cursor_position))) {
-		printf("Path found: %d\n", path.points.num);
-		glColor4f(1, 0, 0, 1);
-		glPointSize(10.0f);
-		glBegin(GL_POINTS);
-		For(path.points, {
-			glVertex2f(it->point.x, it->point.y);
-		});
-		glEnd();
-	}
 
 	glPopMatrix();
 }
@@ -310,7 +281,7 @@ bool check_nav_point(Vec2 point) {
 
 	for (int i = 0; i < 8; i++) {
 		cpShapeFilter filter;
-		filter.categories = 1;
+		filter.categories = 1|2;
 		if (cpSpaceSegmentQueryFirst(entity_manager.space, cpv(point.x, point.y), cpv(points[i].x, points[i].y), 1, filter, &info[i])) {
 			return false;
 		}
@@ -321,8 +292,8 @@ bool check_nav_point(Vec2 point) {
 
 void generate_nav_points() {
 	int grid_size = game.current_level->nav_points_size;
-	int num_x = 1000 / grid_size;
-	int num_y = 1000 / grid_size;
+	int num_x = 2000 / grid_size;
+	int num_y = 2000 / grid_size;
 	game.current_level->nav_points_width = num_x * 2;
 	game.current_level->nav_points_height = num_y * 2;
 	for (int y = -num_y; y < num_y; y++) {

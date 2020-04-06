@@ -11,10 +11,18 @@ struct Nav_Mesh_Point {
 	int grid_index = -1;
 };
 
+struct Nav_Path {
+	Array<Nav_Mesh_Point *> points;
+};
+
+void get_neighbours(int index, Nav_Mesh_Point *neighbours[8]);
+void position_to_grid_index(Vec2 position, int *grid_x, int *grid_y);
+bool make_path(Nav_Path *path, Vec2 from, Vec2 to);
+
 struct Level {
 	Array<Vec2> fov_check_points;
 	Array<Nav_Mesh_Point> nav_points;
-	float nav_points_size = 64.0f;
+	float nav_points_size = 32.0f;
 	int nav_points_width = 0;
 	int nav_points_height = 0;
 	const char *file_name = nullptr;
