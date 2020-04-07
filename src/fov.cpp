@@ -59,10 +59,8 @@ void fov_shutdown(Field_Of_View *fov) {
 }
 
 void fov_render(Field_Of_View *fov) {
-	glMatrixMode(GL_MODELVIEW);
-	glPushMatrix();
-	glLoadIdentity();
-	render_setup_render_world();
+	render_setup_for_world();
+
 	glBegin(GL_TRIANGLES);
 	for (int i = 0; i < fov->num_verts - 1; i++) {
 		glVertex2f(fov->position.x, fov->position.y);
@@ -73,12 +71,7 @@ void fov_render(Field_Of_View *fov) {
 	glVertex2f(fov->sorted[0].position.x, fov->sorted[0].position.y);
 	glVertex2f(fov->sorted[fov->num_verts - 1].position.x, fov->sorted[fov->num_verts - 1].position.y);
 	glEnd();
-	glPopMatrix();
 
-	glMatrixMode(GL_MODELVIEW);
-	glPushMatrix();
-	glLoadIdentity();
-	render_setup_render_world();
 	glColor4f(1, 0, 0, 1);
 	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 	glBegin(GL_TRIANGLES);
@@ -92,5 +85,4 @@ void fov_render(Field_Of_View *fov) {
 	glVertex2f(fov->sorted[fov->num_verts - 1].position.x, fov->sorted[fov->num_verts - 1].position.y);
 	glEnd();
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-	glPopMatrix();
 }

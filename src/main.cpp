@@ -70,6 +70,7 @@ int main(int argc, char *argv[]) {
 
 		srand((unsigned)time(nullptr));
 
+		//@todo: add a first check so that the files aren't hotloaded when the game starts and they're loaded for the first time
 		hotload_check_files_non_blocking();
 
 		float now = SDL_GetTicks() / 1000.0f;

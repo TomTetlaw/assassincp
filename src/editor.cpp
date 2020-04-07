@@ -27,6 +27,8 @@ internal Array<int> selected_polygon_points; // indices into selected_entities[0
 
 internal Array<const char *> entity_type_names; // create on init because no new types after startup
 
+internal float poly_point_size = 10.0f;
+
 bool lines_intersect(Vec2 p1, Vec2 q1, Vec2 p2, Vec2 q2)
 {
 	return false;
@@ -280,17 +282,13 @@ void Editor_Entity::render() {
 	rt.size = size;
 	rt.scale = scale;
 	rt.texture = texture;
-	rt.centered = true;
 	render_texture(&rt);
 
-	Vec4 c = Vec4(1, 1, 1, 1);
+	Vec4 colour = Vec4(1, 1, 1, 1);
 	if (selected_entities.find(this) || hovered) {
-		c = Vec4(0, 1, 0, 1);
+		colour = Vec4(0, 1, 0, 1);
 	}
-
-	float hw = size.x / 2;
-	float hh = size.y / 2;
-	render_box(false, position.x-hw, position.y-hh, size.x*scale.x, size.y*scale.y, c);
+	render_box(position, size * scale, false, colour);
 }
 
 void Editor_Entity::on_drag(Vec2 amount) {
@@ -302,49 +300,34 @@ void Editor_Entity::on_delete() {
 }
 
 void Editor_Polygon::render() {
-	glMatrixMode(GL_MODELVIEW);
-	glLoadIdentity();
-	glPushMatrix();
+	render_setup_for_ui();
 
-	render_setup_render_ui();
-
-	glColor4f(1, 1, 1, 1);
-	glBegin(GL_LINES);
 	for (int i = 0; i < points.num; i++) {
 		if (i + 1 < points.num) {
-			glVertex2f(points[i]->position.x, points[i]->position.y);
-			glVertex2f(points[i + 1]->position.x, points[i + 1]->position.y);
+			Vec2 a = points[i]->position;
+			Vec2 b = points[i + 1]->position;
+			render_line(a, b, Vec4(1, 1, 1, 1));
 		}
 	}
-	glEnd();
 
 	if (closed) {
-		glBegin(GL_LINES);
-		glVertex2f(points[points.num - 1]->position.x, points[points.num - 1]->position.y);
-		glVertex2f(points[0]->position.x, points[0]->position.y);
-		glEnd();
+		Vec2 a = points[points.num - 1]->position;
+		Vec2 b = points[0]->position;
+		render_line(a, b, Vec4(1, 1, 1, 1));
 	}
 
 	if (currently_editing_polygon == this) {
-		glBegin(GL_LINES);
-		glVertex2f(points[points.num - 1]->position.x, points[points.num - 1]->position.y);
-		Vec2 end = render_to_world_pos(sys.cursor_position);
-		glVertex2f(end.x, end.y);
-		glEnd();
+		Vec2 a = points[points.num - 1]->position;
+		Vec2 b = render_to_world_pos(sys.cursor_position);
+		render_line(a, b, Vec4(1, 1, 1, 1));
 	}
 
+	Vec4 colour = Vec4(1, 1, 1, 1);
 	if (selected_entities.find(this)) {
-		glColor4f(0, 1, 0, 1);
+		colour = Vec4(0, 1, 0, 1);
 	}
-	else {
-		glColor4f(1, 1, 1, 1);
-	}
-	glPointSize(5.0f);
-	glBegin(GL_POINTS);
-	glVertex2f(center.x, center.y);
-	glEnd();
 
-	glPopMatrix();
+	render_point(center, poly_point_size, colour);
 }
 
 void Editor_Polygon::on_drag(Vec2 amount) {
@@ -408,23 +391,11 @@ void Editor_Polygon::on_delete() {
 }
 
 void Editor_Polygon_Point::render() {
-	glMatrixMode(GL_MODELVIEW);
-	glLoadIdentity();
-	glPushMatrix();
-
-	render_setup_render_ui();
-
-	glBegin(GL_POINTS);
-	if (selected_entities.find(this)) {
-		glColor4f(0, 1, 0, 1);
+	Vec4 colour = Vec4(1, 1, 1, 1);
+	if(selected_entities.find(this)) {
+		colour = Vec4(0, 1, 0, 1);
 	}
-	else {
-		glColor4f(1, 1, 1, 1);
-	}
-	glVertex2f(position.x, position.y);
-	glEnd();
-
-	glPopMatrix();
+	render_point(position, poly_point_size, colour);
 }
 
 void Editor_Polygon_Point::on_drag(Vec2 amount) {
@@ -504,7 +475,7 @@ internal bool find_polygon_point_at(Vec2 position, Editor_Polygon **poly_out, in
 		auto it = entities[it_index];
 		if (it->type == EDITOR_ENTITY_POLYGON) {
 			for (int i = 0; i < ((Editor_Polygon *)it)->points.num; i++) {
-				if (((Editor_Polygon *)it)->points[i]->position.distance_to(position) < 10.0f) {
+				if (((Editor_Polygon *)it)->points[i]->position.distance_to(position) < poly_point_size) {
 					*poly_out = ((Editor_Polygon *)it);
 					*point_index = i;
 					return true;
@@ -646,53 +617,35 @@ void editor_render() {
 	ImGui::Render();
 	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
-	glEnable(GL_SCISSOR_TEST);
-	glScissor(edit_window_left + (sys.window_size.x / 2), -edit_window_bottom + (sys.window_size.y / 2), edit_window_right - edit_window_left, edit_window_bottom - edit_window_top);
+	render_start_scissor(edit_window_top, edit_window_left, edit_window_bottom, edit_window_right);
+	
+	render_setup_for_world();
 
 	For(entities) {
 		auto it = entities[it_index];
 		it->render();
 	}
 
+	render_setup_for_ui();
+
 	if (drag_select) {
-		render_box(false, drag_start_point.x, drag_start_point.y, drag_size.x, drag_size.y, Vec4(0, 1, 0, 1));
+		render_box(drag_start_point, drag_size, false, Vec4(0, 1, 0, 1));
 	}
 
-	glMatrixMode(GL_MODELVIEW);
-	glLoadIdentity();
-	glPushMatrix();
-	render_setup_render_ui();
-
-	glColor4f(1, 1, 1, 0.1f);
-	glBegin(GL_LINES);
 	int grid_size = 32;
 	int num_x = 10000 / grid_size;
 	int num_y = 10000 / grid_size;
 	for (int x = -num_x; x < num_x; x++) {
-		glVertex2f(x * grid_size, -10000);
-		glVertex2f(x * grid_size, 10000);
+		render_line(x * grid_size, -10000.0f, x * grid_size, 10000.0f, Vec4(1, 1, 1, 0.1f));
 	}
 	for (int y = -num_y; y < num_y; y++) {
-		glVertex2f(-10000, y * grid_size);
-		glVertex2f(10000, y * grid_size);
+		render_line(-10000.0f, y * grid_size, 10000.0f, y * grid_size, Vec4(1, 1, 1, 0.1f));
 	}
-	glEnd();
 
-	glPopMatrix();
+	render_end_scissor();
 
-	glDisable(GL_SCISSOR_TEST);
-
-	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-	glColor4f(1, 1, 1, 1);
-	glBegin(GL_QUADS);
-
-	glVertex2f(edit_window_right, edit_window_top);
-	glVertex2f(edit_window_left, edit_window_top);
-	glVertex2f(edit_window_left, edit_window_bottom);
-	glVertex2f(edit_window_right, edit_window_bottom);
-
-	glEnd();
-	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+	render_box2(edit_window_top, edit_window_left, 
+		edit_window_bottom, edit_window_right);
 }
 
 void editor_handle_mouse_press(int mouse_button, bool down, Vec2 _, bool is_double_click) {

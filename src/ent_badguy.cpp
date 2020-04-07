@@ -28,29 +28,6 @@ class Bad_Guy : public Entity {
 	}
 
 	void render() {
-		Entity::render();
-		
-		glMatrixMode(GL_MODELVIEW);
-		glLoadIdentity();
-		glPushMatrix();
-		render_setup_render_world();
-
-		glPointSize(10.0f);
-		glBegin(GL_POINTS);
-		For(path.points) {
-			auto it = path.points[it_index];
-			if (it_index == current_point_index) {
-				glColor4f(0, 1, 0, 1);
-			}
-			else {
-				glColor4f(1, 0, 0, 1);
-			}
-
-			glVertex2f(it->point.x, it->point.y);
-		}
-		glEnd();
-
-		glPopMatrix();
 	}
 };
 

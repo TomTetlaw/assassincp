@@ -7,12 +7,12 @@ internal Vec4 clear_colour;
 internal bool debug_draw = true;
 internal Font *default_font = nullptr;
 internal Vec2 debug_string_position;
-internal bool use_camera = true;
-internal bool use_zoom = true;
 internal char *default_font_file = "data/fonts/consolas.ttf";
 internal char **default_font_file_ptr = &default_font_file;
 internal int default_font_size = 16;
 internal bool centered = false;
+internal double z_near = 0.0;
+internal double z_far = 1.0;
 
 internal void opengl_debug_callback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* userParam);
 
@@ -35,9 +35,11 @@ void render_init() {
     glDebugMessageCallback((GLDEBUGPROC)opengl_debug_callback, nullptr);
     glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_TRUE);
 
-	register_var("renderer_clear_colour", &clear_colour);
-	register_var("renderer_should_clear", &should_clear);
-	register_var("renderer_draw_debug", &debug_draw);
+	register_var("clear_colour", &clear_colour);
+	register_var("should_clear_screen", &should_clear);
+	register_var("draw_debug", &debug_draw);
+	register_var("z_near", &z_near);
+	register_var("z_far", &z_far);
 	register_var("default_font_file", default_font_file_ptr, reload_default_font);
 	register_var("default_font_size", &default_font_size, reload_default_font);
 
@@ -70,32 +72,46 @@ void render_begin_frame() {
 	debug_string_position = Vec2(-(sys.window_size.x / 2) + 10, -(sys.window_size.y / 2) + (float)default_font->line_skip);
 }
 
-void render_setup_render_world() {
+internal void setup_camera_and_zoom() {
+	glTranslatef(-renderer.camera_position.x, -renderer.camera_position.y, 0);
+	float scale = render_scale_for_zoom_level();
+	glScalef(scale, scale, 1);
+}
+
+// scissor means that everything outside of the box will not be rendered
+void render_start_scissor(float top, float left, float bottom, float right) {
+	glEnable(GL_SCISSOR_TEST);
+	glScissor(left + (sys.window_size.x / 2), -bottom + (sys.window_size.y / 2), right - left, bottom - top);
+}
+
+void render_end_scissor() {
+	glDisable(GL_SCISSOR_TEST);
+}
+
+void render_setup_for_world() {
+	centered = true;
+
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
 	float hw = sys.window_size.x / 2;
 	float hh = sys.window_size.y / 2;
-	glOrtho(-hw, hw, hh, -hh, 0.0, 1.0);
+	glOrtho(-hw, hw, hh, -hh, z_near, z_far);
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
+
+	//setup_camera_and_zoom();
 }
 
-void render_setup_render_ui() {
+void render_setup_for_ui() {
+	centered = false;
+
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
-	glOrtho(0, sys.window_size.x, 0, sys.window_size.y, 0.0, 1.0);
+	glOrtho(0, sys.window_size.x, 0, sys.window_size.y, z_near, z_far);
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();	
-}
 
-// boxes/textures etc are rendered from centrepoint
-void render_setup_centered() {
-	centered = true;
-}
-
-// boxes/textures etc are rendered from top left
-void render_setup_topleft() {
-	centered = false;
+	//setup_camera_and_zoom();
 }
 
 void render_end_frame() {
@@ -134,97 +150,7 @@ Vec2 render_to_world_pos(Vec2 a) {
 	return (a + renderer.camera_position) * render_inverse_scale_for_zoom_level();
 }
 
-internal void setup_render() {
-	if (use_camera) {
-		glTranslatef(-renderer.camera_position.x, -renderer.camera_position.y, 0);
-	}
-
-	if (use_zoom) {
-		float scale = render_scale_for_zoom_level();
-		glScalef(scale, scale, 1);
-	}
-}
-
-void opengl_debug_output_to_file(unsigned int source, unsigned int type, unsigned int id, unsigned int severity, const char* message, bool should_print) {
-       FILE* f = nullptr;
-       fopen_s(&f, "data/opengl.log", "a");
-       if(f) {
-			char debSource[16] = {};
-			char debType[20] = {};
-			char debSev[5] = {};
-
-			switch(source) {
-			case GL_DEBUG_SOURCE_API_ARB:
-				strcpy_s(debSource, "OpenGL");
-				break;
-			case GL_DEBUG_SOURCE_SHADER_COMPILER_ARB:
-				strcpy_s(debSource, "Shader Compiler");
-				break;
-			case GL_DEBUG_SOURCE_THIRD_PARTY_ARB:
-			    strcpy_s(debSource, "Third Party");
-				break;
-			case GL_DEBUG_SOURCE_APPLICATION_ARB:
-			    strcpy_s(debSource, "Application");
-				break;
-			case GL_DEBUG_SOURCE_OTHER_ARB:
-			    strcpy_s(debSource, "Other");
-				break;
-			case GL_DEBUG_SOURCE_WINDOW_SYSTEM_ARB:
-				strcpy_s(debSource, "Windows");
-				break;
-			}
-			
-			switch(type) {
-			case GL_DEBUG_TYPE_ERROR_ARB:
-			    strcpy_s(debType, "Error");
-				break;
-			case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR_ARB:
-			    strcpy_s(debType, "Deprecated behavior");
-				break;
-			case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR_ARB:
-			    strcpy_s(debType, "Undefined behavior");
-				break;
-			case GL_DEBUG_TYPE_PORTABILITY_ARB:
-			    strcpy_s(debType, "Portability");
-				break;
-			case GL_DEBUG_TYPE_PERFORMANCE_ARB:
-			    strcpy_s(debType, "Performance");
-				break;
-			case GL_DEBUG_TYPE_OTHER_ARB:
-			    strcpy_s(debType, "Other");
-				break;
-			}
-			   
-			switch(severity) {
-			case GL_DEBUG_SEVERITY_HIGH_ARB:
-			    strcpy_s(debSev, "High");
-				break;
-			case GL_DEBUG_SEVERITY_MEDIUM_ARB:
-			    strcpy_s(debSev, "Medium");
-				break;
-			case GL_DEBUG_SEVERITY_LOW_ARB:
-			    strcpy_s(debSev, "Low");
-				break;
-			}
-			
-			if(should_print) {
-				printf("Source:%s\tType:%s\tID:%d\tSeverity:%s\tMessage:%s\n", debSource, debType, id, debSev, message);
-			}
-			fprintf(f, "Source:%s\tType:%s\tID:%d\tSeverity:%s\tMessage:%s\n", debSource, debType, id, debSev, message);
-			fclose(f);
-       }
-}
-
-void opengl_debug_callback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* userParam) {
-	if(id == 131185) {
-		/* Message:Buffer detailed info: Buffer object 1 (bound to GL_VERTEX_ATTRIB_ARRAY_BUFFER_BINDING_ARB (0), GL_VERTEX_ATTRIB_ARRAY_BUFFER_BINDING_ARB (1), GL_VERTEX_ATTRIB_ARRAY_BUFFER_BINDING_ARB (2), and GL_ARRAY_BUFFER_ARB, usage hint is GL_STREAM_DRAW) will use VIDEO memory as the source for buffer object operations.*/
-		return;
-	}
-
-    opengl_debug_output_to_file(source, type, id, severity, message, severity == GL_DEBUG_SEVERITY_MEDIUM_ARB || severity == GL_DEBUG_SEVERITY_HIGH_ARB);
-}
-
-void _render_texture(Render_Texture *rt) {
+void render_texture(Render_Texture *rt) {
 	if (!rt->texture) {
 		return;
 	}
@@ -308,7 +234,7 @@ void _render_texture(Render_Texture *rt) {
 	glDisable(GL_TEXTURE_2D);
 }
 
-void _render_string(Vec2 position, const char *text, Vec4 colour, Font *font, float wrap) {
+void render_string(Vec2 position, const char *text, Vec4 colour, Font *font, float wrap) {
 	if (!font) {
 		font = default_font;
 	}
@@ -331,7 +257,7 @@ void _render_string(Vec2 position, const char *text, Vec4 colour, Font *font, fl
 			
 			bool old_centered = centered;
 			centered = false;
-			_render_texture(&rt);
+			render_texture(&rt);
 			centered = old_centered;
 
 			position.x += font->glyphs[(int)text[i]].advance;
@@ -339,7 +265,7 @@ void _render_string(Vec2 position, const char *text, Vec4 colour, Font *font, fl
 	}
 }
 
-void _render_string_format(Vec2 position, Vec4 colour, Font *font, float wrap, const char *text, ...) {
+void render_string_format(Vec2 position, Vec4 colour, Font *font, float wrap, const char *text, ...) {
 	//@todo: make this better?
 	constexpr int max_string_length = 1024;
 
@@ -352,11 +278,11 @@ void _render_string_format(Vec2 position, Vec4 colour, Font *font, float wrap, c
 	vsnprintf_s(message, 1024, text, argptr);
 	va_end(argptr);
 
-	_render_string(position, message, colour, font, wrap);
+	render_string(position, message, colour, font, wrap);
 }
 
 // if you don't want to think about colour/font/wrap the default values will be same as those in render_string
-void _render_string_format_lazy(Vec2 position, const char *text, ...) {
+void render_string_format_lazy(Vec2 position, const char *text, ...) {
 	//@todo: make this better?
 	constexpr int max_string_length = 1024;
 
@@ -369,13 +295,13 @@ void _render_string_format_lazy(Vec2 position, const char *text, ...) {
 	vsnprintf_s(message, 1024, text, argptr);
 	va_end(argptr);
 
-	_render_string(position, message);
+	render_string(position, message);
 }
 
 // renders string at the top of the screen underneath last debug string
 // usually used to print out debug info that changes every frame.
 // won't draw if var renderer_draw_debug is false
-void _render_debug_string(const char *text, ...) {
+void render_debug_string(const char *text, ...) {
 	//@todo: make this better?
 	constexpr int max_string_length = 1024;
 
@@ -392,11 +318,11 @@ void _render_debug_string(const char *text, ...) {
 	vsnprintf_s(message, 1024, text, argptr);
 	va_end(argptr);
 
-	_render_string(debug_string_position, message);
+	render_string(debug_string_position, message);
 	debug_string_position.y += (float)default_font->line_skip;
 }
 
-void _render_line(Vec2 a, Vec2 b, Vec4 colour) {
+void render_line(Vec2 a, Vec2 b, Vec4 colour) {
 	glColor4f(v4parms(colour));
 	glBegin(GL_LINES);
 	glVertex2f(a.x, a.y);
@@ -404,23 +330,23 @@ void _render_line(Vec2 a, Vec2 b, Vec4 colour) {
 	glEnd();
 }
 
-void _render_line(float ax, float ay, float bx, float by, Vec4 colour) {
-	_render_line(Vec2(ax, ay), Vec2(bx, by), colour);
+void render_line(float ax, float ay, float bx, float by, Vec4 colour) {
+	render_line(Vec2(ax, ay), Vec2(bx, by), colour);
 }
 
 // render a line projected length units from a position 
-void _render_line(Vec2 start, float length, float angle, Vec4 colour) {
+void render_line2(Vec2 start, float length, float angle, Vec4 colour) {
 	Vec2 end;
 	end.x = start.x + (length * cos(angle));
 	end.y = start.y + (length * -sin(angle)); // using -sin because y is up in our coord system
-	_render_line(start, end, colour);
+	render_line(start, end, colour);
 }
 
-void _render_line(float x, float y, float length, float angle, Vec4 colour) {
-	_render_line(Vec2(x, y), length, angle, colour);
+void render_line2(float x, float y, float length, float angle, Vec4 colour) {
+	render_line2(Vec2(x, y), length, angle, colour);
 }
 
-void _render_box(Vec2 position, Vec2 size, bool fill = false, Vec4 colour = Vec4(1, 1, 1, 1)) {
+void render_box(Vec2 position, Vec2 size, bool fill, Vec4 colour) {
 	float hw = size.x / 2;
 	float hh = size.y / 2;
 	
@@ -449,11 +375,29 @@ void _render_box(Vec2 position, Vec2 size, bool fill = false, Vec4 colour = Vec4
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 }
 
-void _render_box(float x, float y, float w, float h, bool fill, Vec4 colour) {
-	_render_box(Vec2(x, y), Vec2(w, h), fill, colour);
+void render_box(float x, float y, float w, float h, bool fill, Vec4 colour) {
+	render_box(Vec2(x, y), Vec2(w, h), fill, colour);
 }
 
-void _render_point(Vec2 position, float size, Vec4 colour) {
+void render_box2(float top, float left, float bottom, float right, bool fill, Vec4 colour) {
+	if (fill) {
+		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+	}
+	else {
+		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+	}	
+
+	glColor4f(v4parms(colour));
+	glBegin(GL_QUADS);
+	glVertex2f(right, top);
+	glVertex2f(left, top);
+	glVertex2f(left, bottom);
+	glVertex2f(right, bottom);
+	glEnd();
+	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+}
+
+void render_point(Vec2 position, float size, Vec4 colour) {
 	glColor4f(v4parms(colour));
 	glPointSize(size);
 	glBegin(GL_POINTS);
@@ -461,6 +405,85 @@ void _render_point(Vec2 position, float size, Vec4 colour) {
 	glEnd();
 }
 
-void _render_point(float x, float y, float size = 10.0f, Vec4 colour = Vec4(1, 1, 1, 1)) {
-	_render_point(Vec2(x, y), size, colour);
+void render_point(float x, float y, float size, Vec4 colour) {
+	render_point(Vec2(x, y), size, colour);
+}
+
+void opengl_debug_output_to_file(unsigned int source, unsigned int type, unsigned int id, unsigned int severity, const char* message, bool should_print) {
+       FILE* f = nullptr;
+       fopen_s(&f, "data/opengl.log", "a");
+       if(f) {
+			char debSource[16] = {};
+			char debType[20] = {};
+			char debSev[5] = {};
+
+			switch(source) {
+			case GL_DEBUG_SOURCE_API_ARB:
+				strcpy_s(debSource, "OpenGL");
+				break;
+			case GL_DEBUG_SOURCE_SHADER_COMPILER_ARB:
+				strcpy_s(debSource, "Shader Compiler");
+				break;
+			case GL_DEBUG_SOURCE_THIRD_PARTY_ARB:
+			    strcpy_s(debSource, "Third Party");
+				break;
+			case GL_DEBUG_SOURCE_APPLICATION_ARB:
+			    strcpy_s(debSource, "Application");
+				break;
+			case GL_DEBUG_SOURCE_OTHER_ARB:
+			    strcpy_s(debSource, "Other");
+				break;
+			case GL_DEBUG_SOURCE_WINDOW_SYSTEM_ARB:
+				strcpy_s(debSource, "Windows");
+				break;
+			}
+			
+			switch(type) {
+			case GL_DEBUG_TYPE_ERROR_ARB:
+			    strcpy_s(debType, "Error");
+				break;
+			case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR_ARB:
+			    strcpy_s(debType, "Deprecated behavior");
+				break;
+			case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR_ARB:
+			    strcpy_s(debType, "Undefined behavior");
+				break;
+			case GL_DEBUG_TYPE_PORTABILITY_ARB:
+			    strcpy_s(debType, "Portability");
+				break;
+			case GL_DEBUG_TYPE_PERFORMANCE_ARB:
+			    strcpy_s(debType, "Performance");
+				break;
+			case GL_DEBUG_TYPE_OTHER_ARB:
+			    strcpy_s(debType, "Other");
+				break;
+			}
+			   
+			switch(severity) {
+			case GL_DEBUG_SEVERITY_HIGH_ARB:
+			    strcpy_s(debSev, "High");
+				break;
+			case GL_DEBUG_SEVERITY_MEDIUM_ARB:
+			    strcpy_s(debSev, "Medium");
+				break;
+			case GL_DEBUG_SEVERITY_LOW_ARB:
+			    strcpy_s(debSev, "Low");
+				break;
+			}
+			
+			if(should_print) {
+				printf("%d: Source:%s\tType:%s\tID:%d\tSeverity:%s\tMessage:%s\n", sys.frame_num, debSource, debType, id, debSev, message);
+			}
+			fprintf(f, "%d: Source:%s\tType:%s\tID:%d\tSeverity:%s\tMessage:%s\n", sys.frame_num, debSource, debType, id, debSev, message);
+			fclose(f);
+       }
+}
+
+void opengl_debug_callback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* userParam) {
+	if(id == 131185) {
+		/* Message:Buffer detailed info: Buffer object 1 (bound to GL_VERTEX_ATTRIB_ARRAY_BUFFER_BINDING_ARB (0), GL_VERTEX_ATTRIB_ARRAY_BUFFER_BINDING_ARB (1), GL_VERTEX_ATTRIB_ARRAY_BUFFER_BINDING_ARB (2), and GL_ARRAY_BUFFER_ARB, usage hint is GL_STREAM_DRAW) will use VIDEO memory as the source for buffer object operations.*/
+		return;
+	}
+
+    opengl_debug_output_to_file(source, type, id, severity, message, severity == GL_DEBUG_SEVERITY_MEDIUM_ARB || severity == GL_DEBUG_SEVERITY_HIGH_ARB);
 }

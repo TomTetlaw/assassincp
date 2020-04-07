@@ -26,7 +26,6 @@ void Entity::update_render_texture() {
 	rt.sh = sh;
 	rt.tl = tl;
 	rt.th = th;
-	rt.centered = true;
 }
 
 void Entity::set_texture(const char *filename, bool set_size) {

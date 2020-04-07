@@ -34,8 +34,10 @@ internal void generate_nav_points() {
 }
 
 internal void regen_nav_points(Config_Var *var) {
-	game.current_level->nav_points.num = 0;
-	generate_nav_points();
+	if(game.current_level) {
+		game.current_level->nav_points.num = 0;
+		generate_nav_points();
+	}
 }
 
 void game_init() {
@@ -153,23 +155,14 @@ bool make_path(Nav_Path *path, Vec2 from, Vec2 to) {
 void game_render() {
 	if (!game.current_level) return;
 
-	glMatrixMode(GL_MODELVIEW);
-	glLoadIdentity();
-	glPushMatrix();
+	render_setup_for_world();
 
-	render_setup_render_world();
-	glPointSize(10.0f);
-	glColor4f(1, 1, 1, 0.1f);
-	glBegin(GL_POINTS);
 	For(game.current_level->nav_points) {
 		auto it = game.current_level->nav_points[it_index];
 		if (it.valid) {
-			glVertex2f(it.point.x, it.point.y);
+			render_point(it.point, 10.0f, Vec4(1, 1, 1, 0.1f));
 		}
 	}
-	glEnd();
-
-	glPopMatrix();
 }
 
 void game_toggle_paused() {

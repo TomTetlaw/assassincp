@@ -2,36 +2,30 @@
 
 Config config;
 
-#define PRINT_STRING_LENGTH 1024
-
 internal void set_var_string(Config_Var *var) {
-	if (!var->print_string) {
-		var->print_string = new char[PRINT_STRING_LENGTH];
-	}
-
 	switch (var->type) {
 	case VAR_FLOAT:
-		sprintf_s(var->print_string, PRINT_STRING_LENGTH, "%f", *var->float_dest);
+		sprintf_s(var->print_string, var_string_length, "%f", *var->float_dest);
 		break;
 	case VAR_INT:
-		sprintf_s(var->print_string, PRINT_STRING_LENGTH, "%d", *var->int_dest);
+		sprintf_s(var->print_string, var_string_length, "%d", *var->int_dest);
 		break;
 	case VAR_BOOL:
 		if (*var->bool_dest) {
-			strcpy_s(var->print_string, PRINT_STRING_LENGTH, "true");
+			strcpy_s(var->print_string, var_string_length, "true");
 		}
 		else {
-			strcpy_s(var->print_string, PRINT_STRING_LENGTH, "false");
+			strcpy_s(var->print_string, var_string_length, "false");
 		}
 		break;
 	case VAR_STRING:
-		strncpy_s(var->print_string, PRINT_STRING_LENGTH, var->string_data, PRINT_STRING_LENGTH);
+		strncpy_s(var->print_string, var_string_length, var->string_data, var_string_length);
 		break;
 	case VAR_VEC2:
-		sprintf_s(var->print_string, PRINT_STRING_LENGTH, "(%f %f)", var->vec2_dest->x, var->vec2_dest->y);
+		sprintf_s(var->print_string, var_string_length, "(%f %f)", var->vec2_dest->x, var->vec2_dest->y);
 		break;
 	case VAR_VEC4:
-		sprintf_s(var->print_string, PRINT_STRING_LENGTH, "(%f %f %f %f)", var->vec4_dest->x, var->vec4_dest->y, var->vec4_dest->z, var->vec4_dest->w);
+		sprintf_s(var->print_string, var_string_length, "(%f %f %f %f)", var->vec4_dest->x, var->vec4_dest->y, var->vec4_dest->z, var->vec4_dest->w);
 		break;
 	}
 }
@@ -51,11 +45,23 @@ void register_var(const char *name, float *var, Config_Var_Callback callback) {
 	add_var(v);
 }
 
+void register_var(const char *name, double *var, Config_Var_Callback callback) {
+	Config_Var *v = new Config_Var;
+	v->type = VAR_DOUBLE;
+	v->name = name;
+	v->double_dest = var;
+	v->callback = callback;
+	add_var(v);	
+}
+
 void register_var(const char *name, char **var, Config_Var_Callback callback) {
 	Config_Var *v = new Config_Var;
 	v->type = VAR_STRING;
 	v->name = name;
-	v->string_dest = var;
+	if(*var) {
+		strcpy_s(v->string_data, var_string_length, *var);
+	}
+	*var = v->string_data;
 	v->callback = callback;
 	add_var(v);
 }
@@ -99,10 +105,6 @@ void register_var(const char *name, Vec4 *var, Config_Var_Callback callback) {
 void config_shutdown() {
 	For(config.vars) {
 		auto it = config.vars[it_index];
-		if (it->string_data) {
-			delete[] it->string_data;
-			delete[] it->print_string;
-		}
 		delete it;
 	}
 }
@@ -112,7 +114,10 @@ internal void set_var_from_string(Config_Var *var, const char *string) {
 	
 	switch (var->type) {
 	case VAR_FLOAT:
-		*var->float_dest = (float)atof(string);
+		*var->float_dest = (float)atof(string); // atof returns double by default... for some reason
+		break;
+	case VAR_DOUBLE:
+		*var->double_dest = atof(string); // atof returns double by default... for some reason
 		break;
 	case VAR_INT:
 		*var->int_dest = atoi(string);
@@ -126,15 +131,7 @@ internal void set_var_from_string(Config_Var *var, const char *string) {
 		}
 		break;
 	case VAR_STRING: {
-			int length = (int)strlen(string);
-			if (var->string_data) {
-				delete[] var->string_data;
-			}
-			var->string_data = new char[length + 1];
-			strcpy_s(var->string_data, length + 1, string);
-			var->string_data[length] = 0;
-			*var->string_dest = var->string_data;
-			var->string_length = length;
+			strcpy_s(var->string_data, var_string_length, string);
 		} break;
 	case VAR_VEC2:
 		sscanf_s(string, "%f %f", &var->vec2_dest->x, &var->vec2_dest->y);
@@ -191,6 +188,9 @@ void config_write_file(const char *filename) {
 		switch (it->type) {
 		case VAR_FLOAT:
 			fprintf_s(file, "%s %f\n", it->name, *it->float_dest);
+			break;
+		case VAR_DOUBLE:
+			fprintf_s(file, "%s %f\n", it->name, *it->float_dest); // %f is for double... for some reason
 			break;
 		case VAR_INT:
 			fprintf_s(file, "%s %d\n", it->name, *it->int_dest);

@@ -1,5 +1,9 @@
-renderer_clear_colour (0.000000 0.000000 0.000000 0.000000)
-renderer_should_clear true
-renderer_draw_debug false
+clear_colour (0.000000 0.000000 0.000000 0.000000)
+should_clear_screen true
+draw_debug true
+z_near 0.000000
+z_far 0.000000
+default_font_file data/fonts/consolas.ttf
+default_font_size 16
 nav_grid_width 2000
 nav_grid_height 2000
