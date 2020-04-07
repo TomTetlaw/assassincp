@@ -15,7 +15,9 @@ this caused only the first point to get updated:
 	//	it.visited = false;
 	//});
 
-// figure out vars
+// add comments
+// add todos
+// add asserts
 // rewrite renderer
 // rewrite physics
 // rewrite ui

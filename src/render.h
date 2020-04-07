@@ -4,22 +4,15 @@
 struct Render_Texture {
 	Texture *texture = nullptr;
 	Vec2 position;
-	Vec2 size;
-	Vec2 scale;
-	Vec4 colour;
+	Vec2 size = Vec2(-1, -1);
+	Vec2 scale = Vec2(1, 1);
+	Vec4 colour = Vec4(1, 1, 1, 1);
 	float angle = 0.0f;
 	float sl = -1;
 	float sh = -1;
 	float tl = -1;
 	float th = -1;
-	bool centered = false;
 	bool repeat = false;
-
-	inline Render_Texture() {
-		size = Vec2(-1, -1);
-		scale = Vec2(1, 1);
-		colour = Vec4(1, 1, 1, 1);
-	}
 };
 
 struct Render {
@@ -37,18 +30,44 @@ void render_init();
 void render_shutdown();
 void render_begin_frame();
 void render_end_frame();
+
+// you must call one of these before rendering
 void render_setup_render_world(); // middle of screen is (0,0)
 void render_setup_render_ui(); // top left of screen is (0,0)
-void render_texture(Render_Texture *rt);
-void render_debug_string(const char *text, ...);
-void render_string_format(Font *font, Vec2 position, Vec4 colour, float wrap, const char *text, ...);
-void render_string(Font *font, Vec2 position, Vec4 colour, float wrap, const char *text);
-void render_line(Vec2 a, Vec2 b, Vec4 colour);
-void render_line(Vec2 position, float length, float angle, Vec4 colour);
-void render_box(bool fill, float x, float y, float width, float height, Vec4 colour);
-void render_centered_box(bool fill, float x, float y, float width, float height, Vec4 colour);
-void render_point(Vec2 position, float size, Vec4 colour);
-void render_triangle(Vec4 colour, Vec2 point1, Vec2 point2, Vec2 point3);
-void render_polygon(Vec4 colour, Vec2 *verts, int num_verts);
+// you must also call one of these!
+void render_setup_centered(); // boxes/textures etc are rendered from centrepoint
+void render_setup_topleft(); // boxes/textures etc are rendered from top left
+
+// if rt->size or rt->sl/tl/sh/th are -1 then this function will use default values
+void _render_texture(Render_Texture *rt);
+
+// note that all render_string_* functions ignore render_setup_centered
+void _render_string(Vec2 position, const char *text, Vec4 colour = Vec4(1, 1, 1, 1), Font *font = nullptr, float wrap = -1.0f);
+void _render_string_format(Vec2 position, Vec4 colour, Font *font, float wrap, const char *text, ...);
+
+// if you don't want to think about colour/font/wrap the default values will be same as those in render_string
+void _render_string_format_lazy(Vec2 position, const char *text, ...);
+
+// renders string at the top of the screen underneath last debug string
+// usually used to print out debug info that changes every frame
+// won't draw if var renderer_draw_debug is false
+void _render_debug_string(const char *text, ...);
+
+void _render_line(Vec2 a, Vec2 b, Vec4 colour = Vec4(1, 1, 1, 1));
+void _render_line(float ax, float ay, float bx, float by, Vec4 colour = Vec4(1, 1, 1, 1));
+
+// render a line projected length units from a position 
+void _render_line(Vec2 start, float length, float angle, Vec4 colour = Vec4(1, 1, 1, 1));
+void _render_line(float x, float y, float length, float angle, Vec4 colour = Vec4(1, 1, 1, 1));
+
+void _render_box(Vec2 position, Vec2 size, bool fill = false, Vec4 colour = Vec4(1, 1, 1, 1));
+void _render_box(float x, float y, float w, float h, bool fill = false, Vec4 colour = Vec4(1, 1, 1, 1));
+
+void _render_point(Vec2 position, float size = 10.0f, Vec4 colour = Vec4(1, 1, 1, 1));
+void _render_point(float x, float y, float size = 10.0f, Vec4 colour = Vec4(1, 1, 1, 1));
+
+//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+//              when you wake up change rendering to use these new versions
+//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 #endif
