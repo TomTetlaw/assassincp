@@ -37,6 +37,7 @@ struct Game {
 
 extern Game game;
 
+void game_init();
 void game_update();
 void game_render();
 void game_toggle_paused();

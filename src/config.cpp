@@ -97,13 +97,14 @@ void register_var(const char *name, Vec4 *var, Config_Var_Callback callback) {
 }
 
 void config_shutdown() {
-	For(config.vars, {
+	For(config.vars) {
+		auto it = config.vars[it_index];
 		if (it->string_data) {
 			delete[] it->string_data;
 			delete[] it->print_string;
 		}
 		delete it;
-	});
+	}
 }
 
 internal void set_var_from_string(Config_Var *var, const char *string) {
@@ -185,7 +186,8 @@ void config_write_file(const char *filename) {
 		return;
 	}
 
-	For(config.vars, {
+	For(config.vars) {
+		auto it = config.vars[it_index];
 		switch (it->type) {
 		case VAR_FLOAT:
 			fprintf_s(file, "%s %f\n", it->name, *it->float_dest);
@@ -206,7 +208,7 @@ void config_write_file(const char *filename) {
 			fprintf_s(file, "%s (%f %f %f %f)\n", it->name, it->vec4_dest->x, it->vec4_dest->y, it->vec4_dest->z, it->vec4_dest->w);
 			break;
 		}
-	});
+	}
 
 	fclose(file);
 }

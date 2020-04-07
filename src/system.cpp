@@ -2,6 +2,10 @@
 
 System sys;
 
+internal void hotload_config_file(const char *filename, void *data) {
+	config_load(filename);
+}
+
 void system_init(int argc, char *argv[]) {
 	if (SDL_Init(SDL_INIT_EVERYTHING)) {
 		system_error("Failed to initialize SDL: %s", SDL_GetError());
@@ -65,9 +69,15 @@ void system_init(int argc, char *argv[]) {
 	render_init();
 	entity_init();
 	editor_init();
+	game_init();
+
+	config_load("data/config.txt");
+	hotload_add_file("data/config.txt", nullptr, hotload_config_file);
 }
 
 void system_quit() {
+	config_write_file("data/config.txt");
+
 	editor_shutdown();
 	entity_shutdown();
 	font_shutdown();

@@ -5,15 +5,19 @@ Render renderer;
 internal bool should_clear = true;
 internal Vec4 clear_colour;
 internal bool debug_draw = true;
-
 internal Font *default_font = nullptr;
 internal Vec2 debug_string_position;
-
 internal bool use_camera = true;
-
 internal bool use_zoom = true;
+internal char *default_font_file = "data/fonts/consolas.ttf";
+internal char **default_font_file_ptr = &default_font_file;
+internal int default_font_size = 16;
 
 internal void opengl_debug_callback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* userParam);
+
+internal void reload_default_font(Config_Var *var) {
+	default_font = load_font(*default_font_file_ptr, default_font_size);
+}
 
 void render_init() {
 	glewInit();
@@ -32,6 +36,8 @@ void render_init() {
 	register_var("renderer_clear_colour", &clear_colour);
 	register_var("renderer_should_clear", &should_clear);
 	register_var("renderer_draw_debug", &debug_draw);
+	register_var("default_font_file", default_font_file_ptr, reload_default_font);
+	register_var("default_font_size", &default_font_size, reload_default_font);
 
 	FILE *f = nullptr;
 	fopen_s(&f, "data/opengl.log", "w");
@@ -39,7 +45,7 @@ void render_init() {
 		fclose(f);
 	}
 
-	default_font = load_font("data/fonts/consolas.ttf", 16);
+	default_font = load_font(*default_font_file_ptr, default_font_size);
 	debug_string_position = Vec2(-sys.window_size.x, -sys.window_size.y);
 }
 

@@ -10,26 +10,29 @@ void delete_api_object_for_texture(Texture *texture) {
 }
 
 void texture_shutdown() {
-	For(textures, {
+	For(textures) {
+		auto it = textures[it_index];
 		delete_api_object_for_texture(it);
 		delete it;
-	});
+	}
 }
 
 void texture_begin_level_load() {
-	For(textures, {
+	For(textures) {
+		auto it = textures[it_index];
 		if (!it->never_unload) {
 			it->used = false;
 		}
-	});
+	}
 }
 
 void texture_end_level_load() {
-	For(textures, {
+	For(textures) {
+		auto it = textures[it_index];
 		if (!it->used && !it->never_unload) {
 			delete_api_object_for_texture(it);
 		}
-	});
+	}
 }
 
 internal bool load_texture_data(Texture *texture) {
@@ -151,7 +154,8 @@ Texture *load_texture(const char *filename) {
 		return nullptr;
 	}
 
-	For(textures, {
+	For(textures) {
+		auto it = textures[it_index];
 		if (!strcmp(it->filename, filename)) {
 			it->used = true;
 			if (!it->api_object) {
@@ -159,7 +163,7 @@ Texture *load_texture(const char *filename) {
 			}
 			return it;
 		}
-	});
+	}
 
 	Texture *texture = new Texture;
 	strcpy(texture->filename, filename);

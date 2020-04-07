@@ -69,12 +69,13 @@ void entity_on_level_load() {
 }
 
 void entity_render() {
-	For(entities, {
+	For(entities) {
+		auto it = entities[it_index];
 		if (it) {
 			render_texture(&it->rt);
 			it->render();
 		}
-	});
+	}
 }
 
 void entity_update(float dt) {
@@ -103,11 +104,12 @@ void entity_update(float dt) {
 		}
 	}
 
-	//For(entities, {
+	//For(entities) {
+	//	auto it = entities[it_index];
 	//	if(it && it->delete_me) {
 	//		delete_entity(it);
 	//	}
-	//});
+	//}
 }
 
 Entity *entity_get_entity_from_handle(Entity_Handle handle) {

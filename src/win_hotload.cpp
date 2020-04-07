@@ -5,15 +5,16 @@ internal Array<Hotloaded_File *> files;
 internal HANDLE dir_change_notification;
 
 void hotload_init() {
-	dir_change_notification = FindFirstChangeNotificationA("E:/stuff/code/game/build/data/", TRUE, FILE_NOTIFY_CHANGE_LAST_WRITE); //@IncompletePath
+	dir_change_notification = FindFirstChangeNotificationA("w:/build/data", TRUE, FILE_NOTIFY_CHANGE_LAST_WRITE); //@IncompletePath
 }
 
 void hotload_shutdown() {
 	FindCloseChangeNotification(dir_change_notification);
 
-	For(files, {
+	For(files) {
+		auto it = files[it_index];
 		delete it;
-	});
+	}
 }
 
 void hotload_add_file(const char *filename, void *data, Hotload_Callback callback) {
@@ -33,11 +34,14 @@ void hotload_add_file(const char *filename, void *data, Hotload_Callback callbac
 
 void hotload_check_files_non_blocking() {
 	if (WaitForSingleObject(dir_change_notification, 0) == WAIT_OBJECT_0) {
-		For(files, {
+		For(files) {
+			auto it = files[it_index];
 			HANDLE file_handle = CreateFileA(it->filename, GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 			if (file_handle == INVALID_HANDLE_VALUE) { // could fail if an editor program is still holding onto the file
 				continue;
 			} 
+
+			OutputDebugStringA("we got here.\n");
 
 			FILETIME file_time;
 			BOOL success = GetFileTime(file_handle, NULL, NULL, &file_time); // could fail if an editor program is still holding onto the file
@@ -55,10 +59,10 @@ void hotload_check_files_non_blocking() {
 					it->last_write_high = file_time.dwHighDateTime;
 					it->callback(it->filename, it->data);
 					break;
-				} 
+				}
 
 				FindNextChangeNotification(dir_change_notification);
 			}
-		});
+		}
 	}
 }

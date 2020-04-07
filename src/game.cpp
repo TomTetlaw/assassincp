@@ -1,6 +1,6 @@
 #include "precompiled.h"
-Game game;
 
+Game game;
 
 internal float real_time = 0.0f;
 internal float last_time = 0.0f;
@@ -8,6 +8,40 @@ internal float real_delta_time = 0.0f;
 internal bool paused = false;
 internal float time_paused = 0.0f;
 internal float total_time_paused = 0.0f;
+internal int nav_grid_width = 2000;
+internal int nav_grid_height = 2000;
+
+internal bool check_nav_point(Vec2 point) {
+	return false;
+}
+
+internal void generate_nav_points() {
+	int grid_size = game.current_level->nav_points_size;
+	int num_x = nav_grid_width / grid_size;
+	int num_y = nav_grid_height / grid_size;
+	game.current_level->nav_points_width = num_x * 2;
+	game.current_level->nav_points_height = num_y * 2;
+	for (int y = -num_y; y < num_y; y++) {
+		for (int x = -num_x; x < num_x; x++) {
+			Vec2 p = Vec2(x * grid_size, y * grid_size);
+			Nav_Mesh_Point point;
+			point.point = p;
+			point.valid = check_nav_point(p);
+			point.grid_index = game.current_level->nav_points.num;
+			game.current_level->nav_points.append(point);
+		}
+	}
+}
+
+internal void regen_nav_points(Config_Var *var) {
+	game.current_level->nav_points.num = 0;
+	generate_nav_points();
+}
+
+void game_init() {
+	register_var("nav_grid_width", &nav_grid_width, regen_nav_points);
+	register_var("nav_grid_height", &nav_grid_height, regen_nav_points);
+}
 
 void game_update() {
 	float temp = last_time;
@@ -127,11 +161,12 @@ void game_render() {
 	glPointSize(10.0f);
 	glColor4f(1, 1, 1, 0.1f);
 	glBegin(GL_POINTS);
-	For(game.current_level->nav_points, {
+	For(game.current_level->nav_points) {
+		auto it = game.current_level->nav_points[it_index];
 		if (it.valid) {
 			glVertex2f(it.point.x, it.point.y);
 		}
-	});
+	}
 	glEnd();
 
 	glPopMatrix();
@@ -157,9 +192,6 @@ public:
 	Array<Vec2> verts;
 
 	void render() {
-		For(verts, {
-			
-		});
 	}
 };
 
@@ -176,28 +208,6 @@ void on_level_load() {
 	editor_on_level_load();
 	delete game.current_level;
 	game.current_level = nullptr;
-}
-
-internal bool check_nav_point(Vec2 point) {
-	return false;
-}
-
-internal void generate_nav_points() {
-	int grid_size = game.current_level->nav_points_size;
-	int num_x = 2000 / grid_size;
-	int num_y = 2000 / grid_size;
-	game.current_level->nav_points_width = num_x * 2;
-	game.current_level->nav_points_height = num_y * 2;
-	for (int y = -num_y; y < num_y; y++) {
-		for (int x = -num_x; x < num_x; x++) {
-			Vec2 p = Vec2(x * grid_size, y * grid_size);
-			Nav_Mesh_Point point;
-			point.point = p;
-			point.valid = check_nav_point(p);
-			point.grid_index = game.current_level->nav_points.num;
-			game.current_level->nav_points.append(point);
-		}
-	}
 }
 
 internal void process_level() {
@@ -220,7 +230,7 @@ internal void process_level() {
 		spawn_entity(player);
 
 		input.player = player;
-		player = player;
+		game.player = player;
 
 		delete_entity(player_start);
 	}
@@ -282,9 +292,10 @@ void load_level(const char *file_name) {
 			polygon.read_save(&file);
 
 			Poly *poly = (Poly *)create_entity("info_polygon", nullptr, false, false);
-			For(polygon.points, {
+			For(polygon.points) {
+				auto it = polygon.points[it_index];
 				poly->verts.append(it->position);
-			});
+			}
 			spawn_entity(poly);
 		}
 	}

@@ -1,14 +1,7 @@
 #include "precompiled.h"
 
-void hotload_config_file(const char *filename, void *data) {
-	config_load(filename);
-}
-
 int main(int argc, char *argv[]) {
 	system_init(argc, argv);
-
-	config_load("data/config.txt");
-	hotload_add_file("data/config.txt", nullptr, hotload_config_file);
 
 	float last_time = 0.0f;
 

@@ -93,6 +93,6 @@ int Array<T>::find_index(const T &val) {
 	return -1;
 }
 
-#define For(x, code) { if(x.num > 0) { auto it = x.first(); for (int it_index = 0; it_index < x.num; it_index++, it = x[it_index]) code } }
+#define For(x) for(int it_index = 0; it_index < x.num; it_index++)
 
 #endif

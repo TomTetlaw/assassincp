@@ -1,4 +1,5 @@
 renderer_clear_colour (0.000000 0.000000 0.000000 0.000000)
 renderer_should_clear true
 renderer_draw_debug false
-gravity (0 100)     
+nav_grid_width 2000
+nav_grid_height 2000
