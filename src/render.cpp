@@ -2,9 +2,20 @@
 
 Render renderer;
 
-void opengl_debug_callback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* userParam);
+internal bool should_clear = true;
+internal Vec4 clear_colour;
+internal bool debug_draw = true;
 
-void Render::init() {
+internal Font *default_font = nullptr;
+internal Vec2 debug_string_position;
+
+internal bool use_camera = true;
+
+internal bool use_zoom = true;
+
+internal void opengl_debug_callback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* userParam);
+
+void render_init() {
 	glewInit();
 
 	glEnable(GL_BLEND); 
@@ -18,9 +29,9 @@ void Render::init() {
     glDebugMessageCallback((GLDEBUGPROC)opengl_debug_callback, nullptr);
     glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_TRUE);
 
-	config.register_var("renderer_clear_colour", &clear_colour);
-	config.register_var("renderer_should_clear", &should_clear);
-	config.register_var("renderer_draw_debug", &debug_draw);
+	register_var("renderer_clear_colour", &clear_colour);
+	register_var("renderer_should_clear", &should_clear);
+	register_var("renderer_draw_debug", &debug_draw);
 
 	FILE *f = nullptr;
 	fopen_s(&f, "data/opengl.log", "w");
@@ -28,91 +39,95 @@ void Render::init() {
 		fclose(f);
 	}
 
-	default_font = font_manager.load("data/fonts/consolas.ttf", 16);
+	default_font = load_font("data/fonts/consolas.ttf", 16);
 	debug_string_position = Vec2(-sys.window_size.x, -sys.window_size.y);
 }
 
-void Render::render_physics_debug() {
-	if (!debug_draw) {
-		return;
-	}
+void render_shutdown() {
 }
 
-void Render::shutdown() {
+void render_on_level_load() {
+	renderer.camera_position = Vec2(0, 0);
+	renderer.zoom_level = 0;
 }
 
-void Render::on_level_load() {
-	camera_position = Vec2(0, 0);
-	zoom_level = 0;
-}
-
-void Render::begin_frame() {
+void render_begin_frame() {
 	if(should_clear) {
-		glClearColor(clear_colour.x, clear_colour.y, clear_colour.z, clear_colour.w);
+		glClearColor(v4parms(clear_colour));
 		glClear(GL_COLOR_BUFFER_BIT);
 	}
 
 	glClear(GL_DEPTH_BUFFER_BIT);
 
+	debug_string_position = Vec2(-(sys.window_size.x / 2) + 10, -(sys.window_size.y / 2) + (float)default_font->line_skip);
+}
+
+void render_setup_render_world() {
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
 	float hw = sys.window_size.x / 2;
 	float hh = sys.window_size.y / 2;
 	glOrtho(-hw, hw, hh, -hh, 0.0, 1.0);
-
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
-
-	debug_string_position = Vec2(-(sys.window_size.x / 2) + 10, -(sys.window_size.y / 2) + (float)default_font->line_skip);
 }
 
-void Render::end_frame() {
+void render_setup_render_ui() {
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+	glOrtho(0, sys.window_size.x, 0, sys.window_size.y, 0.0, 1.0);
+	glMatrixMode(GL_MODELVIEW);
+	glLoadIdentity();	
+}
+
+void render_end_frame() {
 	SDL_GL_SwapWindow(sys.window);
 }
 
-void Render::update(float dt) {
-}
-
-float Render::scale_for_zoom_level(int level) {
+float render_scale_for_zoom_level() {
 	float scale = 0.0f;
-	if (level == 0) {
+	if (renderer.zoom_level == 0) {
 		scale = 1.0f;
 	}
-	else if (level < 0) {
-		scale = 1.0f / (((level * 0.125f)*-1) + 1);
+	else if (renderer.zoom_level < 0) {
+		scale = 1.0f / (((renderer.zoom_level * 0.125f)*-1) + 1);
 	}
-	else if (level > 0) {
-		scale = (level * 0.25f) + 1;
+	else if (renderer.zoom_level > 0) {
+		scale = (renderer.zoom_level * 0.25f) + 1;
 	}
 	return scale;
 }
 
-float Render::inverse_scale_for_zoom_level(int level) {
+float render_inverse_scale_for_zoom_level() {
 	float scale = 0.0f;
-	if (level == 0) {
+	if (renderer.zoom_level == 0) {
 		scale = 1.0f;
 	}
-	else if (level < 0) {
-		scale = ((level * 0.125f) * -1) + 1;
+	else if (renderer.zoom_level < 0) {
+		scale = ((renderer.zoom_level * 0.125f) * -1) + 1;
 	}
-	else if (level > 0) {
-		scale = 1.0f / ((level * 0.25f) + 1);
+	else if (renderer.zoom_level > 0) {
+		scale = 1.0f / ((renderer.zoom_level * 0.25f) + 1);
 	}
 	return scale;
 }
 
-void Render::setup_render() {
+Vec2 render_to_world_pos(Vec2 a) {
+	return (a + renderer.camera_position) * render_inverse_scale_for_zoom_level();
+}
+
+internal void setup_render() {
 	if (use_camera) {
-		glTranslatef(-camera_position.x, -camera_position.y, 0);
+		glTranslatef(-renderer.camera_position.x, -renderer.camera_position.y, 0);
 	}
 
 	if (use_zoom) {
-		float scale = scale_for_zoom_level(zoom_level);
+		float scale = render_scale_for_zoom_level();
 		glScalef(scale, scale, 1);
 	}
 }
 
-void Render::texture(Render_Texture *rt) {
+void render_texture(Render_Texture *rt) {
 	if (!rt->texture) {
 		return;
 	}
@@ -148,7 +163,7 @@ void Render::texture(Render_Texture *rt) {
 	if (tl == -1) { tl = 0; }
 	if (th == -1) { th = 1; }
 
-	glColor4f(V4PARMS(rt->colour));
+	glColor4f(v4parms(rt->colour));
 
 	glEnable(GL_TEXTURE_2D);
 	glBindTexture(GL_TEXTURE_2D, rt->texture->api_object);
@@ -156,8 +171,6 @@ void Render::texture(Render_Texture *rt) {
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 	glPushMatrix();
-
-	setup_render();
 
 	glTranslatef(x, y, 0);
 	glRotatef(rad2deg(rt->angle), 0, 0, 1);
@@ -202,7 +215,7 @@ void Render::texture(Render_Texture *rt) {
 	glDisable(GL_TEXTURE_2D);
 }
 
-void Render::debug_string(const char *text, ...) {
+void render_debug_string(const char *text, ...) {
 	va_list argptr;
 	char message[1024]; //@fixme unsafe
 
@@ -214,11 +227,11 @@ void Render::debug_string(const char *text, ...) {
 	vsnprintf_s(message, 1024, text, argptr);
 	va_end(argptr);
 
-	string(nullptr, debug_string_position, Vec4(1,1,1,1), -1, message);
+	render_string(nullptr, debug_string_position, Vec4(1,1,1,1), -1, message);
 	debug_string_position.y += (float)default_font->line_skip;
 }
 
-void Render::string_format(Font *font, Vec2 position, Vec4 colour, float wrap, const char *text, ...) {
+void render_string_format(Font *font, Vec2 position, Vec4 colour, float wrap, const char *text, ...) {
 	va_list argptr;
 	char message[1024]; //@fixme unsafe
 
@@ -226,10 +239,10 @@ void Render::string_format(Font *font, Vec2 position, Vec4 colour, float wrap, c
 	vsnprintf_s(message, 1024, text, argptr);
 	va_end(argptr);
 
-	string(font, position, colour, wrap, message);
+	render_string(font, position, colour, wrap, message);
 }
 
-void Render::string(Font *font, Vec2 position, Vec4 colour, float wrap, const char *text) {
+void render_string(Font *font, Vec2 position, Vec4 colour, float wrap, const char *text) {
 	if (!font) {
 		font = default_font;
 	}
@@ -249,98 +262,61 @@ void Render::string(Font *font, Vec2 position, Vec4 colour, float wrap, const ch
 			rt.texture = font->glyphs[(int)text[i]].texture;
 			rt.position = position;
 			rt.colour = colour;
-			texture(&rt);
+			render_texture(&rt);
 
 			position.x += font->glyphs[(int)text[i]].advance;
 		}
 	}
 }
 
-void Render::line(Vec2 a, Vec2 b, Vec4 colour) {
-	glMatrixMode(GL_MODELVIEW);
-	glPushMatrix();
-	glLoadIdentity();
-
-	setup_render();
-
-	glColor4f(V4PARMS(colour));
+void render_line(Vec2 a, Vec2 b, Vec4 colour) {
+	glColor4f(v4parms(colour));
 	glBegin(GL_LINES);
 	glVertex2f(a.x, a.y);
 	glVertex2f(b.x, b.y);
 	glEnd();
-
-	glPopMatrix();
 }
 
-void Render::line(Vec2 position, float length, float angle, Vec4 colour) {
+void render_line(Vec2 position, float length, float angle, Vec4 colour) {
 	Vec2 b;
-
 	b.x = position.x + (length * cos(angle));
 	b.y = position.y + (length * -sin(angle));
-
-	line(position, b, colour);
+	render_line(position, b, colour);
 }
 
-void Render::point(Vec2 position, float size, Vec4 colour) {
-	glMatrixMode(GL_MODELVIEW);
-	glPushMatrix();
-	glLoadIdentity();
-
-	setup_render();
-
-	glColor4f(V4PARMS(colour));
-
+void render_point(Vec2 position, float size, Vec4 colour) {
+	glColor4f(v4parms(colour));
 	glPointSize(size);
 	glBegin(GL_POINTS);
 	glVertex2f(position.x, position.y);
 	glEnd();
 	glPointSize(1);
-
 	glPopMatrix();
 }
 
-void Render::triangle(Vec4 colour, Vec2 point1, Vec2 point2, Vec2 point3) {
-	glMatrixMode(GL_MODELVIEW);
-	glPushMatrix();
-	glLoadIdentity();
-
-	setup_render();
-
-	glColor4f(V4PARMS(colour));
-
+void render_triangle(Vec4 colour, Vec2 point1, Vec2 point2, Vec2 point3) {
+	glColor4f(v4parms(colour));
 	glBegin(GL_TRIANGLES);
 	glVertex2f(point1.x, point1.y);
 	glVertex2f(point2.x, point2.y);
 	glVertex2f(point3.x, point3.y);
 	glEnd();
-
-	glPopMatrix();
 }
 
-void Render::polygon(Vec4 colour, Vec2 *verts, int num_verts) {
-	glMatrixMode(GL_MODELVIEW);
-	glPushMatrix();
-	glLoadIdentity();
-
-	setup_render();
-
-	glColor4f(V4PARMS(colour));
+void render_polygon(Vec4 colour, Vec2 *verts, int num_verts) {
+	glColor4f(v4parms(colour));
 
 	glBegin(GL_TRIANGLES);
 	for (int i = 0; i < num_verts; i++) {
 		glVertex2f(verts[i].x, verts[i].y);
 	}
 	glEnd();
-
-	glPopMatrix();
 }
 
-void Render::box(bool fill, float x, float y, float width, float height, Vec4 colour) {
+void render_box(bool fill, float x, float y, float width, float height, Vec4 colour) {
 	glMatrixMode(GL_MODELVIEW);
 	glPushMatrix();
 	glLoadIdentity();
-
-	setup_render();
 
 	if (fill) {
 		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
@@ -349,7 +325,7 @@ void Render::box(bool fill, float x, float y, float width, float height, Vec4 co
 		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 	}
 
-	glColor4f(V4PARMS(colour));
+	glColor4f(v4parms(colour));
 	glBegin(GL_QUADS);
 	glVertex2f(x, y);
 	glVertex2f(x, y + height);
@@ -362,19 +338,14 @@ void Render::box(bool fill, float x, float y, float width, float height, Vec4 co
 	glPopMatrix();
 }
 
-void Render::centered_box(bool fill, float x, float y, float width, float height, Vec4 colour) {
+void render_centered_box(bool fill, float x, float y, float width, float height, Vec4 colour) {
 	float hw = width / 2;
 	float hh = height / 2;
 	x = x - hw;
 	y = y - hh;
 	width += hw;
 	height += hh;
-	box(fill, x, y, width, height, colour);
-}
-
-Vec2 Render::get_string_size(const char *s) {
-	return Vec2(font_manager.get_string_length_in_pixels(default_font, s),
-		default_font->height);
+	render_box(fill, x, y, width, height, colour);
 }
 
 void opengl_debug_output_to_file(unsigned int source, unsigned int type, unsigned int id, unsigned int severity, const char* message, bool should_print) {
@@ -449,7 +420,7 @@ void opengl_debug_output_to_file(unsigned int source, unsigned int type, unsigne
 
 void opengl_debug_callback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* userParam) {
 	if(id == 131185) {
-		return;
+	//	return;
 	}
 
     opengl_debug_output_to_file(source, type, id, severity, message, severity == GL_DEBUG_SEVERITY_MEDIUM_ARB || severity == GL_DEBUG_SEVERITY_HIGH_ARB);

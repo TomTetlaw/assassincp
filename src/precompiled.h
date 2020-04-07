@@ -2,6 +2,7 @@
 #define __PRECOMPILED_H__
 
 #define _CRT_SECURE_NO_WARNINGS
+#define _MBCS
 
 #include <stdarg.h>
 #include <stdio.h>
@@ -30,6 +31,8 @@
 #endif
 
 #define break_point(x) { *(int *)0 = 0; }
+
+#define internal static
 
 #include "mathlib.h"
 #include "common.h"

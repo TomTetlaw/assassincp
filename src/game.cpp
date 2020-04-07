@@ -1,28 +1,30 @@
 #include "precompiled.h"
 Game game;
 
-void Game::init() {
-}
 
-void Game::shutdown() {
-}
+internal float real_time = 0.0f;
+internal float last_time = 0.0f;
+internal float real_delta_time = 0.0f;
+internal bool paused = false;
+internal float time_paused = 0.0f;
+internal float total_time_paused = 0.0f;
 
-void Game::update() {
-	float temp = game.last_time;
-	game.last_time = SDL_GetTicks() / 1000.0f;
+void game_update() {
+	float temp = last_time;
+	last_time = SDL_GetTicks() / 1000.0f;
 
-	if (!game.paused) {
-		game.game_time = game.real_time - game.total_time_paused;
+	if (!paused) {
+		game.game_time = real_time - total_time_paused;
 	}
 
-	game.real_delta_time = game.last_time - temp;
-	game.real_time += game.delta_time;
+	real_delta_time = last_time - temp;
+	real_time += game.delta_time;
 
-	if (game.paused) {
+	if (paused) {
 		game.delta_time = 0;
 	}
 	else {
-		game.delta_time = game.real_delta_time;
+		game.delta_time = real_delta_time;
 	}
 }
 
@@ -114,18 +116,18 @@ bool make_path(Nav_Path *path, Vec2 from, Vec2 to) {
 	return true;
 }
 
-void Game::render() {
-	if (!current_level) return;
+void game_render() {
+	if (!game.current_level) return;
 
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 	glPushMatrix();
-	renderer.setup_render();
 
+	render_setup_render_world();
 	glPointSize(10.0f);
 	glColor4f(1, 1, 1, 0.1f);
 	glBegin(GL_POINTS);
-	For(current_level->nav_points, {
+	For(game.current_level->nav_points, {
 		if (it.valid) {
 			glVertex2f(it.point.x, it.point.y);
 		}
@@ -135,18 +137,18 @@ void Game::render() {
 	glPopMatrix();
 }
 
-void Game::toggle_paused() {
-	Game::set_paused(!game.paused);
+void game_toggle_paused() {
+	game_set_paused(!paused);
 }
 
-void Game::set_paused(bool paused) {
-	game.paused = paused;
+void game_set_paused(bool paused) {
+	paused = paused;
 
-	if (game.paused) {
-		game.total_time_paused += game.real_time - game.time_paused;
+	if (paused) {
+		total_time_paused += real_time - time_paused;
 	}
 	else {
-		game.time_paused = game.real_time;
+		time_paused = real_time;
 	}
 }
 
@@ -156,7 +158,7 @@ public:
 
 	void render() {
 		For(verts, {
-		
+			
 		});
 	}
 };
@@ -168,85 +170,19 @@ class Poly_Point : public Entity {
 
 declare_entity_type(Poly_Point, "info_poly_point", ENTITY_INFO_POLYGON_POINT);
 
-void Game::on_level_load() {
-	renderer.on_level_load();
-	entity_manager.on_level_load();
-	editor.on_level_load();
-	delete current_level;
-	current_level = nullptr;
+void on_level_load() {
+	render_on_level_load();
+	entity_on_level_load();
+	editor_on_level_load();
+	delete game.current_level;
+	game.current_level = nullptr;
 }
 
-void process_level();
-
-void Game::load_level(const char *file_name) {
-	current_level = new Level;
-
-	Vec2 p[] = {
-		Vec2(-10000, -10000),
-		Vec2(-10000, 10000),
-		Vec2(10000, -10000),
-		Vec2(10000, 10000)
-	};
-
-	for (int i = 0; i < 4; i++) {
-		current_level->fov_check_points.append(p[i]);
-	}
-
-	Save_File file;
-	if (!save_open_read(file_name, &file)) {
-		console.printf("Failed to open map file for reading from game: %d", errno);
-		return;
-	}
-
-	int version = 0;
-	save_read_int(&file, &version);
-	if (version != map_file_version) {
-		console.printf("Attempting to open map file with old version from game (wanted %d, got %d): %s\n", map_file_version, version, file_name);
-		save_close(&file);
-		return;
-	}
-
-	int num = 0;
-	save_read_int(&file, &num);
-	for (int i = 0; i < num; i++) {
-		int type = 0;
-		save_read_int(&file, &type);
-		if (type == EDITOR_ENTITY_ENTITY) {
-			Editor_Entity entity;
-			entity.read_save(&file);
-
-			Entity *ent = entity_manager.create_entity(entity.type_name, entity.name, false, false);
-			if (ent) {
-				ent->position = entity.position;
-				ent->size = entity.size;
-				ent->rt.scale = entity.scale;
-				ent->set_texture(entity.texture_name, false);
-				ent->colour = entity.colour;
-				entity_manager.spawn_entity(ent);
-			}
-		}
-		else if (type == EDITOR_ENTITY_POLYGON) {
-			Editor_Polygon polygon;
-			polygon.read_save(&file);
-
-			Poly *poly = (Poly *)entity_manager.create_entity("info_polygon", nullptr, false, false);
-			For(polygon.points, {
-				poly->verts.append(it->position);
-			});
-			entity_manager.spawn_entity(poly);
-		}
-	}
-
-	save_close(&file);
-
-	process_level();
-}
-
-bool check_nav_point(Vec2 point) {
+internal bool check_nav_point(Vec2 point) {
 	return false;
 }
 
-void generate_nav_points() {
+internal void generate_nav_points() {
 	int grid_size = game.current_level->nav_points_size;
 	int num_x = 2000 / grid_size;
 	int num_y = 2000 / grid_size;
@@ -259,36 +195,103 @@ void generate_nav_points() {
 			point.point = p;
 			point.valid = check_nav_point(p);
 			point.grid_index = game.current_level->nav_points.num;
-
 			game.current_level->nav_points.append(point);
 		}
 	}
 }
 
-void process_level() {
+internal void process_level() {
 	bool has_one_player_start = true;
 	Entity *player_start = nullptr;
 
 	if (entity_manager.entity_types[ENTITY_INFO_PLAYER_START]->entities.num == 0) {
-		console.printf("Warning: no info_player_start found!\n");
+		console_printf("Warning: no info_player_start found!\n");
 		has_one_player_start = false;
 	}
 	if (entity_manager.entity_types[ENTITY_INFO_PLAYER_START]->entities.num > 1) {
-		console.printf("Warning: more than one info_player_start found!\n");
+		console_printf("Warning: more than one info_player_start found!\n");
 	}
 
 	if (has_one_player_start) {
 		player_start = entity_manager.entity_types[ENTITY_INFO_PLAYER_START]->entities[0];
 
-		Entity *player = entity_manager.create_entity("ent_player", nullptr, false, false);
+		Entity *player = create_entity("ent_player", nullptr, false, false);
 		player->position = player_start->position;
-		entity_manager.spawn_entity(player);
+		spawn_entity(player);
 
 		input.player = player;
-		game.player = player;
+		player = player;
 
-		entity_manager.delete_entity(player_start);
+		delete_entity(player_start);
 	}
 
 	generate_nav_points();
+}
+
+void load_level(const char *file_name) {
+	game.current_level = new Level;
+
+	Vec2 p[] = {
+		Vec2(-10000, -10000),
+		Vec2(-10000, 10000),
+		Vec2(10000, -10000),
+		Vec2(10000, 10000)
+	};
+
+	for (int i = 0; i < 4; i++) {
+		game.current_level->fov_check_points.append(p[i]);
+	}
+
+	Save_File file;
+	if (!save_open_read(file_name, &file)) {
+		console_printf("Failed to open map file for reading from game: %d", errno);
+		return;
+	}
+
+	int version = 0;
+	save_read_int(&file, &version);
+	if (version != map_file_version) {
+		console_printf("Attempting to open map file with old version from game (wanted %d, got %d): %s\n", map_file_version, version, file_name);
+		save_close(&file);
+		return;
+	}
+
+	texture_begin_level_load();
+
+	int num = 0;
+	save_read_int(&file, &num);
+	for (int i = 0; i < num; i++) {
+		int type = 0;
+		save_read_int(&file, &type);
+		if (type == EDITOR_ENTITY_ENTITY) {
+			Editor_Entity entity;
+			entity.read_save(&file);
+
+			Entity *ent = create_entity(entity.type_name, entity.name, false, false);
+			if (ent) {
+				ent->position = entity.position;
+				ent->size = entity.size;
+				ent->rt.scale = entity.scale;
+				ent->set_texture(entity.texture_name, false);
+				ent->colour = entity.colour;
+				spawn_entity(ent);
+			}
+		}
+		else if (type == EDITOR_ENTITY_POLYGON) {
+			Editor_Polygon polygon;
+			polygon.read_save(&file);
+
+			Poly *poly = (Poly *)create_entity("info_polygon", nullptr, false, false);
+			For(polygon.points, {
+				poly->verts.append(it->position);
+			});
+			spawn_entity(poly);
+		}
+	}
+
+	save_close(&file);
+
+	texture_end_level_load();
+
+	process_level();
 }

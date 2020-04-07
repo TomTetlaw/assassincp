@@ -4,6 +4,9 @@ declare_entity_type(Entity, "ent_base", ENTITY_BASE);
 
 Entity_Manager entity_manager;
 
+internal Array<Entity *> entities;
+internal int next_parity = 0;
+
 #pragma init_seg(lib) 
 Entity_Type_Decl *Entity_Type_Decl::list = nullptr;
 int Entity_Type_Decl::list_num = 0;
@@ -27,7 +30,7 @@ void Entity::update_render_texture() {
 }
 
 void Entity::set_texture(const char *filename, bool set_size) {
-	texture = tex.load(filename);
+	texture = load_texture(filename);
 
 	if (set_size) {
 		if (texture) {
@@ -41,7 +44,7 @@ void Entity::set_texture(const char *filename, bool set_size) {
 	}
 }
 
-void Entity_Manager::init() {
+void entity_init() {
 	entity_manager.entity_types.ensure_size(Entity_Type_Decl::list_num);
 	entity_manager.entity_types.num = Entity_Type_Decl::list_num;
 
@@ -52,33 +55,31 @@ void Entity_Manager::init() {
 	}
 }
 
-void Entity_Manager::shutdown() {
-	for (int i = 0; i < entity_manager.entities.num; i++) {
-		if (entity_manager.entities[i]) {
-			entity_manager.entities[i]->shutdown();
+void entity_shutdown() {
+	for (int i = 0; i < entities.num; i++) {
+		if (entities[i]) {
+			entities[i]->shutdown();
 		}
-		delete entity_manager.entities[i];
+		delete entities[i];
 	}
 }
 
-void Entity_Manager::on_level_load() {
-	entity_manager.delete_all_entities();
+void entity_on_level_load() {
+	entity_delete_all_entities();
 }
 
-void Entity_Manager::render() {
-	renderer.use_camera = true;
-	
+void entity_render() {
 	For(entities, {
 		if (it) {
-			renderer.texture(&it->rt);
+			render_texture(&it->rt);
 			it->render();
 		}
 	});
 }
 
-void Entity_Manager::update(float dt) {
-	for (int i = 0; i < entity_manager.entities.num; i++) {
-		Entity *entity = entity_manager.entities[i];
+void entity_update(float dt) {
+	for (int i = 0; i < entities.num; i++) {
+		Entity *entity = entities[i];
 		if (!entity) {
 			continue;
 		}
@@ -87,8 +88,8 @@ void Entity_Manager::update(float dt) {
 		entity->position = entity->position + (entity->velocity * dt);
 	}
 
-	for (int i = 0; i < entity_manager.entities.num; i++) {
-		Entity *entity = entity_manager.entities[i];
+	for (int i = 0; i < entities.num; i++) {
+		Entity *entity = entities[i];
 		if (!entity) {
 			continue;
 		}
@@ -109,15 +110,15 @@ void Entity_Manager::update(float dt) {
 	//});
 }
 
-Entity *Entity_Manager::get_entity_from_handle(Entity_Handle handle) {
-	if (handle.num < 0 || handle.num >= entity_manager.entities.num) {
+Entity *entity_get_entity_from_handle(Entity_Handle handle) {
+	if (handle.num < 0 || handle.num >= entities.num) {
 		return nullptr;
 	}
 	if (handle.parity < 0) {
 		return nullptr;
 	}
 
-	Entity *entity = entity_manager.entities[handle.num];
+	Entity *entity = entities[handle.num];
 	if (!entity) {
 		return nullptr;
 	}
@@ -129,22 +130,26 @@ Entity *Entity_Manager::get_entity_from_handle(Entity_Handle handle) {
 	return nullptr;
 }
 
-void Entity_Manager::add_entity(Entity *entity) {
+void add_entity(Entity *entity) {
+	if(entity->handle.parity != -1) {
+		return;
+	}
+
 	bool added = false;
 
-	for (int i = 0; i < entity_manager.entities.num; i++) {
-		if (!entity_manager.entities[i]) {
-			entity_manager.entities[i] = entity;
+	for (int i = 0; i < entities.num; i++) {
+		if (!entities[i]) {
+			entities[i] = entity;
 			entity->handle.num = i;
 			added = true;
 		}
 	}
 
-	entity->handle.parity = entity_manager.next_parity++;
+	entity->handle.parity = next_parity++;
 
 	if (!added) {
-		entity->handle.num = entity_manager.entities.num;
-		entity_manager.entities.append(entity);
+		entity->handle.num = entities.num;
+		entities.append(entity);
 	}
 
 	added = false;
@@ -163,15 +168,15 @@ void Entity_Manager::add_entity(Entity *entity) {
 	}
 }
 
-void Entity_Manager::spawn_entity(Entity *entity) {
+void spawn_entity(Entity *entity) {
 	if (entity->handle.parity == -1) {
-		entity_manager.add_entity(entity);
+		add_entity(entity);
 	}
 
 	entity->spawn();
 }
 
-Entity *Entity_Manager::create_entity(const char *type_name, const char *name, bool spawn, bool add) {
+Entity *create_entity(const char *type_name, const char *name, bool spawn, bool add) {
 	if (!type_name) {
 		return nullptr;
 	}
@@ -202,15 +207,15 @@ Entity *Entity_Manager::create_entity(const char *type_name, const char *name, b
 	return nullptr;
 }
 
-void Entity_Manager::delete_entity(Entity *entity) {
+void delete_entity(Entity *entity) {
 	if (!entity) {
 		return;
 	}
-	if (entity->handle.num < 0 || entity->handle.num >= entity_manager.entities.num) {
+	if (entity->handle.num < 0 || entity->handle.num >= entities.num) {
 		return;
 	}
 
-	entity_manager.entities[entity->handle.num] = nullptr;
+	entities[entity->handle.num] = nullptr;
 	entity_manager.entity_types[entity->classify]->entities[entity->num_in_type] = nullptr;
 
 	entity->shutdown();
@@ -218,11 +223,11 @@ void Entity_Manager::delete_entity(Entity *entity) {
 	delete entity;
 }
 
-void Entity_Manager::delete_all_entities() {
-	for (int i = 0; i < entity_manager.entities.num; i++) {
-		entity_manager.delete_entity(entity_manager.entities[i]);
+void entity_delete_all_entities() {
+	for (int i = 0; i < entities.num; i++) {
+		delete_entity(entities[i]);
 	}
-	entity_manager.entities.num = 0;
+	entities.num = 0;
 	for (int i = 0; i < entity_manager.entity_types.num; i++) {
 		Entity_Type_Decl *decl = entity_manager.entity_types[i];
 		for (int j = 0; j < decl->entities.num; j++) {

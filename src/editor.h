@@ -81,59 +81,22 @@ public:
 
 constexpr int map_file_version = 3;
 
-struct Editor {
-	bool left_button_down = false;
-	bool middle_button_down = false;
-	bool shift_down = false;
+void editor_init();
+void editor_shutdown();
+void editor_render();
+void editor_update();
 
-	bool dragging_entity = false;
+bool editor_gui_handle_event(SDL_Event *ev);
 
-	float edit_window_top = 0.0f;
-	float edit_window_left = 0.0f;
-	float edit_window_bottom = 0.0f;
-	float edit_window_right = 0.0f;
+void editor_handle_mouse_press(int mouse_button, bool down, Vec2 position, bool is_double_click);
+void editor_handle_mouse_move(int relx, int rely);
+void editor_handle_key_press(SDL_Scancode scancode, bool down, int mods);
+void editor_handle_mouse_wheel(int amount);
 
-	bool drag_select = false;
-	Vec2 drag_start_point;
-	Vec2 drag_size;
+void editor_save(const char *file_name);
+void editor_load_map_into_editor(const char *file_name);
 
-	Editor_Polygon *currently_editing_polygon = nullptr;
-	bool find_polygon_point_at(Vec2 position, Editor_Polygon **poly_out, int *point_index);
-
-	Editor_Mode mode = EDITOR_SELECT;
-
-	Array<Editor_Entity *> entities;
-	Array<Editor_Entity *> selected_entities;
-
-	Array<int> selected_polygon_points; // indices into selected_entities[0].points
-
-	Array<const char *> entity_type_names; // create on init because no new types after startup
-
-	struct nk_context *context = nullptr;
-
-	void init();
-	void shutdown();
-	void render();
-	void update();
-
-	void add_entity(Editor_Entity *entity);
-	void delete_entity(Editor_Entity *entity);
-	void clear_selected_entities();
-
-	bool gui_handle_event(SDL_Event *ev);
-
-	void handle_mouse_press(int mouse_button, bool down, Vec2 position, bool is_double_click);
-	void handle_mouse_move(int relx, int rely);
-	void handle_key_press(SDL_Scancode scancode, bool down, int mods);
-	void handle_mouse_wheel(int amount);
-
-	void save(const char *file_name);
-	void load_map_into_editor(const char *file_name);
-
-	void on_level_load(); // called when we switch from editor to game so we can clear everything
-	void remove_all();
-};
-
-extern Editor editor;
+void editor_on_level_load(); // called when we switch from editor to game so we can clear everything
+void editor_remove_all();
 
 #endif

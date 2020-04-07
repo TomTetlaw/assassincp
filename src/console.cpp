@@ -1,8 +1,6 @@
 #include "precompiled.h"
 
-Console console;
-
-void Console::init() {
+void console_init() {
 	FILE *log = nullptr;
 	fopen_s(&log, "data/console.log", "w");
 	if (log) {
@@ -10,7 +8,17 @@ void Console::init() {
 	}
 }
 
-void Console::printf(const char *text, ...) {
+void console_print(const char *text) {
+	puts(text);
+
+	FILE *log = nullptr;
+	fopen_s(&log, "data/console.log", "a");
+	if (log) {
+		fputs(text, log);
+		fclose(log);
+	}
+}
+void console_printf(const char *text, ...) {
 	va_list argptr;
 	char message[2048];
 
@@ -18,12 +26,5 @@ void Console::printf(const char *text, ...) {
 	vsnprintf_s(message, 2048, _TRUNCATE, text, argptr);
 	va_end(argptr);
 
-	::printf("%s", message);
-
-	FILE *log = nullptr;
-	fopen_s(&log, "data/console.log", "a");
-	if (log) {
-		fwrite(message, 1, strlen(message), log);
-		fclose(log);
-	}
+	console_print(message);
 }

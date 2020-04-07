@@ -98,22 +98,20 @@ struct Entity_Type_Decl {
 
 struct Entity_Manager {
 	Array<Entity_Type_Decl *> entity_types;
-	Array<Entity *> entities;
-	int next_parity = 0;
-
-	void init();
-	void shutdown();
-	void on_level_load();
-	void render();
-	void update(float dt);
-	void add_entity(Entity *entity);
-	void spawn_entity(Entity *entity);
-	void delete_entity(Entity *entity);
-	void delete_all_entities();
-	Entity *get_entity_from_handle(Entity_Handle handle);
-	Entity *create_entity(const char *type_name, const char *name = nullptr, bool spawn = true, bool add = true);
 };
 
 extern Entity_Manager entity_manager;
+
+void entity_init();
+void entity_shutdown();
+void entity_on_level_load();
+void entity_render();
+void entity_update(float dt);
+void add_entity(Entity *entity);
+void spawn_entity(Entity *entity);
+Entity *create_entity(const char *type_name, const char *name = nullptr, bool spawn = true, bool add = true);
+void delete_entity(Entity *entity);
+void entity_delete_all_entities();
+Entity *entity_get_entity_from_handle(Entity_Handle handle);
 
 #endif

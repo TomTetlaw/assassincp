@@ -10,14 +10,13 @@ struct System {
 	float delta = 0.0f;
 	float current_time = 0.0f;
 	int frame_num = 0;
-
-	void init(int argc, char *argv[]);
-	void quit();
-	void error(const char *text, ...);
-
-	void open_file_dialogue(const char *dir, const char *filters, char *out);
 };
 
 extern System sys;
+
+void system_init(int argc, char *argv[]);
+void system_quit();
+void system_error(const char *text, ...);
+void system_open_file_dialogue(const char *dir, const char *filters, char *out);
 
 #endif

@@ -33,7 +33,7 @@ class Bad_Guy : public Entity {
 		glMatrixMode(GL_MODELVIEW);
 		glLoadIdentity();
 		glPushMatrix();
-		renderer.setup_render();
+		render_setup_render_world();
 
 		glPointSize(10.0f);
 		glBegin(GL_POINTS);

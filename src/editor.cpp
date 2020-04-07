@@ -5,7 +5,27 @@
 #include "imgui/imgui_impl_sdl.h"
 #include "imgui/imgui_impl_opengl3.h"
 
-Editor editor;
+internal bool left_button_down = false;
+internal bool middle_button_down = false;
+internal bool shift_down = false;
+
+internal bool dragging_entity = false;
+
+internal bool drag_select = false;
+internal Vec2 drag_start_point;
+internal Vec2 drag_size;
+
+internal Editor_Polygon *currently_editing_polygon = nullptr;
+internal bool find_polygon_point_at(Vec2 position, Editor_Polygon **poly_out, int *point_index);
+
+internal Editor_Mode mode = EDITOR_SELECT;
+
+internal Array<Editor_Entity *> entities;
+internal Array<Editor_Entity *> selected_entities;
+
+internal Array<int> selected_polygon_points; // indices into selected_entities[0].points
+
+internal Array<const char *> entity_type_names; // create on init because no new types after startup
 
 bool lines_intersect(Vec2 p1, Vec2 q1, Vec2 p2, Vec2 q2)
 {
@@ -261,16 +281,16 @@ void Editor_Entity::render() {
 	rt.scale = scale;
 	rt.texture = texture;
 	rt.centered = true;
-	renderer.texture(&rt);
+	render_texture(&rt);
 
 	Vec4 c = Vec4(1, 1, 1, 1);
-	if (editor.selected_entities.find(this) || hovered) {
+	if (selected_entities.find(this) || hovered) {
 		c = Vec4(0, 1, 0, 1);
 	}
 
 	float hw = size.x / 2;
 	float hh = size.y / 2;
-	renderer.box(false, position.x-hw, position.y-hh, size.x*scale.x, size.y*scale.y, c);
+	render_box(false, position.x-hw, position.y-hh, size.x*scale.x, size.y*scale.y, c);
 }
 
 void Editor_Entity::on_drag(Vec2 amount) {
@@ -278,7 +298,7 @@ void Editor_Entity::on_drag(Vec2 amount) {
 }
 
 void Editor_Entity::on_delete() { 
-	editor.entities.remove(editor.entities.find_index(this));
+	entities.remove(entities.find_index(this));
 }
 
 void Editor_Polygon::render() {
@@ -286,7 +306,7 @@ void Editor_Polygon::render() {
 	glLoadIdentity();
 	glPushMatrix();
 
-	renderer.setup_render();
+	render_setup_render_ui();
 
 	glColor4f(1, 1, 1, 1);
 	glBegin(GL_LINES);
@@ -305,15 +325,15 @@ void Editor_Polygon::render() {
 		glEnd();
 	}
 
-	if (editor.currently_editing_polygon == this) {
+	if (currently_editing_polygon == this) {
 		glBegin(GL_LINES);
 		glVertex2f(points[points.num - 1]->position.x, points[points.num - 1]->position.y);
-		Vec2 end = renderer.to_world_pos(sys.cursor_position);
+		Vec2 end = render_to_world_pos(sys.cursor_position);
 		glVertex2f(end.x, end.y);
 		glEnd();
 	}
 
-	if (editor.selected_entities.find(this)) {
+	if (selected_entities.find(this)) {
 		glColor4f(0, 1, 0, 1);
 	}
 	else {
@@ -342,6 +362,11 @@ void Editor_Polygon::write_save(Save_File *file) {
 	});
 }
 
+internal void editor_add_entity(Editor_Entity *entity) {
+	entity->index = entities.num;
+	entities.append(entity);
+}
+
 void Editor_Polygon::read_save(Save_File *file) {
 	strcpy(type_name, "info_polygon");
 	save_read_bool(file, &closed);
@@ -356,7 +381,7 @@ void Editor_Polygon::read_save(Save_File *file) {
 		strcpy(point->type_name, "info_poly_point");
 		point->parent = this;
 		point->position = v;
-		editor.add_entity(point);
+		editor_add_entity(point);
 		points.append(point);
 	}
 }
@@ -368,7 +393,7 @@ void Editor_Polygon::calculate_properties() {
 
 void Editor_Polygon::on_delete() {
 	For(points, {
-		editor.entities.remove(editor.entities.find_index(it));
+		entities.remove(entities.find_index(it));
 	});
 
 	For(points, {
@@ -383,10 +408,10 @@ void Editor_Polygon_Point::render() {
 	glLoadIdentity();
 	glPushMatrix();
 
-	renderer.setup_render();
+	render_setup_render_ui();
 
 	glBegin(GL_POINTS);
-	if (editor.selected_entities.find(this)) {
+	if (selected_entities.find(this)) {
 		glColor4f(0, 1, 0, 1);
 	}
 	else {
@@ -401,7 +426,7 @@ void Editor_Polygon_Point::render() {
 void Editor_Polygon_Point::on_drag(Vec2 amount) {
 	// only drag if our parent isn't selected
 	// because that would cause it to drag twice
-	if (!editor.selected_entities.find(parent)) {
+	if (!selected_entities.find(parent)) {
 		position = position + amount;
 		parent->calculate_properties();
 	}
@@ -415,19 +440,24 @@ void Editor_Polygon_Point::on_delete() {
 	Editor_Entity::on_delete();
 }
 
-bool Editor::gui_handle_event(SDL_Event *ev) {
+bool editor_gui_handle_event(SDL_Event *ev) {
 	ImGui_ImplSDL2_ProcessEvent(ev);
 	return false;
 }
 
-Texture *select_mode_on_image = nullptr;
-Texture *select_mode_off_image = nullptr;
-Texture *entity_mode_on_image = nullptr;
-Texture *entity_mode_off_image = nullptr;
-Texture *polygon_mode_on_image = nullptr;
-Texture *polygon_mode_off_image = nullptr;
+internal Texture *select_mode_on_image = nullptr;
+internal Texture *select_mode_off_image = nullptr;
+internal Texture *entity_mode_on_image = nullptr;
+internal Texture *entity_mode_off_image = nullptr;
+internal Texture *polygon_mode_on_image = nullptr;
+internal Texture *polygon_mode_off_image = nullptr;
 
-void Editor::init() {
+internal float edit_window_top = 0.0f;
+internal float edit_window_left = 0.0f;
+internal float edit_window_bottom = 0.0f;
+internal float edit_window_right = 0.0f;
+
+void editor_init() {
 	ImGui::CreateContext();
 	ImGuiIO &io = ImGui::GetIO();
 	ImGui::StyleColorsDark();
@@ -435,12 +465,12 @@ void Editor::init() {
 	ImGui_ImplSDL2_InitForOpenGL(sys.window, sys.context);
 	ImGui_ImplOpenGL3_Init();
 
-	select_mode_on_image = tex.load("data/textures/editor/select_mode_on.png");
-	select_mode_off_image = tex.load("data/textures/editor/select_mode_off.png");
-	entity_mode_on_image = tex.load("data/textures/editor/entity_mode_on.png");
-	entity_mode_off_image = tex.load("data/textures/editor/entity_mode_off.png");
-	polygon_mode_on_image = tex.load("data/textures/editor/polygon_mode_on.png");
-	polygon_mode_off_image = tex.load("data/textures/editor/polygon_mode_off.png");
+	select_mode_on_image = load_texture("data/textures/editor/select_mode_on.png");
+	select_mode_off_image = load_texture("data/textures/editor/select_mode_off.png");
+	entity_mode_on_image = load_texture("data/textures/editor/entity_mode_on.png");
+	entity_mode_off_image = load_texture("data/textures/editor/entity_mode_off.png");
+	polygon_mode_on_image = load_texture("data/textures/editor/polygon_mode_on.png");
+	polygon_mode_off_image = load_texture("data/textures/editor/polygon_mode_off.png");
 
 	edit_window_top = -(sys.window_size.y / 2);
 	edit_window_left = -(sys.window_size.x / 2) + 110;
@@ -452,24 +482,45 @@ void Editor::init() {
 	}
 }
 
-void Editor::shutdown() {
+void editor_shutdown() {
 	ImGui_ImplOpenGL3_Shutdown();
 	ImGui_ImplSDL2_Shutdown();
 	ImGui::DestroyContext();
 
-	remove_all();
+	editor_remove_all();
 }
 
-void Editor::update() {
+internal void clear_selected_entities() {
+	selected_entities.num = 0;
+	selected_polygon_points.num = 0;
+}
+
+internal bool find_polygon_point_at(Vec2 position, Editor_Polygon **poly_out, int *point_index) {
+	For(entities, {
+		if (it->type == EDITOR_ENTITY_POLYGON) {
+			for (int i = 0; i < ((Editor_Polygon *)it)->points.num; i++) {
+				if (((Editor_Polygon *)it)->points[i]->position.distance_to(position) < 10.0f) {
+					*poly_out = ((Editor_Polygon *)it);
+					*point_index = i;
+					return true;
+				}
+			}
+		}
+	});
+
+	return false;
+}
+
+void editor_update() {
 	// @cleanup: don't do this every frame, only on change or selected new image
 	For(entities, {
 		if (!strcmp(it->type_name, "info_player_start")) {
 			strcpy(it->texture_name, "data/textures/editor/info_player_start.png");
-			it->texture = tex.load("data/textures/editor/info_player_start.png");
+			it->texture = load_texture("data/textures/editor/info_player_start.png");
 		}
 		else {
 			if (it->texture_name[0]) {
-				it->texture = tex.load(it->texture_name);
+				it->texture = load_texture(it->texture_name);
 			}
 		}
 	});
@@ -539,7 +590,7 @@ void Editor::update() {
 
 		int id = entity->texture ? entity->texture->api_object : -1;
 		if (ImGui::ImageButton((ImTextureID)id, ImVec2(32, 32))) {
-			sys.open_file_dialogue("data/textures/", "PNG Files\0*.png\0\0", entity->texture_name);
+			system_open_file_dialogue("data/textures/", "PNG Files\0*.png\0\0", entity->texture_name);
 		}
 		ImGui::End();
 	}
@@ -562,7 +613,7 @@ void Editor::update() {
 	}
 }
 
-void Editor::remove_all() {
+void editor_remove_all() {
 	for (int i = 0; i < entities.num; i++) {
 		delete entities[i];
 	}
@@ -571,12 +622,7 @@ void Editor::remove_all() {
 	clear_selected_entities();
 }
 
-void Editor::add_entity(Editor_Entity *entity) {
-	entity->index = entities.num;
-	entities.append(entity);
-}
-
-void Editor::delete_entity(Editor_Entity *entity) {
+void editor_delete_entity(Editor_Entity *entity) {
 	if (entity->index < 0) {
 		return;
 	}
@@ -589,32 +635,25 @@ void Editor::delete_entity(Editor_Entity *entity) {
 	});
 }
 
-void Editor::clear_selected_entities() {
-	selected_entities.num = 0;
-	selected_polygon_points.num = 0;
-}
-
-void Editor::render() {
+void editor_render() {
 	ImGui::Render();
 	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
 	glEnable(GL_SCISSOR_TEST);
 	glScissor(edit_window_left + (sys.window_size.x / 2), -edit_window_bottom + (sys.window_size.y / 2), edit_window_right - edit_window_left, edit_window_bottom - edit_window_top);
 
-	renderer.use_zoom = true;
-
 	For(entities, {
 		it->render();
-		});
+	});
 
 	if (drag_select) {
-		renderer.box(false, drag_start_point.x, drag_start_point.y, drag_size.x, drag_size.y, Vec4(0, 1, 0, 1));
+		render_box(false, drag_start_point.x, drag_start_point.y, drag_size.x, drag_size.y, Vec4(0, 1, 0, 1));
 	}
 
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 	glPushMatrix();
-	renderer.setup_render();
+	render_setup_render_ui();
 
 	glColor4f(1, 1, 1, 0.1f);
 	glBegin(GL_LINES);
@@ -648,7 +687,7 @@ void Editor::render() {
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 }
 
-void Editor::handle_mouse_press(int mouse_button, bool down, Vec2 _, bool is_double_click) {
+void editor_handle_mouse_press(int mouse_button, bool down, Vec2 _, bool is_double_click) {
 	if (mouse_button == SDL_BUTTON_LEFT) {
 		left_button_down = down;
 	}
@@ -674,7 +713,7 @@ void Editor::handle_mouse_press(int mouse_button, bool down, Vec2 _, bool is_dou
 			if (down) {
 				Editor_Entity *entity = nullptr;
 				For(entities, { // don't start drag select if dragging a thing
-					if (point_intersects_centered_box(renderer.to_world_pos(sys.cursor_position), it->position, it->size)) {
+					if (point_intersects_centered_box(render_to_world_pos(sys.cursor_position), it->position, it->size)) {
 						entity = it;
 						break;
 					}
@@ -684,7 +723,7 @@ void Editor::handle_mouse_press(int mouse_button, bool down, Vec2 _, bool is_dou
 				}
 				else {
 					drag_select = true;
-					drag_start_point = renderer.to_world_pos(sys.cursor_position);
+					drag_start_point = render_to_world_pos(sys.cursor_position);
 				}
 			}
 			else {
@@ -694,10 +733,10 @@ void Editor::handle_mouse_press(int mouse_button, bool down, Vec2 _, bool is_dou
 				else {
 					// if clicked and didn't move mouse
 					if (drag_start_point.x == 0) {
-						drag_start_point.x = renderer.to_world_pos(sys.cursor_position).x;
+						drag_start_point.x = render_to_world_pos(sys.cursor_position).x;
 					}
 					if (drag_start_point.y == 0) {
-						drag_start_point.y = renderer.to_world_pos(sys.cursor_position).y;
+						drag_start_point.y = render_to_world_pos(sys.cursor_position).y;
 					}
 
 					// if drawing a box to the left or above where initially clicked
@@ -737,8 +776,8 @@ void Editor::handle_mouse_press(int mouse_button, bool down, Vec2 _, bool is_dou
 		if (mouse_button == SDL_BUTTON_LEFT) {
 			if (down) {
 				Editor_Entity *new_entity = new Editor_Entity;
-				new_entity->position = renderer.to_world_pos(sys.cursor_position);
-				add_entity(new_entity);
+				new_entity->position = render_to_world_pos(sys.cursor_position);
+				editor_add_entity(new_entity);
 				clear_selected_entities();
 				selected_entities.append(new_entity);
 			}
@@ -750,16 +789,16 @@ void Editor::handle_mouse_press(int mouse_button, bool down, Vec2 _, bool is_dou
 				Editor_Polygon *polygon = nullptr;
 				int point_index = -1;
 
-				if(find_polygon_point_at(renderer.to_world_pos(sys.cursor_position), &polygon, &point_index)) {
+				if(find_polygon_point_at(render_to_world_pos(sys.cursor_position), &polygon, &point_index)) {
 					polygon->closed = true;
 					currently_editing_polygon = nullptr;
 				}
 				else {
 					Editor_Polygon_Point *point = new Editor_Polygon_Point;
 					point->parent = currently_editing_polygon;
-					point->position = renderer.to_world_pos(sys.cursor_position);
+					point->position = render_to_world_pos(sys.cursor_position);
 					point->current_entity_type_num = ENTITY_INFO_POLYGON_POINT;
-					editor.add_entity(point);
+					editor_add_entity(point);
 					currently_editing_polygon->points.append(point);
 					currently_editing_polygon->calculate_properties();
 				}
@@ -770,33 +809,17 @@ void Editor::handle_mouse_press(int mouse_button, bool down, Vec2 _, bool is_dou
 				Editor_Polygon_Point *point = new Editor_Polygon_Point;
 				point->current_entity_type_num = ENTITY_INFO_POLYGON_POINT;
 				point->parent = polygon;
-				point->position = renderer.to_world_pos(sys.cursor_position);
-				editor.add_entity(point);
+				point->position = render_to_world_pos(sys.cursor_position);
+				editor_add_entity(point);
 				polygon->points.append(point);
 				polygon->calculate_properties();
-				add_entity(polygon);
+				editor_add_entity(polygon);
 			}
 		}
 	}
 }
 
-bool Editor::find_polygon_point_at(Vec2 position, Editor_Polygon **poly_out, int *point_index) {
-	For(entities, {
-		if (it->type == EDITOR_ENTITY_POLYGON) {
-			for (int i = 0; i < ((Editor_Polygon *)it)->points.num; i++) {
-				if (((Editor_Polygon *)it)->points[i]->position.distance_to(position) < 10.0f) {
-					*poly_out = ((Editor_Polygon *)it);
-					*point_index = i;
-					return true;
-				}
-			}
-		}
-	});
-
-	return false;
-}
-
-void Editor::handle_mouse_move(int relx, int rely) {
+void editor_handle_mouse_move(int relx, int rely) {
 	if (middle_button_down) {
 		renderer.camera_position = renderer.camera_position - Vec2(relx, rely);
 	}
@@ -805,23 +828,23 @@ void Editor::handle_mouse_move(int relx, int rely) {
 		if (dragging_entity) {
 			For(selected_entities, {
 				if (it->draggable) {
-					it->on_drag(Vec2(relx, rely) * renderer.inverse_scale_for_zoom_level(renderer.zoom_level));
+					it->on_drag(Vec2(relx, rely) * render_inverse_scale_for_zoom_level());
 				}
 			});
 		}
 
 		if (drag_select) {
-			drag_size = renderer.to_world_pos(sys.cursor_position) - drag_start_point;
+			drag_size = render_to_world_pos(sys.cursor_position) - drag_start_point;
 
 			Vec2 start_point = drag_start_point;
 			Vec2 size = drag_size;
 
 			// if clicked and didn't move mouse
 			if (start_point.x == 0) {
-				start_point.x = renderer.to_world_pos(sys.cursor_position).x;
+				start_point.x = render_to_world_pos(sys.cursor_position).x;
 			}
 			if (start_point.y == 0) {
-				start_point.y = renderer.to_world_pos(sys.cursor_position).y;
+				start_point.y = render_to_world_pos(sys.cursor_position).y;
 			}
 
 			// if drawing a box to the left or above where initially clicked
@@ -855,7 +878,7 @@ void Editor::handle_mouse_move(int relx, int rely) {
 			For(entities, {
 				float hw = (it->size.x / 2);
 				float hh = (it->size.y / 2);
-				if (point_intersects_box(renderer.to_world_pos(sys.cursor_position), it->position - Vec2(hw, hh), it->size)) {
+				if (point_intersects_box(render_to_world_pos(sys.cursor_position), it->position - Vec2(hw, hh), it->size)) {
 					it->hovered = true;
 				}
 				else {
@@ -868,7 +891,7 @@ void Editor::handle_mouse_move(int relx, int rely) {
 	}
 }
 
-void Editor::handle_key_press(SDL_Scancode scancode, bool down, int mods) {
+void editor_handle_key_press(SDL_Scancode scancode, bool down, int mods) {
 	if (scancode == SDL_SCANCODE_LSHIFT) {
 		shift_down = down;
 	}
@@ -886,18 +909,18 @@ void Editor::handle_key_press(SDL_Scancode scancode, bool down, int mods) {
 	}
 }
 
-void Editor::handle_mouse_wheel(int amount) {
+void editor_handle_mouse_wheel(int amount) {
 	//@todo: zoom to mouse position
 	//renderer.camera_position = renderer.to_world_pos(sys.cursor_position);
 	renderer.zoom_level += amount;
 }
 
-void Editor::save(const char *file_name) {
+void editor_save(const char *file_name) {
 	// !!!!! if you add anything to this you must increment map_file_version in editor.h !!!!!
 
 	Save_File file;
 	if (!save_open_write(file_name, &file)) {
-		console.printf("Failed to open map file for writing from editor: %d\n", errno);
+		console_printf("Failed to open map file for writing from editor: %d\n", errno);
 		return;
 	}
 
@@ -912,17 +935,17 @@ void Editor::save(const char *file_name) {
 	save_close(&file);
 }
 
-void Editor::load_map_into_editor(const char *file_name) {
+void editor_load_map_into_editor(const char *file_name) {
 	Save_File file;
 	if (!save_open_read(file_name, &file)) {
-		console.printf("Failed to open map file for reading from editor: %d\n", errno);
+		console_printf("Failed to open map file for reading from editor: %d\n", errno);
 		return;
 	}
 
 	int version = 0;
 	save_read_int(&file, &version);
 	if (version != map_file_version) {
-		console.printf("Attempting to open map file with old version from editor (wanted %d, got %d): %s\n", map_file_version, version, file_name);
+		console_printf("Attempting to open map file with old version from editor (wanted %d, got %d): %s\n", map_file_version, version, file_name);
 		save_close(&file);
 		return;
 	}
@@ -936,19 +959,19 @@ void Editor::load_map_into_editor(const char *file_name) {
 			Editor_Entity *entity = new Editor_Entity;
 			entity->read_save(&file);
 			//printf("loaded: %d\n", entity->current_entity_type_num);
-			add_entity(entity);
+			editor_add_entity(entity);
 		}
 		else if (type == EDITOR_ENTITY_POLYGON) {
 			Editor_Polygon *polygon = new Editor_Polygon;
 			polygon->read_save(&file);
 			polygon->calculate_properties();
-			add_entity(polygon);
+			editor_add_entity(polygon);
 		}
 	}
 
 	save_close(&file);
 }
 
-void Editor::on_level_load() {
-	remove_all();
+void editor_on_level_load() {
+	editor_remove_all();
 }

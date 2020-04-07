@@ -1,22 +1,26 @@
 #include "precompiled.h"
 
-int main(int argc, char *argv[]) {
-	sys.init(argc, argv);
+void hotload_config_file(const char *filename, void *data) {
+	config_load(filename);
+}
 
-	config_load_file("data/config.txt", nullptr);
-	hotload.add_file("data/config.txt", nullptr, config_load_file);
+int main(int argc, char *argv[]) {
+	system_init(argc, argv);
+
+	config_load("data/config.txt");
+	hotload_add_file("data/config.txt", nullptr, hotload_config_file);
 
 	float last_time = 0.0f;
 
 	bool use_editor = true;
 	input.target = INPUT_EDITOR;
-	editor.load_map_into_editor("data/levels/test.acp");
+	editor_load_map_into_editor("data/levels/test.acp");
 
 	system("cd");
 	SDL_Event ev;
 	while(sys.running) {
 		while (SDL_PollEvent(&ev)) {
-			if (!editor.gui_handle_event(&ev)) {
+			if (!editor_gui_handle_event(&ev)) {
 				switch (ev.type) {
 				case SDL_QUIT:
 					sys.running = false;
@@ -25,47 +29,43 @@ int main(int argc, char *argv[]) {
 					bool ctrl_pressed = (ev.key.keysym.mod & KMOD_CTRL) > 0;
 					bool alt_pressed = (ev.key.keysym.mod & KMOD_ALT) > 0;
 					bool shift_pressed = (ev.key.keysym.mod & KMOD_SHIFT) > 0;
-					input.handle_key_press(ev.key.keysym.scancode, true, ctrl_pressed, alt_pressed, shift_pressed);
+					input_handle_key_press(ev.key.keysym.scancode, true, ctrl_pressed, alt_pressed, shift_pressed);
 					if (ev.key.keysym.scancode == SDL_SCANCODE_SPACE) {
 						use_editor = !use_editor;
 						if (use_editor) {
 							input.target = INPUT_EDITOR;
-							game.on_level_load();
-							editor.load_map_into_editor("data/levels/test.acp");
+							on_level_load();
+							editor_load_map_into_editor("data/levels/test.acp");
 						}
 						else {
-							editor.save("data/levels/test.acp");
+							editor_save("data/levels/test.acp");
 							input.target = INPUT_GAME;
-							game.on_level_load();
-							game.load_level("data/levels/test.acp");
+							on_level_load();
+							load_level("data/levels/test.acp");
 						}
 					}
 					else if (ev.key.keysym.scancode == SDL_SCANCODE_ESCAPE) {
 						sys.running = false;
-					}
-					else if (ev.key.keysym.scancode == SDL_SCANCODE_T) {
-						renderer.camera_position = Vec2(0, 0);
-						renderer.zoom_level = 0;
 					}
 				} break;
 				case SDL_KEYUP: {
 					bool ctrl_pressed = (ev.key.keysym.mod & KMOD_CTRL) > 0;
 					bool alt_pressed = (ev.key.keysym.mod & KMOD_ALT) > 0;
 					bool shift_pressed = (ev.key.keysym.mod & KMOD_SHIFT) > 0;
-					input.handle_key_press(ev.key.keysym.scancode, false, ctrl_pressed, alt_pressed, shift_pressed);
+					input_handle_key_press(ev.key.keysym.scancode, false, ctrl_pressed, alt_pressed, shift_pressed);
 				} break;
 				case SDL_MOUSEMOTION:
 					sys.cursor_position = Vec2((float)ev.motion.x, (float)ev.motion.y) - (sys.window_size * 0.5f);
-					input.handle_mouse_move(ev.motion.xrel, ev.motion.yrel);
+					input_handle_mouse_move(ev.motion.xrel, ev.motion.yrel);
 					break;
 				case SDL_MOUSEBUTTONDOWN:
-					input.handle_mouse_press(ev.button.button, true, Vec2((float)ev.button.x, (float)ev.button.y), ev.button.clicks == 2);
+					input_handle_mouse_press(ev.button.button, true, Vec2((float)ev.button.x, (float)ev.button.y), ev.button.clicks == 2);
 					break;
 				case SDL_MOUSEBUTTONUP:
-					input.handle_mouse_press(ev.button.button, false, Vec2((float)ev.button.x, (float)ev.button.y), ev.button.clicks == 2);
+					input_handle_mouse_press(ev.button.button, false, Vec2((float)ev.button.x, (float)ev.button.y), ev.button.clicks == 2);
 					break;
 				case SDL_MOUSEWHEEL:
-					input.handle_mouse_wheel(ev.wheel.y);
+					input_handle_mouse_wheel(ev.wheel.y);
 					break;
 				}
 			}
@@ -77,7 +77,7 @@ int main(int argc, char *argv[]) {
 
 		srand((unsigned)time(nullptr));
 
-		hotload.check_files_non_blocking();
+		hotload_check_files_non_blocking();
 
 		float now = SDL_GetTicks() / 1000.0f;
 		sys.delta = now - last_time;
@@ -91,32 +91,25 @@ int main(int argc, char *argv[]) {
 		sys.frame_num++;
 
 		if (use_editor) {
-			editor.update();
+			editor_update();
 		}
 		
-		game.update();
-		entity_manager.update(game.delta_time);
-		renderer.update(game.delta_time);
+		game_update();
+		entity_update(game.delta_time);
 
-		renderer.begin_frame();
+		render_begin_frame();
 
-		renderer.use_camera = true;
-		game.render();
-		entity_manager.render();
-		renderer.render_physics_debug();
+		game_render();
+		entity_render();
 		
 		if (use_editor) {
-			renderer.use_camera = true;
-			editor.render();
+			editor_render();
 		}
-		
-		renderer.use_camera = false;
-		renderer.use_zoom = false;
 
-		renderer.end_frame();
+		render_end_frame();
 	}
 
-	sys.quit();
+	system_quit();
 
 	return 0;
 }

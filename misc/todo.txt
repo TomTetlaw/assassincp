@@ -1,8 +1,6 @@
 editor bug still exists where entities get messed up. reproduce by creating heaps of entities and then switching
 to game, then back to editor
 
-hotloading of config.txt isn't working for some reason
-
 zoom towards mouse cursor
 
 editor causes a crash if trying to delete a polygon + one of its points at the same time
@@ -16,3 +14,9 @@ this caused only the first point to get updated:
 	//For(game.current_level->nav_points, {
 	//	it.visited = false;
 	//});
+
+
+// fix hotloading
+// rewrite renderer
+// rewrite physics
+// rewrite ui

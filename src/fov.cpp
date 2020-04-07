@@ -1,6 +1,6 @@
 #include "precompiled.h"
 
-int compare_fov_vert(const void *a, const void *b) {
+internal int compare_fov_vert(const void *a, const void *b) {
 	const Sorted_FOV_Vert *va = (const Sorted_FOV_Vert *)a;
 	const Sorted_FOV_Vert *vb = (const Sorted_FOV_Vert *)b;
 	float angle_a = va->angle;
@@ -20,80 +20,76 @@ int compare_fov_vert(const void *a, const void *b) {
 
 const int num_rays = 3;
 
-void Field_Of_View::init() {
-	num_verts = (game.current_level->fov_check_points.num * num_rays);
-	verts = new Vec2[num_verts];
-	sorted = new Sorted_FOV_Vert[num_verts];
+void fov_init(Field_Of_View *fov) {
+	fov->num_verts = (game.current_level->fov_check_points.num * num_rays);
+	fov->verts = new Vec2[fov->num_verts];
+	fov->sorted = new Sorted_FOV_Vert[fov->num_verts];
 }
 
-void Field_Of_View::update() {
+void fov_update(Field_Of_View *fov) {
 	int vert_num = 0;
 	for (int i = 0; i < game.current_level->fov_check_points.num; i++) {
 		for (int j = 0; j < num_rays; j++) {
 			Vec2 points[num_rays];
 			points[0] = game.current_level->fov_check_points[i];
-			points[1] = position + Vec2::from_angle(position.angle_to(game.current_level->fov_check_points[i]) - 0.00001f) * 10000;
-			points[2] = position + Vec2::from_angle(position.angle_to(game.current_level->fov_check_points[i]) + 0.00001f) * 10000;
+			points[1] = fov->position + Vec2::from_angle(fov->position.angle_to(game.current_level->fov_check_points[i]) - 0.00001f) * 10000;
+			points[2] = fov->position + Vec2::from_angle(fov->position.angle_to(game.current_level->fov_check_points[i]) + 0.00001f) * 10000;
 			if (false /*raycast*/) {
 				//verts[vert_num] = Vec2(info[j].point.x, info[j].point.y);
 			}
 			else {
-				verts[vert_num] = points[j];
+				fov->verts[vert_num] = points[j];
 			}
 
 			vert_num++;
 		}
 	}
 
-	for (int i = 0; i < num_verts; i++) {
-		sorted[i].angle = position.angle_to(verts[i]);
-		sorted[i].position = verts[i];
+	for (int i = 0; i < fov->num_verts; i++) {
+		fov->sorted[i].angle = fov->position.angle_to(fov->verts[i]);
+		fov->sorted[i].position = fov->verts[i];
 	}
 
-	qsort(sorted, num_verts, sizeof(Sorted_FOV_Vert), compare_fov_vert);
+	qsort(fov->sorted, fov->num_verts, sizeof(Sorted_FOV_Vert), compare_fov_vert);
 }
 
-void Field_Of_View::shutdown() {
-	delete[] verts;
-	delete[] sorted;
+void fov_shutdown(Field_Of_View *fov) {
+	delete[] fov->verts;
+	delete[] fov->sorted;
 }
 
-void Field_Of_View::render() {
+void fov_render(Field_Of_View *fov) {
 	glMatrixMode(GL_MODELVIEW);
 	glPushMatrix();
 	glLoadIdentity();
-	renderer.setup_render();
+	render_setup_render_world();
 	glBegin(GL_TRIANGLES);
-	for (int i = 0; i < num_verts - 1; i++) {
-		glVertex2f(position.x, position.y);
-		glVertex2f(sorted[i].position.x, sorted[i].position.y);
-		glVertex2f(sorted[i + 1].position.x, sorted[i + 1].position.y);
+	for (int i = 0; i < fov->num_verts - 1; i++) {
+		glVertex2f(fov->position.x, fov->position.y);
+		glVertex2f(fov->sorted[i].position.x, fov->sorted[i].position.y);
+		glVertex2f(fov->sorted[i + 1].position.x, fov->sorted[i + 1].position.y);
 	}
-	glVertex2f(position.x, position.y);
-	glVertex2f(sorted[0].position.x, sorted[0].position.y);
-	glVertex2f(sorted[num_verts - 1].position.x, sorted[num_verts - 1].position.y);
+	glVertex2f(fov->position.x, fov->position.y);
+	glVertex2f(fov->sorted[0].position.x, fov->sorted[0].position.y);
+	glVertex2f(fov->sorted[fov->num_verts - 1].position.x, fov->sorted[fov->num_verts - 1].position.y);
 	glEnd();
 	glPopMatrix();
 
-	if (!renderer.debug_draw) {
-		return;
-	}
-
 	glMatrixMode(GL_MODELVIEW);
 	glPushMatrix();
 	glLoadIdentity();
-	renderer.setup_render();
+	render_setup_render_world();
 	glColor4f(1, 0, 0, 1);
 	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 	glBegin(GL_TRIANGLES);
-	for (int i = 0; i < num_verts - 1; i++) {
-		glVertex2f(position.x, position.y);
-		glVertex2f(sorted[i].position.x, sorted[i].position.y);
-		glVertex2f(sorted[i + 1].position.x, sorted[i + 1].position.y);
+	for (int i = 0; i < fov->num_verts - 1; i++) {
+		glVertex2f(fov->position.x, fov->position.y);
+		glVertex2f(fov->sorted[i].position.x, fov->sorted[i].position.y);
+		glVertex2f(fov->sorted[i + 1].position.x, fov->sorted[i + 1].position.y);
 	}
-	glVertex2f(position.x, position.y);
-	glVertex2f(sorted[0].position.x, sorted[0].position.y);
-	glVertex2f(sorted[num_verts - 1].position.x, sorted[num_verts - 1].position.y);
+	glVertex2f(fov->position.x, fov->position.y);
+	glVertex2f(fov->sorted[0].position.x, fov->sorted[0].position.y);
+	glVertex2f(fov->sorted[fov->num_verts - 1].position.x, fov->sorted[fov->num_verts - 1].position.y);
 	glEnd();
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 	glPopMatrix();

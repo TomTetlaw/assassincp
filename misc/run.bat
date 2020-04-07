@@ -1,1 +1,0 @@
-call "../build/game.exe"

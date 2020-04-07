@@ -10,31 +10,32 @@ class Player : public Entity {
 
 	void spawn() {
 		set_texture("data/textures/player.png");
-		fov.init();
+		fov_init(&fov);
 	}
 
 	void shutdown() {
-		fov.shutdown();
+		fov_shutdown(&fov);
 	}
 
 	void update(float dt) {
 		const Uint8* state = SDL_GetKeyboardState(nullptr);
+		velocity = Vec2(0,0);
 		if (state[SDL_SCANCODE_W]) {
-			velocity = Vec2(0, -100);
+			velocity = velocity + Vec2(0, -300);
 		}
 		if (state[SDL_SCANCODE_S]) {
-			velocity = Vec2(0, 100);
+			velocity = velocity + Vec2(0, 300);
 		}
 		if (state[SDL_SCANCODE_A]) {
-			velocity = Vec2(-100, 0);
+			velocity = velocity + Vec2(-300, 0);
 		}
 		if (state[SDL_SCANCODE_D]) {
-			velocity = Vec2(100, 0);
+			velocity = velocity + Vec2(300, 0);
 		}
 
 		renderer.camera_position = position;
 
-		angle = position.angle_to(renderer.to_world_pos(sys.cursor_position));
+		angle = position.angle_to(render_to_world_pos(sys.cursor_position));
 
 		fov.position = position;
 		//fov.update();

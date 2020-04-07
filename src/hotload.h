@@ -11,15 +11,9 @@ struct Hotloaded_File {
 	Hotload_Callback callback = nullptr;
 };
 
-struct Hotload {
-	Array<Hotloaded_File *> files;
-
-	void init();
-	void shutdown(); 
-	void add_file(const char *filename, void *data, Hotload_Callback callback);
-	void check_files_non_blocking();
-};
-
-extern Hotload hotload;
+void hotload_init();
+void hotload_shutdown();
+void hotload_add_file(const char *filename, void *data, Hotload_Callback callback);
+void hotload_check_files_non_blocking();
 
 #endif

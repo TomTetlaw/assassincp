@@ -4,7 +4,7 @@ Config config;
 
 #define PRINT_STRING_LENGTH 1024
 
-void set_var_string(Config_Var *var) {
+internal void set_var_string(Config_Var *var) {
 	if (!var->print_string) {
 		var->print_string = new char[PRINT_STRING_LENGTH];
 	}
@@ -30,25 +30,19 @@ void set_var_string(Config_Var *var) {
 	case VAR_VEC2:
 		sprintf_s(var->print_string, PRINT_STRING_LENGTH, "(%f %f)", var->vec2_dest->x, var->vec2_dest->y);
 		break;
-	case VAR_VEC3:
-		sprintf_s(var->print_string, PRINT_STRING_LENGTH, "(%f %f %f)", var->vec3_dest->x, var->vec3_dest->y, var->vec3_dest->z);
-		break;
 	case VAR_VEC4:
 		sprintf_s(var->print_string, PRINT_STRING_LENGTH, "(%f %f %f %f)", var->vec4_dest->x, var->vec4_dest->y, var->vec4_dest->z, var->vec4_dest->w);
 		break;
 	}
 }
 
-void Config::init() {
-}
-
-void add_var(Config_Var *v) {
+internal void add_var(Config_Var *v) {
 	set_var_string(v);
 	config.vars.append(v);
-	console.printf("added var: %s (=%s)\n", v->name, v->print_string);
+	console_printf("added var: %s (=%s)\n", v->name, v->print_string);
 }
 
-void Config::register_var(const char *name, float *var, Config_Var_Callback callback) {
+void register_var(const char *name, float *var, Config_Var_Callback callback) {
 	Config_Var *v = new Config_Var;
 	v->type = VAR_FLOAT;
 	v->name = name;
@@ -57,7 +51,7 @@ void Config::register_var(const char *name, float *var, Config_Var_Callback call
 	add_var(v);
 }
 
-void Config::register_var(const char *name, char **var, Config_Var_Callback callback) {
+void register_var(const char *name, char **var, Config_Var_Callback callback) {
 	Config_Var *v = new Config_Var;
 	v->type = VAR_STRING;
 	v->name = name;
@@ -66,7 +60,7 @@ void Config::register_var(const char *name, char **var, Config_Var_Callback call
 	add_var(v);
 }
 
-void Config::register_var(const char *name, bool *var, Config_Var_Callback callback) {
+void register_var(const char *name, bool *var, Config_Var_Callback callback) {
 	Config_Var *v = new Config_Var;
 	v->type = VAR_BOOL;
 	v->name = name;
@@ -75,7 +69,7 @@ void Config::register_var(const char *name, bool *var, Config_Var_Callback callb
 	add_var(v);
 }
 
-void Config::register_var(const char *name, int *var, Config_Var_Callback callback) {
+void register_var(const char *name, int *var, Config_Var_Callback callback) {
 	Config_Var *v = new Config_Var;
 	v->type = VAR_INT;
 	v->name = name;
@@ -84,7 +78,7 @@ void Config::register_var(const char *name, int *var, Config_Var_Callback callba
 	add_var(v);
 }
 
-void Config::register_var(const char *name, Vec2 *var, Config_Var_Callback callback) {
+void register_var(const char *name, Vec2 *var, Config_Var_Callback callback) {
 	Config_Var *v = new Config_Var;
 	v->type = VAR_VEC2;
 	v->name = name;
@@ -93,16 +87,7 @@ void Config::register_var(const char *name, Vec2 *var, Config_Var_Callback callb
 	add_var(v);
 }
 
-void Config::register_var(const char *name, Vec3 *var, Config_Var_Callback callback) {
-	Config_Var *v = new Config_Var;
-	v->type = VAR_VEC3;
-	v->name = name;
-	v->vec3_dest = var;
-	v->callback = callback;
-	add_var(v);
-}
-
-void Config::register_var(const char *name, Vec4 *var, Config_Var_Callback callback) {
+void register_var(const char *name, Vec4 *var, Config_Var_Callback callback) {
 	Config_Var *v = new Config_Var;
 	v->type = VAR_VEC4;
 	v->name = name;
@@ -111,8 +96,8 @@ void Config::register_var(const char *name, Vec4 *var, Config_Var_Callback callb
 	add_var(v);
 }
 
-void Config::shutdown() {
-	For(vars, {
+void config_shutdown() {
+	For(config.vars, {
 		if (it->string_data) {
 			delete[] it->string_data;
 			delete[] it->print_string;
@@ -121,8 +106,8 @@ void Config::shutdown() {
 	});
 }
 
-void Config::set_var_from_string(Config_Var *var, const char *string) {
-	console.printf("setting var %s to %s\n", var->name, string);
+internal void set_var_from_string(Config_Var *var, const char *string) {
+	console_printf("setting var %s to %s\n", var->name, string);
 	
 	switch (var->type) {
 	case VAR_FLOAT:
@@ -153,9 +138,6 @@ void Config::set_var_from_string(Config_Var *var, const char *string) {
 	case VAR_VEC2:
 		sscanf_s(string, "%f %f", &var->vec2_dest->x, &var->vec2_dest->y);
 		break;
-	case VAR_VEC3:
-		sscanf_s(string, "%f %f %f", &var->vec3_dest->x, &var->vec3_dest->y, &var->vec3_dest->z);
-		break;
 	case VAR_VEC4:
 		sscanf_s(string, "%f %f %f %f", &var->vec4_dest->x, &var->vec4_dest->y, &var->vec4_dest->z, &var->vec4_dest->w);
 		break;
@@ -168,7 +150,7 @@ void Config::set_var_from_string(Config_Var *var, const char *string) {
 	}
 }
 
-void config_load_file(const char *filename, void *data) {
+void config_load(const char *filename) {
 	config.filename = filename;
 
 	const char *text = load_file(config.filename).data;
@@ -186,7 +168,7 @@ void config_load_file(const char *filename, void *data) {
 			Config_Var *var = config.vars[i];
 			if (!strcmp(var->name, token)) {
 				text = parse_token(text, token);
-				config.set_var_from_string(var, token);
+				set_var_from_string(var, token);
 				found = true;
 				break;
 			}
@@ -196,14 +178,14 @@ void config_load_file(const char *filename, void *data) {
 	delete[] text;
 }
 
-void Config::write_file(const char *filename) {
+void config_write_file(const char *filename) {
 	FILE *file = nullptr;
 	fopen_s(&file, filename, "w");
 	if (!file) {
 		return;
 	}
 
-	For(vars, {
+	For(config.vars, {
 		switch (it->type) {
 		case VAR_FLOAT:
 			fprintf_s(file, "%s %f\n", it->name, *it->float_dest);
@@ -219,9 +201,6 @@ void Config::write_file(const char *filename) {
 			break;
 		case VAR_VEC2:
 			fprintf_s(file, "%s (%f %f)\n", it->name, it->vec2_dest->x, it->vec2_dest->y);
-			break;
-		case VAR_VEC3:
-			fprintf_s(file, "%s (%f %f %f)\n", it->name, it->vec3_dest->x, it->vec3_dest->y, it->vec3_dest->z);
 			break;
 		case VAR_VEC4:
 			fprintf_s(file, "%s (%f %f %f %f)\n", it->name, it->vec4_dest->x, it->vec4_dest->y, it->vec4_dest->z, it->vec4_dest->w);

@@ -1,18 +1,15 @@
 #include "precompiled.h"
 
-Font_Manager font_manager;
+Array<Font *> fonts;
 
-void Font_Manager::init() {
-}
-
-void Font_Manager::shutdown() {
-	for (int i = 0; i < font_manager.fonts.num; i++) {
-		Font *font = font_manager.fonts[i];
+void font_shutdown() {
+	for (int i = 0; i < fonts.num; i++) {
+		Font *font = fonts[i];
 		delete font;
 	}
 }
 
-void load_data_into_font(Font *font_info, TTF_Font *font) {
+internal void load_data_into_font(Font *font_info, TTF_Font *font) {
 	font_info->height = TTF_FontHeight(font);
 	font_info->ascent = TTF_FontAscent(font);
 	font_info->descent = TTF_FontDescent(font);
@@ -36,18 +33,18 @@ void load_data_into_font(Font *font_info, TTF_Font *font) {
 			colour.a = 255;
 
 			SDL_Surface *surface = TTF_RenderGlyph_Blended(font, (char)i, colour);
-			font_info->glyphs[i].texture = tex.create_from_surface(font_info->glyphs[i].name, surface);
+			font_info->glyphs[i].texture = create_texture_from_surface(font_info->glyphs[i].name, surface);
 		}
 	}
 }
 
-void font_hotload_callback(const char *filename, void *data) {
-	for (int i = 0; i < font_manager.fonts.num; i++) {
-		Font *font_info = font_manager.fonts[i];
+internal void font_hotload_callback(const char *filename, void *data) {
+	for (int i = 0; i < fonts.num; i++) {
+		Font *font_info = fonts[i];
 		if (!strcmp(filename, font_info->filename)) {
 			TTF_Font *font = TTF_OpenFont(filename, font_info->point_size);
 			if (!font) {
-				console.printf("Failed to hotload font %s: %s\n", filename, TTF_GetError());
+				console_printf("Failed to hotload font %s: %s\n", filename, TTF_GetError());
 				break;
 			}
 			else {
@@ -59,11 +56,11 @@ void font_hotload_callback(const char *filename, void *data) {
 	}
 }
 
-Font *Font_Manager::load(const char *filename, int point_size) {
+Font *load_font(const char *filename, int point_size) {
 	Font *font_info = nullptr;
 
-	for (int i = 0; i < font_manager.fonts.num; i++) {
-		font_info = font_manager.fonts[i];
+	for (int i = 0; i < fonts.num; i++) {
+		font_info = fonts[i];
 		if (!strcmp(font_info->filename, filename) && font_info->point_size == point_size) {
 			return font_info;
 		}
@@ -71,7 +68,7 @@ Font *Font_Manager::load(const char *filename, int point_size) {
 
 	TTF_Font *font = TTF_OpenFont(filename, point_size);
 	if (!font) {
-		console.printf("Failed to open font %s: %s\n", filename, TTF_GetError());
+		console_printf("Failed to open font %s: %s\n", filename, TTF_GetError());
 		return nullptr;
 	}
 
@@ -79,16 +76,16 @@ Font *Font_Manager::load(const char *filename, int point_size) {
 	font_info->filename = filename;
 	font_info->point_size = point_size;
 	load_data_into_font(font_info, font);
-	font_manager.fonts.append(font_info);
+	fonts.append(font_info);
 
-	hotload.add_file(filename, nullptr, font_hotload_callback);
+	hotload_add_file(filename, nullptr, font_hotload_callback);
 
 	TTF_CloseFont(font);
 
 	return font_info;
 }
 
-int Font_Manager::get_string_length_in_pixels(Font *font, const char *string) {
+int font_get_string_length_in_pixels(Font *font, const char *string) {
 	int length = (int)strlen(string);
 	int pixel_length = 0;
 

@@ -11,11 +11,11 @@ struct Field_Of_View {
 	Vec2 *verts = nullptr;
 	Sorted_FOV_Vert *sorted = nullptr;
 	Vec2 position;
-
-	void init();
-	void update();
-	void shutdown();
-	void render();
 };
+
+void fov_init(Field_Of_View *fov);
+void fov_update(Field_Of_View *fov);
+void fov_shutdown(Field_Of_View *fov);
+void fov_render(Field_Of_View *fov);
 
 #endif

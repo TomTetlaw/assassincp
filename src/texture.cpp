@@ -1,6 +1,6 @@
 #include "precompiled.h"
 
-Texture_Manager tex;
+internal Array<Texture *> textures;
 
 void delete_api_object_for_texture(Texture *texture) {
 	if (texture->api_object) {
@@ -9,17 +9,14 @@ void delete_api_object_for_texture(Texture *texture) {
 	}
 }
 
-void Texture_Manager::init() {
-}
-
-void Texture_Manager::shutdown() {
+void texture_shutdown() {
 	For(textures, {
 		delete_api_object_for_texture(it);
 		delete it;
 	});
 }
 
-void Texture_Manager::begin_level_load() {
+void texture_begin_level_load() {
 	For(textures, {
 		if (!it->never_unload) {
 			it->used = false;
@@ -27,7 +24,7 @@ void Texture_Manager::begin_level_load() {
 	});
 }
 
-void Texture_Manager::end_level_load() {
+void texture_end_level_load() {
 	For(textures, {
 		if (!it->used && !it->never_unload) {
 			delete_api_object_for_texture(it);
@@ -35,7 +32,7 @@ void Texture_Manager::end_level_load() {
 	});
 }
 
-bool load_texture_data(Texture *texture) {
+internal bool load_texture_data(Texture *texture) {
 	SDL_Surface *surf = IMG_Load(texture->filename);
 	if (!surf) {
 		return false;
@@ -79,7 +76,7 @@ bool load_texture_data(Texture *texture) {
 	return true;
 }
 
-void create_texture_data(Texture *texture, const unsigned char *data, int width, int height) {
+internal void create_texture_data(Texture *texture, const unsigned char *data, int width, int height) {
 	unsigned int t;
 	glGenTextures(1, &t);
 	glBindTexture(GL_TEXTURE_2D, t);
@@ -96,7 +93,7 @@ void create_texture_data(Texture *texture, const unsigned char *data, int width,
 	texture->api_object = t;
 }
 
-void create_texture_data_from_surface(Texture *texture, SDL_Surface *surf) {
+internal void create_texture_data_from_surface(Texture *texture, SDL_Surface *surf) {
 	if (!surf) {
 		return;
 	}
@@ -136,20 +133,20 @@ void create_texture_data_from_surface(Texture *texture, SDL_Surface *surf) {
 	texture->width = surf->w;
 	texture->height = surf->h;
 	if (texture->width <= 0 || texture->height <= 0) {
-		console.printf("Texture with zero width but valid SDL surface! [%s: (%d, %d) (%d, %d)]\n", texture->filename, texture->width, texture->height, surf->clip_rect.w, surf->clip_rect.h);
+		console_printf("Texture with zero width but valid SDL surface! [%s: (%d, %d) (%d, %d)]\n", texture->filename, texture->width, texture->height, surf->clip_rect.w, surf->clip_rect.h);
 		texture->width = surf->clip_rect.w;
 		texture->height = surf->clip_rect.h;
 	}
 	texture->api_object = t;
 }
 
-void texture_hotload_callback(const char *filename, void *data) {
+internal void texture_hotload_callback(const char *filename, void *data) {
 	Texture *texture = (Texture *)data;
 	delete_api_object_for_texture(texture);
 	load_texture_data(texture);
 }
 
-Texture *Texture_Manager::load(const char *filename) {
+Texture *load_texture(const char *filename) {
 	if (!filename || filename[0] == 0) {
 		return nullptr;
 	}
@@ -168,20 +165,20 @@ Texture *Texture_Manager::load(const char *filename) {
 	strcpy(texture->filename, filename);
 	if (load_texture_data(texture)) {
 		texture->used = true;
-		tex.textures.append(texture);
+		textures.append(texture);
 
-		hotload.add_file(filename, texture, texture_hotload_callback);
+		hotload_add_file(filename, texture, texture_hotload_callback);
 
 		return texture;
 	}
 	else {
-		console.printf("Failed to load texture %s: %s\n", filename, IMG_GetError());
+		console_printf("Failed to load texture %s: %s\n", filename, IMG_GetError());
 		delete texture;
 		return nullptr;
 	}
 }
 
-Texture *Texture_Manager::create(const char *name, const unsigned char *data, int width, int height) {
+Texture *create_texture(const char *name, const unsigned char *data, int width, int height) {
 	Texture *texture = new Texture;
 	strcpy(texture->filename, name);
 	texture->used = true;
@@ -193,7 +190,7 @@ Texture *Texture_Manager::create(const char *name, const unsigned char *data, in
 	return texture;
 }
 
-Texture *Texture_Manager::create_from_surface(const char *name, SDL_Surface *surface) {
+Texture *create_texture_from_surface(const char *name, SDL_Surface *surface) {
 	Texture *texture = new Texture;
 	strcpy(texture->filename, name);
 	texture->used = true;

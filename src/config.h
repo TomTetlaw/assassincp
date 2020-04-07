@@ -24,7 +24,6 @@ struct Config_Var {
 		char **string_dest;
 		bool *bool_dest;
 		Vec2 *vec2_dest;
-		Vec3 *vec3_dest;
 		Vec4 *vec4_dest;
 	};
 
@@ -39,21 +38,17 @@ struct Config_Var {
 struct Config {
 	Array<Config_Var *> vars;
 	const char *filename = nullptr;
-
-	void init();
-	void shutdown();
-	void register_var(const char *name, float *var, Config_Var_Callback callback = nullptr);
-	void register_var(const char *name, char **var, Config_Var_Callback callback = nullptr);
-	void register_var(const char *name, bool *var, Config_Var_Callback callback = nullptr);
-	void register_var(const char *name, int *var, Config_Var_Callback callback = nullptr);
-	void register_var(const char *name, Vec2 *var, Config_Var_Callback callback = nullptr);
-	void register_var(const char *name, Vec3 *var, Config_Var_Callback callback = nullptr);
-	void register_var(const char *name, Vec4 *var, Config_Var_Callback callback = nullptr);
-	void write_file(const char *filename);
-	void set_var_from_string(Config_Var *var, const char *string);
 };
 
-void config_load_file(const char *filename, void *data); // all vars must be registered before calling this
+void config_load(const char *filename); // all vars must be registered before calling this
+void config_shutdown();
+void register_var(const char *name, float *var, Config_Var_Callback callback = nullptr);
+void register_var(const char *name, char **var, Config_Var_Callback callback = nullptr);
+void register_var(const char *name, bool *var, Config_Var_Callback callback = nullptr);
+void register_var(const char *name, int *var, Config_Var_Callback callback = nullptr);
+void register_var(const char *name, Vec2 *var, Config_Var_Callback callback = nullptr);
+void register_var(const char *name, Vec4 *var, Config_Var_Callback callback = nullptr);
+void config_write_file(const char *filename);
 
 extern Config config;
 

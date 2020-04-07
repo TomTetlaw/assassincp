@@ -108,7 +108,7 @@ Load_File_Result load_file(const char *filename) {
 
 Save_File::~Save_File() {
 	if (handle != nullptr) {
-		console.printf("Warning: didn't close save file at end of scope!\n");
+		console_printf("Warning: didn't close save file at end of scope!\n");
 	}
 }
 
@@ -152,12 +152,6 @@ void save_write_vec2(Save_File *file, Vec2 value) {
 	save_write_float(file, value.y);
 }
 
-void save_write_vec3(Save_File *file, Vec3 value) {
-	save_write_float(file, value.x);
-	save_write_float(file, value.y);
-	save_write_float(file, value.z);
-}
-
 void save_write_vec4(Save_File *file, Vec4 value) {
 	save_write_float(file, value.x);
 	save_write_float(file, value.y);
@@ -194,12 +188,6 @@ void save_read_float(Save_File *file, float *value) {
 void save_read_vec2(Save_File *file, Vec2 *value) {
 	save_read_float(file, &value->x);
 	save_read_float(file, &value->y);
-}
-
-void save_read_vec3(Save_File *file, Vec3 *value) {
-	save_read_float(file, &value->x);
-	save_read_float(file, &value->y);
-	save_read_float(file, &value->z);
 }
 
 void save_read_vec4(Save_File *file, Vec4 *value) {

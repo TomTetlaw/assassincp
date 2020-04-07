@@ -25,15 +25,8 @@ struct Font {
 	const char *filename = nullptr;
 };
 
-struct Font_Manager {
-	Array<Font *> fonts;
-
-	void init();
-	void shutdown();
-	Font *load(const char *filename, int point_size);
-	int get_string_length_in_pixels(Font *font, const char *string);
-};
-
-extern Font_Manager font_manager;
+void font_shutdown();
+Font *load_font(const char *filename, int point_size);
+int font_get_string_length_in_pixels(Font *font, const char *string);
 
 #endif

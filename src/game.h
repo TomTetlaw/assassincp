@@ -30,28 +30,19 @@ struct Level {
 
 struct Game {
 	float game_time = 0.0f;
-	float real_time = 0.0f;
-	float last_time = 0.0f;
 	float delta_time = 0.0f;
-	float real_delta_time = 0.0f;
-
-	bool paused = false;
-	float time_paused = 0.0f;
-	float total_time_paused = 0.0f;
-
-	void init();
-	void shutdown();
-	void update();
-	void render();
-	void toggle_paused();
-	void set_paused(bool paused);
-
 	Level *current_level = nullptr;
 	Entity *player = nullptr;
-	void on_level_load();
-	void load_level(const char *file_name);
 };
 
 extern Game game;
+
+void game_update();
+void game_render();
+void game_toggle_paused();
+void game_set_paused(bool paused);
+void load_level(const char *file_name);
+
+void on_level_load(); // the central function for changing level
 
 #endif
