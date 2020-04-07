@@ -1,6 +1,8 @@
 #include "precompiled.h"
 
 System sys;
+float screen_width;
+float screen_height;
 
 internal void hotload_config_file(const char *filename, void *data) {
 	config_load(filename);
@@ -39,6 +41,9 @@ void system_init(int argc, char *argv[]) {
 	if (!sys.window) {
 		system_error("Failed to create window at [%d, %d]: %s", x, y, SDL_GetError());
 	}
+
+	screen_width = sys.window_size.x;
+	screen_height = sys.window_size.y;
 
 	SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 8);
 	SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 8);

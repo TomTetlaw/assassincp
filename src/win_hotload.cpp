@@ -39,9 +39,7 @@ void hotload_check_files_non_blocking() {
 			HANDLE file_handle = CreateFileA(it->filename, GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 			if (file_handle == INVALID_HANDLE_VALUE) { // could fail if an editor program is still holding onto the file
 				continue;
-			} 
-
-			OutputDebugStringA("we got here.\n");
+			}
 
 			FILETIME file_time;
 			BOOL success = GetFileTime(file_handle, NULL, NULL, &file_time); // could fail if an editor program is still holding onto the file

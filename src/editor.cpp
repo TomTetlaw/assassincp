@@ -23,11 +23,21 @@ internal Editor_Mode mode = EDITOR_SELECT;
 internal Array<Editor_Entity *> entities;
 internal Array<Editor_Entity *> selected_entities;
 
-internal Array<int> selected_polygon_points; // indices into selected_entities[0].points
-
 internal Array<const char *> entity_type_names; // create on init because no new types after startup
 
 internal float poly_point_size = 10.0f;
+
+internal Texture *select_mode_on_image = nullptr;
+internal Texture *select_mode_off_image = nullptr;
+internal Texture *entity_mode_on_image = nullptr;
+internal Texture *entity_mode_off_image = nullptr;
+internal Texture *polygon_mode_on_image = nullptr;
+internal Texture *polygon_mode_off_image = nullptr;
+
+internal float edit_window_top = 0.0f;
+internal float edit_window_left = 0.0f;
+internal float edit_window_bottom = 0.0f;
+internal float edit_window_right = 0.0f;
 
 bool lines_intersect(Vec2 p1, Vec2 q1, Vec2 p2, Vec2 q2)
 {
@@ -114,12 +124,11 @@ bool box_intersects_centered_box(Vec2 position_a, Vec2 size_a, Vec2 position_b, 
 	return box_intersects_box(position_a, size_a, position_b, size_b);
 }
 
-/*
 bool polygon_is_concave(Editor_Polygon *poly)
 {
 	bool got_negative = false;
 	bool got_positive = false;
-	int num_points = poly->verts.num;
+	int num_points = poly->points.num;
 	int B, C;
 
 	auto cross_product_length = [](float Ax, float Ay, float Bx, float By, float Cx, float Cy) -> float {
@@ -137,9 +146,9 @@ bool polygon_is_concave(Editor_Polygon *poly)
 
 		float cross_product =
 			cross_product_length(
-				poly->verts[A]->position.x, poly->verts[A]->position.y,
-				poly->verts[B]->position.x, poly->verts[B]->position.y,
-				poly->verts[C]->position.x, poly->verts[C]->position.y);
+				poly->points[A]->position.x, poly->points[A]->position.y,
+				poly->points[B]->position.x, poly->points[B]->position.y,
+				poly->points[C]->position.x, poly->points[C]->position.y);
 		if (cross_product < 0)
 		{
 			got_negative = true;
@@ -153,7 +162,6 @@ bool polygon_is_concave(Editor_Polygon *poly)
 
 	return true;
 }
-*/
 
 Vec2 polygon_centre_point(Editor_Polygon *poly) {
 	if (poly->points.num <= 0) {
@@ -201,15 +209,14 @@ Vec2 polygon_centre_point(Editor_Polygon *poly) {
 	return centroid;
 }
 
-/*
-bool line_intersects_polygon(Vec2 a, Vec2 b, Editor_Polygon *poly, int ignore) {
-	for (int j = 0; j < poly->verts.num; j++) {
-		if (j + 1 >= poly->verts.num) {
+internal bool line_intersects_polygon(Vec2 a, Vec2 b, Editor_Polygon *poly, int ignore) {
+	for (int j = 0; j < poly->points.num; j++) {
+		if (j + 1 >= poly->points.num) {
 			continue;
 		}
 
-		Vec2 p1 = poly->verts[j]->position;
-		Vec2 p2 = poly->verts[j + 1]->position;
+		Vec2 p1 = poly->points[j]->position;
+		Vec2 p2 = poly->points[j + 1]->position;
 		Vec2 p3 = a;
 		Vec2 p4 = b;
 
@@ -219,8 +226,8 @@ bool line_intersects_polygon(Vec2 a, Vec2 b, Editor_Polygon *poly, int ignore) {
 	}
 
 	if (poly->closed) {
-		Vec2 p1 = poly->verts[0]->position;
-		Vec2 p2 = poly->verts[poly->verts.num - 1]->position;
+		Vec2 p1 = poly->points[0]->position;
+		Vec2 p2 = poly->points[poly->points.num - 1]->position;
 		Vec2 p3 = a;
 		Vec2 p4 = b;
 
@@ -231,13 +238,6 @@ bool line_intersects_polygon(Vec2 a, Vec2 b, Editor_Polygon *poly, int ignore) {
 
 	return false;
 }
-
-void Editor_Polygon::calculate_properties() {
-	center = polygon_centre_point(this);
-	concave = !polygon_is_concave(this);
-	valid = !concave;
-}
-*/
 
 Editor_Entity::Editor_Entity() {
 	type_name[0] = 0;
@@ -420,18 +420,6 @@ bool editor_gui_handle_event(SDL_Event *ev) {
 	return false;
 }
 
-internal Texture *select_mode_on_image = nullptr;
-internal Texture *select_mode_off_image = nullptr;
-internal Texture *entity_mode_on_image = nullptr;
-internal Texture *entity_mode_off_image = nullptr;
-internal Texture *polygon_mode_on_image = nullptr;
-internal Texture *polygon_mode_off_image = nullptr;
-
-internal float edit_window_top = 0.0f;
-internal float edit_window_left = 0.0f;
-internal float edit_window_bottom = 0.0f;
-internal float edit_window_right = 0.0f;
-
 void editor_init() {
 	ImGui::CreateContext();
 	ImGuiIO &io = ImGui::GetIO();
@@ -447,10 +435,15 @@ void editor_init() {
 	polygon_mode_on_image = load_texture("data/textures/editor/polygon_mode_on.png");
 	polygon_mode_off_image = load_texture("data/textures/editor/polygon_mode_off.png");
 
-	edit_window_top = -(sys.window_size.y / 2);
-	edit_window_left = -(sys.window_size.x / 2) + 110;
-	edit_window_bottom = sys.window_size.y / 2 - 100 + 16 + 7;
-	edit_window_right = (sys.window_size.x / 2) - 345;
+	edit_window_top = 0;
+	edit_window_left = 91.0f + 1; // width of mode select panel + 1
+	edit_window_bottom = screen_height;
+	edit_window_right = screen_width;
+
+	register_var("edit_window_top", &edit_window_top);
+	register_var("edit_window_left", &edit_window_left);
+	register_var("edit_window_bottom", &edit_window_bottom);
+	register_var("edit_window_right", &edit_window_right);
 
 	for (int i = 0; i < entity_manager.entity_types.num; i++) {
 		entity_type_names.append(entity_manager.entity_types[i]->name);
@@ -467,7 +460,6 @@ void editor_shutdown() {
 
 internal void clear_selected_entities() {
 	selected_entities.num = 0;
-	selected_polygon_points.num = 0;
 }
 
 internal bool find_polygon_point_at(Vec2 position, Editor_Polygon **poly_out, int *point_index) {
@@ -584,10 +576,11 @@ void editor_update() {
 		ImGui::End();
 	}
 
-	static bool show_demo_window = true;
-	if (show_demo_window) {
-		ImGui::ShowDemoWindow(&show_demo_window);
-	}
+	// I use this to find the right widget to use:
+	//static bool show_demo_window = true;
+	//if (show_demo_window) {
+	//	ImGui::ShowDemoWindow(&show_demo_window);
+	//}
 }
 
 void editor_remove_all() {

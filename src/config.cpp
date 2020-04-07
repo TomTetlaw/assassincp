@@ -7,6 +7,9 @@ internal void set_var_string(Config_Var *var) {
 	case VAR_FLOAT:
 		sprintf_s(var->print_string, var_string_length, "%f", *var->float_dest);
 		break;
+	case VAR_DOUBLE:
+		sprintf_s(var->print_string, var_string_length, "%f", *var->double_dest);
+		break;
 	case VAR_INT:
 		sprintf_s(var->print_string, var_string_length, "%d", *var->int_dest);
 		break;
@@ -190,7 +193,7 @@ void config_write_file(const char *filename) {
 			fprintf_s(file, "%s %f\n", it->name, *it->float_dest);
 			break;
 		case VAR_DOUBLE:
-			fprintf_s(file, "%s %f\n", it->name, *it->float_dest); // %f is for double... for some reason
+			fprintf_s(file, "%s %f\n", it->name, *it->double_dest); // %f is for double... for some reason
 			break;
 		case VAR_INT:
 			fprintf_s(file, "%s %d\n", it->name, *it->int_dest);

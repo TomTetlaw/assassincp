@@ -389,10 +389,10 @@ void render_box2(float top, float left, float bottom, float right, bool fill, Ve
 
 	glColor4f(v4parms(colour));
 	glBegin(GL_QUADS);
-	glVertex2f(right, top);
 	glVertex2f(left, top);
 	glVertex2f(left, bottom);
 	glVertex2f(right, bottom);
+	glVertex2f(right, top);
 	glEnd();
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 }
