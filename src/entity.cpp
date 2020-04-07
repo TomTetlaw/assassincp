@@ -1,5 +1,7 @@
 #include "precompiled.h"
 
+declare_entity_type(Entity, "ent_base", ENTITY_BASE);
+
 Entity_Manager entity_manager;
 
 #pragma init_seg(lib) 
@@ -148,6 +150,12 @@ void Entity_Manager::update(float dt) {
 			entity->think();
 		}
 	}
+
+	//For(entities, {
+	//	if(it && it->delete_me) {
+	//		delete_entity(it);
+	//	}
+	//});
 }
 
 Entity *Entity_Manager::get_entity_from_handle(Entity_Handle handle) {
@@ -163,7 +171,7 @@ Entity *Entity_Manager::get_entity_from_handle(Entity_Handle handle) {
 		return nullptr;
 	}
 
-	if (entity->parity == handle.parity) {
+	if (entity->handle.parity == handle.parity) {
 		return entity;
 	}
 
@@ -176,15 +184,15 @@ void Entity_Manager::add_entity(Entity *entity) {
 	for (int i = 0; i < entity_manager.entities.num; i++) {
 		if (!entity_manager.entities[i]) {
 			entity_manager.entities[i] = entity;
-			entity->num = i;
+			entity->handle.num = i;
 			added = true;
 		}
 	}
 
-	entity->parity = entity_manager.next_parity++;
+	entity->handle.parity = entity_manager.next_parity++;
 
 	if (!added) {
-		entity->num = entity_manager.entities.num;
+		entity->handle.num = entity_manager.entities.num;
 		entity_manager.entities.append(entity);
 	}
 
@@ -205,7 +213,7 @@ void Entity_Manager::add_entity(Entity *entity) {
 }
 
 void Entity_Manager::spawn_entity(Entity *entity) {
-	if (entity->parity == -1) {
+	if (entity->handle.parity == -1) {
 		entity_manager.add_entity(entity);
 	}
 
@@ -252,11 +260,11 @@ void Entity_Manager::delete_entity(Entity *entity) {
 	if (!entity) {
 		return;
 	}
-	if (entity->num < 0 || entity->num >= entity_manager.entities.num) {
+	if (entity->handle.num < 0 || entity->handle.num >= entity_manager.entities.num) {
 		return;
 	}
 
-	entity_manager.entities[entity->num] = nullptr;
+	entity_manager.entities[entity->handle.num] = nullptr;
 	entity_manager.entity_types[entity->classify]->entities[entity->num_in_type] = nullptr;
 
 	entity->delete_physics(space);

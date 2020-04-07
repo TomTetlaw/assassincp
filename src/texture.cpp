@@ -150,7 +150,7 @@ void texture_hotload_callback(const char *filename, void *data) {
 }
 
 Texture *Texture_Manager::load(const char *filename) {
-	if (!filename || filename == "") {
+	if (!filename || filename[0] == 0) {
 		return nullptr;
 	}
 

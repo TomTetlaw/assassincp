@@ -17,16 +17,8 @@
 #include "../include/sdl2/SDL_syswm.h"
 #include "../include/sdl2/SDL_image.h"
 #include "../include/sdl2/SDL_ttf.h"
-#pragma comment(lib, "../../lib/sdl2/SDL2.lib")
-#pragma comment(lib, "../../lib/sdl2/SDL2_image.lib")
-#pragma comment(lib, "../../lib/sdl2/SDL2_ttf.lib")
-
 #include "../include/glew/glew.h"
-#pragma comment(lib, "../../lib/glew/glew32.lib")
-#pragma comment(lib, "opengl32.lib")
-
 #include "../include/chipmunk/chipmunk.h"
-#pragma comment(lib, "../../lib/chipmunk/chipmunk.lib")
 
 #ifdef assert
 #undef assert

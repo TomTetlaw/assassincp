@@ -6,7 +6,7 @@ class PlayerStart : public Entity {
 declare_entity_type(PlayerStart, "info_player_start", ENTITY_INFO_PLAYER_START);
 
 class Player : public Entity {
-	cpPivotJoint *joint = nullptr;
+	//@Refactor: this style of movement could be abstracted for use in other entities
 	cpBody *move_anchor = nullptr;
 	cpConstraint *move_constraint = nullptr;
 	cpShape *shape = nullptr;
@@ -14,7 +14,6 @@ class Player : public Entity {
 
 	void spawn() {
 		set_texture("data/textures/player.png");
-		velocity_ramp_speed = 1000;
 		fov.init();
 	}
 
@@ -61,16 +60,17 @@ class Player : public Entity {
 
 		cpShapeFilter filter;
 		filter.categories = 1;
+		filter.mask = CP_ALL_CATEGORIES;
 		cpShapeSetFilter(shape, filter);
 
 		move_anchor = cpBodyNewStatic();
 
 		move_constraint = cpPivotJointNew(move_anchor, body, cpvzero);
-		cpConstraintSetMaxBias(move_constraint, 300.0f);
+		cpConstraintSetMaxBias(move_constraint, 500.0f);
 		cpConstraintSetMaxForce(move_constraint, 3000.0f);
 
-		cpSpaceAddShape(space, shape);
 		cpSpaceAddBody(space, body);
+		cpSpaceAddShape(space, shape);
 		cpSpaceAddBody(space, move_anchor);
 		cpSpaceAddConstraint(space, move_constraint);
 	}

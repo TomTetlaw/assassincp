@@ -8,6 +8,7 @@ enum Entity_Classify {
 	ENTITY_INFO_POLYGON_POINT = 3,
 	ENTITY_INFO_PLAYER_START = 4,
 	ENTITY_BAD_GUY = 5,
+	ENTITY_BULLET = 6,
 
 	ENTITY_NUM_TYPES,
 };
@@ -29,8 +30,8 @@ enum Collision_Type {
 struct Entity {
 	Entity();
 
-	int parity = -1;
-	int num = -1;
+	Entity_Handle handle;
+	bool delete_me = false;
 	int num_in_type = -1;
 	Entity_Type_Decl *type = nullptr;
 	Entity_Classify classify = ENTITY_BASE;
@@ -66,6 +67,9 @@ struct Entity {
 	Render_Texture rt;
 	void set_texture(const char *filename, bool set_size = true);
 	void update_render_texture();
+
+	//@Hack: only used for ent_bullet
+	Vec2 goal_position;
 
 	cpBody *body = nullptr;
 	Vec2 position;
@@ -120,7 +124,5 @@ struct Entity_Manager {
 };
 
 extern Entity_Manager entity_manager;
-
-declare_entity_type(Entity, "ent_base", ENTITY_BASE);
 
 #endif

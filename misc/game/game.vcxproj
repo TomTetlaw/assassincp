@@ -86,8 +86,9 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <PrecompiledHeader>Use</PrecompiledHeader>
-      <PrecompiledHeaderFile>precompiled.h</PrecompiledHeaderFile>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <PrecompiledHeaderFile>
+      </PrecompiledHeaderFile>
     </ClCompile>
     <PostBuildEvent>
       <Command>
@@ -95,6 +96,7 @@
     </PostBuildEvent>
     <Link>
       <OutputFile>../../build/game.exe</OutputFile>
+      <AdditionalDependencies>opengl32.lib;../../lib/glew/glew32.lib;../../lib/sdl2/SDL2.lib;../../lib/sdl2/SDL2_image.lib;../../lib/sdl2/SDL2_ttf.lib;../../lib/chipmunk/chipmunk.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">

@@ -165,16 +165,20 @@ public:
 		}
 
 		cpTransform transform = cpTransformIdentity;
-		shape = cpPolyShapeNew(body, verts.num, cp_verts, transform, 0.000001f);
 		
+		shape = cpPolyShapeNew(body, verts.num, cp_verts, transform, 0.000001f);
+		cpShapeFilter filter;
+		filter.categories = 4;
+		cpShapeSetFilter(shape, filter);
+
 		int count = cpPolyShapeGetCount(shape);
 		for (int i = 0; i < count; i++) {
 			cpVect v = cpPolyShapeGetVert(shape, i);
 			game.current_level->fov_check_points.append(Vec2(v.x, v.y));
 		}
 
-		cpSpaceAddShape(space, shape);
 		cpSpaceAddBody(space, body);
+		cpSpaceAddShape(space, shape);
 	}
 
 	void delete_physics(cpSpace *space) {
@@ -281,7 +285,7 @@ bool check_nav_point(Vec2 point) {
 
 	for (int i = 0; i < 8; i++) {
 		cpShapeFilter filter;
-		filter.categories = 1|2;
+		filter.mask = 4;
 		if (cpSpaceSegmentQueryFirst(entity_manager.space, cpv(point.x, point.y), cpv(points[i].x, points[i].y), 1, filter, &info[i])) {
 			return false;
 		}

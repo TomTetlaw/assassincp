@@ -2,9 +2,10 @@
 
 class Bad_Guy : public Entity {
 	Nav_Path path;
-	cpShape *shape = nullptr;
+	//@Refactor: this style of movement could be abstracted for use in other entities
 	cpBody *move_anchor = nullptr;
 	cpConstraint *move_constraint = nullptr;
+	cpShape *shape = nullptr;
 	
 	int current_point_index = 0;
 
@@ -12,6 +13,12 @@ class Bad_Guy : public Entity {
 		path.points.num = 0;
 		current_point_index = 0;
 		make_path(&path, position, game.player->position);
+
+		Entity *bullet = entity_manager.create_entity("ent_bullet", nullptr, false, false);
+		bullet->position = position;
+		bullet->goal_position = game.player->position;
+		entity_manager.spawn_entity(bullet);
+
 		think_time = game.game_time + 1.0f;
 	}
 
@@ -29,8 +36,8 @@ class Bad_Guy : public Entity {
 		cpConstraintSetMaxBias(move_constraint, 300.0f);
 		cpConstraintSetMaxForce(move_constraint, 3000.0f);
 
-		cpSpaceAddShape(space, shape);
 		cpSpaceAddBody(space, body);
+		cpSpaceAddShape(space, shape);
 		cpSpaceAddBody(space, move_anchor);
 		cpSpaceAddConstraint(space, move_constraint);
 	}
