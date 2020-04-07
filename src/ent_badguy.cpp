@@ -2,10 +2,6 @@
 
 class Bad_Guy : public Entity {
 	Nav_Path path;
-	//@Refactor: this style of movement could be abstracted for use in other entities
-	cpBody *move_anchor = nullptr;
-	cpConstraint *move_constraint = nullptr;
-	cpShape *shape = nullptr;
 	
 	int current_point_index = 0;
 
@@ -14,39 +10,7 @@ class Bad_Guy : public Entity {
 		current_point_index = 0;
 		make_path(&path, position, game.player->position);
 
-		Entity *bullet = entity_manager.create_entity("ent_bullet", nullptr, false, false);
-		bullet->position = position;
-		bullet->goal_position = game.player->position;
-		entity_manager.spawn_entity(bullet);
-
 		think_time = game.game_time + 1.0f;
-	}
-
-	void setup_physics(cpSpace *space) {
-		body = cpBodyNew(1, cpMomentForBox(10, size.x, size.y));
-		shape = cpBoxShapeNew(body, size.x, size.y, 1);
-
-		cpShapeFilter filter;
-		filter.categories = 2;
-		cpShapeSetFilter(shape, filter);
-
-		move_anchor = cpBodyNewStatic();
-
-		move_constraint = cpPivotJointNew(move_anchor, body, cpvzero);
-		cpConstraintSetMaxBias(move_constraint, 300.0f);
-		cpConstraintSetMaxForce(move_constraint, 3000.0f);
-
-		cpSpaceAddBody(space, body);
-		cpSpaceAddShape(space, shape);
-		cpSpaceAddBody(space, move_anchor);
-		cpSpaceAddConstraint(space, move_constraint);
-	}
-
-	void delete_physics(cpSpace *space) {
-		cpSpaceRemoveConstraint(space, move_constraint);
-		cpSpaceRemoveShape(space, shape);
-		cpSpaceRemoveBody(space, move_anchor);
-		cpSpaceRemoveBody(space, body);
 	}
 
 	void update(float dt) {
@@ -58,16 +22,14 @@ class Bad_Guy : public Entity {
 					current_point_index = 0;
 				}
 			}
-
-			cpVect v = cpv(path.points[current_point_index]->point.x, path.points[current_point_index]->point.y);
-			cpBodySetPosition(move_anchor, v);
 		}
 		else {
-			cpBodySetPosition(move_anchor, cpv(position.x, position.y));
 		}
 	}
 
 	void render() {
+		Entity::render();
+		
 		glMatrixMode(GL_MODELVIEW);
 		glLoadIdentity();
 		glPushMatrix();

@@ -96,7 +96,7 @@
     </PostBuildEvent>
     <Link>
       <OutputFile>../../build/game.exe</OutputFile>
-      <AdditionalDependencies>opengl32.lib;../../lib/glew/glew32.lib;../../lib/sdl2/SDL2.lib;../../lib/sdl2/SDL2_image.lib;../../lib/sdl2/SDL2_ttf.lib;../../lib/chipmunk/chipmunk.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>opengl32.lib;../../lib/glew/glew32.lib;../../lib/sdl2/SDL2.lib;../../lib/sdl2/SDL2_image.lib;../../lib/sdl2/SDL2_ttf.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">

@@ -18,7 +18,6 @@
 #include "../include/sdl2/SDL_image.h"
 #include "../include/sdl2/SDL_ttf.h"
 #include "../include/glew/glew.h"
-#include "../include/chipmunk/chipmunk.h"
 
 #ifdef assert
 #undef assert

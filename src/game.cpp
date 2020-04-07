@@ -152,38 +152,12 @@ void Game::set_paused(bool paused) {
 
 class Poly : public Entity {
 public:
-	cpShape *shape = nullptr;
 	Array<Vec2> verts;
 
-	void setup_physics(cpSpace *space) {
-		body = cpBodyNewStatic();
-		cpBodySetPosition(body, cpv(position.x, position.y));
-
-		cpVect *cp_verts = new cpVect[verts.num];
-		for (int i = 0; i < verts.num; i++) {
-			cp_verts[i] = cpv(verts[i].x, verts[i].y);
-		}
-
-		cpTransform transform = cpTransformIdentity;
+	void render() {
+		For(verts, {
 		
-		shape = cpPolyShapeNew(body, verts.num, cp_verts, transform, 0.000001f);
-		cpShapeFilter filter;
-		filter.categories = 4;
-		cpShapeSetFilter(shape, filter);
-
-		int count = cpPolyShapeGetCount(shape);
-		for (int i = 0; i < count; i++) {
-			cpVect v = cpPolyShapeGetVert(shape, i);
-			game.current_level->fov_check_points.append(Vec2(v.x, v.y));
-		}
-
-		cpSpaceAddBody(space, body);
-		cpSpaceAddShape(space, shape);
-	}
-
-	void delete_physics(cpSpace *space) {
-		cpSpaceRemoveShape(space, shape);
-		cpSpaceRemoveBody(space, body);
+		});
 	}
 };
 
@@ -243,7 +217,7 @@ void Game::load_level(const char *file_name) {
 
 			Entity *ent = entity_manager.create_entity(entity.type_name, entity.name, false, false);
 			if (ent) {
-				ent->set_position(entity.position);
+				ent->position = entity.position;
 				ent->size = entity.size;
 				ent->rt.scale = entity.scale;
 				ent->set_texture(entity.texture_name, false);
@@ -269,29 +243,7 @@ void Game::load_level(const char *file_name) {
 }
 
 bool check_nav_point(Vec2 point) {
-	cpSegmentQueryInfo info[8];
-	float offset = game.current_level->nav_points_size / 2;
-	Vec2 points[8] = {
-		point + Vec2(offset, 0),
-		point + Vec2(-offset, 0),
-		point + Vec2(0, offset),
-		point + Vec2(0, -offset),
-
-		point + Vec2(-offset, -offset),
-		point + Vec2(offset, -offset),
-		point + Vec2(-offset, offset),
-		point + Vec2(offset, offset),
-	};
-
-	for (int i = 0; i < 8; i++) {
-		cpShapeFilter filter;
-		filter.mask = 4;
-		if (cpSpaceSegmentQueryFirst(entity_manager.space, cpv(point.x, point.y), cpv(points[i].x, points[i].y), 1, filter, &info[i])) {
-			return false;
-		}
-	}
-
-	return true;
+	return false;
 }
 
 void generate_nav_points() {

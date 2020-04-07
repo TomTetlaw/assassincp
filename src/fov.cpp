@@ -29,17 +29,13 @@ void Field_Of_View::init() {
 void Field_Of_View::update() {
 	int vert_num = 0;
 	for (int i = 0; i < game.current_level->fov_check_points.num; i++) {
-		cpSegmentQueryInfo info[num_rays];
-		cpShapeFilter filter;
-		filter.categories = 1;
-
 		for (int j = 0; j < num_rays; j++) {
 			Vec2 points[num_rays];
 			points[0] = game.current_level->fov_check_points[i];
 			points[1] = position + Vec2::from_angle(position.angle_to(game.current_level->fov_check_points[i]) - 0.00001f) * 10000;
 			points[2] = position + Vec2::from_angle(position.angle_to(game.current_level->fov_check_points[i]) + 0.00001f) * 10000;
-			if (cpSpaceSegmentQueryFirst(entity_manager.space, cpv(position.x, position.y), cpv(points[j].x, points[j].y), 0.00001f, filter, &info[j])) {
-				verts[vert_num] = Vec2(info[j].point.x, info[j].point.y);
+			if (false /*raycast*/) {
+				//verts[vert_num] = Vec2(info[j].point.x, info[j].point.y);
 			}
 			else {
 				verts[vert_num] = points[j];

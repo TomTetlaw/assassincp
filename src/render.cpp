@@ -4,14 +4,6 @@ Render renderer;
 
 void opengl_debug_callback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* userParam);
 
-cpSpaceDebugDrawOptions options;
-void cp_debug_draw_circle(cpVect pos, cpFloat angle, cpFloat radius, cpSpaceDebugColor outlineColor, cpSpaceDebugColor fillColor, cpDataPointer data);
-void cp_debug_draw_segment(cpVect a, cpVect b, cpSpaceDebugColor color, cpDataPointer data);
-void cp_debug_draw_fat_segment(cpVect a, cpVect b, cpFloat radius, cpSpaceDebugColor outlineColor, cpSpaceDebugColor fillColor, cpDataPointer data);
-void cp_debug_draw_polygon(int count, const cpVect *verts, cpFloat radius, cpSpaceDebugColor outlineColor, cpSpaceDebugColor fillColor, cpDataPointer data);
-void cp_debug_draw_dot(cpFloat size, cpVect pos, cpSpaceDebugColor color, cpDataPointer data);
-cpSpaceDebugColor cp_colour_for_shape(cpShape *shape, cpDataPointer data);
-
 void Render::init() {
 	glewInit();
 
@@ -38,34 +30,12 @@ void Render::init() {
 
 	default_font = font_manager.load("data/fonts/consolas.ttf", 16);
 	debug_string_position = Vec2(-sys.window_size.x, -sys.window_size.y);
-
-	options.drawCircle = cp_debug_draw_circle;
-	options.drawSegment = cp_debug_draw_segment;
-	options.drawFatSegment = cp_debug_draw_fat_segment;
-	options.drawPolygon = cp_debug_draw_polygon;
-	options.drawDot = cp_debug_draw_dot;
-	options.colorForShape = cp_colour_for_shape;
-	options.flags = (cpSpaceDebugDrawFlags)(cpSpaceDebugDrawFlags::CP_SPACE_DEBUG_DRAW_SHAPES | cpSpaceDebugDrawFlags::CP_SPACE_DEBUG_DRAW_COLLISION_POINTS | cpSpaceDebugDrawFlags::CP_SPACE_DEBUG_DRAW_CONSTRAINTS);
-	options.shapeOutlineColor.r = 1;
-	options.shapeOutlineColor.g = 0;
-	options.shapeOutlineColor.b = 0;
-	options.shapeOutlineColor.a = 1;
-	options.collisionPointColor.r = 1;
-	options.collisionPointColor.g = 0;
-	options.collisionPointColor.b = 0;
-	options.collisionPointColor.a = 1;
-	options.constraintColor.r = 1;
-	options.constraintColor.g = 0;
-	options.constraintColor.b = 0;
-	options.constraintColor.a = 1;
 }
 
 void Render::render_physics_debug() {
 	if (!debug_draw) {
 		return;
 	}
-
-	cpSpaceDebugDraw(entity_manager.space, &options);
 }
 
 void Render::shutdown() {
@@ -483,89 +453,4 @@ void opengl_debug_callback(GLenum source, GLenum type, GLuint id, GLenum severit
 	}
 
     opengl_debug_output_to_file(source, type, id, severity, message, severity == GL_DEBUG_SEVERITY_MEDIUM_ARB || severity == GL_DEBUG_SEVERITY_HIGH_ARB);
-}
-
-void cp_debug_draw_circle(cpVect pos, cpFloat angle, cpFloat radius, cpSpaceDebugColor outlineColor, cpSpaceDebugColor fillColor, cpDataPointer data) {
-	glMatrixMode(GL_MODELVIEW);
-	glPushMatrix();
-	glLoadIdentity();
-
-	renderer.setup_render();
-
-	glColor4f(outlineColor.r, outlineColor.g, outlineColor.b, outlineColor.a);
-	glBegin(GL_LINE_LOOP);
-	int num_segments = 64;
-	for (int ii = 0; ii < num_segments; ii++) {
-		float theta = 2.0f * 3.1415926f * float(ii) / float(num_segments);//get the current angle 
-		float x = radius * cosf(theta);//calculate the x component 
-		float y = radius * sinf(theta);//calculate the y component 
-		glVertex2f(x + pos.x, y + pos.y);//output vertex 
-	}
-	glEnd();
-
-	glPopMatrix();
-}
-
-void cp_debug_draw_segment(cpVect a, cpVect b, cpSpaceDebugColor color, cpDataPointer data) {
-	glMatrixMode(GL_MODELVIEW);
-	glPushMatrix();
-	glLoadIdentity();
-
-	renderer.setup_render();
-
-	glColor4f(1,0,0,1);
-	glBegin(GL_LINES);
-	glVertex2f(a.x, a.y);
-	glVertex2f(b.x, b.y);
-	glEnd();
-
-	glPopMatrix();
-}
-
-void cp_debug_draw_fat_segment(cpVect a, cpVect b, cpFloat radius, cpSpaceDebugColor outlineColor, cpSpaceDebugColor fillColor, cpDataPointer data) {
-	cp_debug_draw_segment(a, b, outlineColor, data);
-}
-
-void cp_debug_draw_polygon(int count, const cpVect *verts, cpFloat radius, cpSpaceDebugColor outlineColor, cpSpaceDebugColor fillColor, cpDataPointer data) {
-	glMatrixMode(GL_MODELVIEW);
-	glPushMatrix();
-	glLoadIdentity();
-
-	renderer.setup_render();
-
-	glColor4f(outlineColor.r, outlineColor.g, outlineColor.b, outlineColor.a);
-	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-	glBegin(GL_POLYGON);
-	for (int i = 0; i < count; i++) {
-		glVertex2f(verts[i].x, verts[i].y);
-	}
-	glEnd();
-	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-
-	glPopMatrix();
-}
-
-void cp_debug_draw_dot(cpFloat size, cpVect pos, cpSpaceDebugColor color, cpDataPointer data) {
-	glMatrixMode(GL_MODELVIEW);
-	glPushMatrix();
-	glLoadIdentity();
-
-	renderer.setup_render();
-
-	glPointSize(size);
-	glColor4f(color.r, color.g, color.b, color.a);
-	glBegin(GL_POINTS);
-	glVertex2f(pos.x, pos.y);
-	glEnd();
-
-	glPopMatrix();
-}
-
-cpSpaceDebugColor cp_colour_for_shape(cpShape *shape, cpDataPointer data) {
-	cpSpaceDebugColor colour;
-	colour.r = 1;
-	colour.g = 1;
-	colour.b = 1;
-	colour.a = 1;
-	return colour;
 }

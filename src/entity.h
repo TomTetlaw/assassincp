@@ -44,9 +44,6 @@ struct Entity {
 	virtual void update(float dt) {}
 	virtual void render() {}
 	virtual void think() {}
-	virtual void setup_physics(cpSpace *space) {}
-	virtual void delete_physics(cpSpace *space) {}
-	virtual void handle_collision(Entity *other, Collision_Type type) {}
 
 	virtual void handle_mouse_press(int mouse_button, bool down, Vec2 position, bool is_double_click) {}
 	virtual void handle_mouse_move(int relx, int rely) {}
@@ -68,10 +65,6 @@ struct Entity {
 	void set_texture(const char *filename, bool set_size = true);
 	void update_render_texture();
 
-	//@Hack: only used for ent_bullet
-	Vec2 goal_position;
-
-	cpBody *body = nullptr;
 	Vec2 position;
 	Vec2 velocity;
 	Vec2 goal_velocity;
@@ -107,8 +100,6 @@ struct Entity_Manager {
 	Array<Entity_Type_Decl *> entity_types;
 	Array<Entity *> entities;
 	int next_parity = 0;
-
-	cpSpace *space = nullptr;
 
 	void init();
 	void shutdown();

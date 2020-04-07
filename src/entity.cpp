@@ -41,39 +41,6 @@ void Entity::set_texture(const char *filename, bool set_size) {
 	}
 }
 
-void Entity::set_position(Vec2 pos) {
-	if (body) {
-		cpBodySetPosition(body, cpv(pos.x, pos.y));
-	}
-
-	position = pos;
-}
-
-void handle_collisions_post_solve(cpArbiter *arb, cpSpace *space, cpDataPointer data) {
-	CP_ARBITER_GET_BODIES(arb, a, b);
-	Entity *first = (Entity *)cpBodyGetUserData(a);
-	Entity *second = (Entity *)cpBodyGetUserData(b);
-	first->handle_collision(second, COLLISION_POST_SOLVE);
-	second->handle_collision(first, COLLISION_POST_SOLVE);
-}
-
-cpBool handle_collisions_begin(cpArbiter *arb, cpSpace *space, cpDataPointer data) {
-	CP_ARBITER_GET_BODIES(arb, a, b);
-	Entity *first = (Entity *)cpBodyGetUserData(a);
-	Entity *second = (Entity *)cpBodyGetUserData(b);
-	first->handle_collision(second, COLLISION_BEGIN);
-	second->handle_collision(first, COLLISION_BEGIN);
-	return cpTrue;
-}
-
-void handle_collisions_seperate(cpArbiter *arb, cpSpace *space, cpDataPointer data) {
-	CP_ARBITER_GET_BODIES(arb, a, b);
-	Entity *first = (Entity *)cpBodyGetUserData(a);
-	Entity *second = (Entity *)cpBodyGetUserData(b);
-	first->handle_collision(second, COLLISION_SEPERATE);
-	second->handle_collision(first, COLLISION_SEPERATE);
-}
-
 void Entity_Manager::init() {
 	entity_manager.entity_types.ensure_size(Entity_Type_Decl::list_num);
 	entity_manager.entity_types.num = Entity_Type_Decl::list_num;
@@ -83,12 +50,6 @@ void Entity_Manager::init() {
 		entity_manager.entity_types[decl->classify] = decl;
 		decl = decl->next;
 	}
-
-	space = cpSpaceNew();
-	cpCollisionHandler *handler = cpSpaceAddDefaultCollisionHandler(space);
-	handler->postSolveFunc = handle_collisions_post_solve;
-	handler->beginFunc = handle_collisions_begin;
-	handler->separateFunc = handle_collisions_seperate;
 }
 
 void Entity_Manager::shutdown() {
@@ -116,24 +77,14 @@ void Entity_Manager::render() {
 }
 
 void Entity_Manager::update(float dt) {
-	cpSpaceStep(space, 1.0f / 60.0f);
-
 	for (int i = 0; i < entity_manager.entities.num; i++) {
 		Entity *entity = entity_manager.entities[i];
 		if (!entity) {
 			continue;
 		}
 
-		if (entity->body) {
-			cpVect physics_position = cpBodyGetPosition(entity->body);
-			entity->position.x = physics_position.x;
-			entity->position.y = physics_position.y;
-
-			//@fixme: figure out how to properly make movement type customizable (angle, x velocity)
-			entity->velocity = approach(entity->velocity, entity->goal_velocity, dt * entity->velocity_ramp_speed);
-		//	cpBodySetVelocity(entity->body, cpv(entity->velocity.x, entity->velocity.y));
-			cpBodySetAngle(entity->body, 0);
-		}
+		entity->velocity = approach(entity->velocity, entity->goal_velocity, dt * entity->velocity_ramp_speed);
+		entity->position = entity->position + (entity->velocity * dt);
 	}
 
 	for (int i = 0; i < entity_manager.entities.num; i++) {
@@ -218,11 +169,6 @@ void Entity_Manager::spawn_entity(Entity *entity) {
 	}
 
 	entity->spawn();
-	entity->setup_physics(entity_manager.space);
-	if (entity->body) {
-		cpBodySetPosition(entity->body, cpv(entity->position.x, entity->position.y));
-		cpBodySetUserData(entity->body, (void *)entity);
-	}
 }
 
 Entity *Entity_Manager::create_entity(const char *type_name, const char *name, bool spawn, bool add) {
@@ -267,7 +213,6 @@ void Entity_Manager::delete_entity(Entity *entity) {
 	entity_manager.entities[entity->handle.num] = nullptr;
 	entity_manager.entity_types[entity->classify]->entities[entity->num_in_type] = nullptr;
 
-	entity->delete_physics(space);
 	entity->shutdown();
 
 	delete entity;
