@@ -1,6 +1,16 @@
 #ifndef __HOTLOAD_H__
 #define __HOTLOAD_H__
 
+// if you're loading a file that should be hotloaded, which is anything that could be edited
+// and then reloaded (textures, config files, etc), then you do it like this:
+//
+// void callback(const char *filename, void *data) {
+//     // the file has been changed and must be loaded again
+// }
+// hotload_add_file("my_file_name", my_data, callback);
+//
+// textures, config files, and fonts are currently all hotloaded automatically.
+
 typedef void(*Hotload_Callback)(const char *filename, void *data);
 
 struct Hotloaded_File {

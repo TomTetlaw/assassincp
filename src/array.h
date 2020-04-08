@@ -8,16 +8,26 @@ struct Array {
 	int num = 0;
 
 	~Array();
+	// make sure the memory is big enough for new_size elements
 	void ensure_size(int new_size);
 	void append(const T &value);
+	// removes the value at index i and moves all elements infront of i back one
 	void remove(int i);
+	// adds a new element to the array and returns a pointer to it
 	T *alloc();
+	// returns true if the value exists
+	bool find(const T &val);
+	// returns the index if the value exists or -1 if not
+	int find_index(const T &val);
+
 	T &operator[](int index) { return data[index]; }
 	T &first() { return data[0]; }
-	//T *last() { if (num <= 0) return nullptr; else return &data[num - 1]; }
-	bool find(const T &val);
-	int find_index(const T &val);
 };
+
+// macro so that you don't have to type for(int i = 0; i < x.num; i++) every time
+// generally you want to do auto it = x[it_index] in the first line of the loop
+// to get the reference to the element
+#define For(x) for(int it_index = 0; it_index < x.num; it_index++)
 
 template<typename T>
 Array<T>::~Array() {
@@ -62,6 +72,7 @@ void Array<T>::remove(int index) {
 	for (int i = 0; i < index; i++) {
 		data[i] = old_data[i];
 	}
+	// move everything after the removed element one to the left
 	for (int i = index; i < size; i++) {
 		data[i] = old_data[i + 1];
 	}
@@ -92,7 +103,5 @@ int Array<T>::find_index(const T &val) {
 
 	return -1;
 }
-
-#define For(x) for(int it_index = 0; it_index < x.num; it_index++)
 
 #endif

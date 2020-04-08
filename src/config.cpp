@@ -8,7 +8,7 @@ internal void set_var_string(Config_Var *var) {
 		sprintf_s(var->print_string, var_string_length, "%f", *var->float_dest);
 		break;
 	case VAR_DOUBLE:
-		sprintf_s(var->print_string, var_string_length, "%f", *var->double_dest);
+		sprintf_s(var->print_string, var_string_length, "%f", *var->double_dest); // %f is for double... for some reason
 		break;
 	case VAR_INT:
 		sprintf_s(var->print_string, var_string_length, "%d", *var->int_dest);
@@ -30,6 +30,8 @@ internal void set_var_string(Config_Var *var) {
 	case VAR_VEC4:
 		sprintf_s(var->print_string, var_string_length, "(%f %f %f %f)", var->vec4_dest->x, var->vec4_dest->y, var->vec4_dest->z, var->vec4_dest->w);
 		break;
+	default:
+		assert(0); // unrecognised type
 	}
 }
 
@@ -210,6 +212,8 @@ void config_write_file(const char *filename) {
 		case VAR_VEC4:
 			fprintf_s(file, "%s (%f %f %f %f)\n", it->name, it->vec4_dest->x, it->vec4_dest->y, it->vec4_dest->z, it->vec4_dest->w);
 			break;
+		default:
+			assert(0); // unrecognised type
 		}
 	}
 

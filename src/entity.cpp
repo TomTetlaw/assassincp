@@ -68,6 +68,8 @@ void entity_on_level_load() {
 }
 
 void entity_render() {
+	render_setup_for_world();
+	
 	For(entities) {
 		auto it = entities[it_index];
 		if (it) {
@@ -111,7 +113,7 @@ void entity_update(float dt) {
 	//}
 }
 
-Entity *entity_get_entity_from_handle(Entity_Handle handle) {
+Entity *find_entity(Entity_Handle handle) {
 	if (handle.num < 0 || handle.num >= entities.num) {
 		return nullptr;
 	}

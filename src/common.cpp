@@ -95,6 +95,8 @@ Load_File_Result load_file(const char *filename) {
 	len = ftell(f);
 	fseek(f, 0, SEEK_SET);
 
+	assert(len > 0);
+
 	char *buffer = new char[len + 1];
 	fread_s((void*)buffer, len + 1, len, 1, f);
 	buffer[len] = 0;

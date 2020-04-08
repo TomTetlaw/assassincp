@@ -64,7 +64,7 @@ void game_update() {
 	}
 }
 
-void get_neighbours(int index, Nav_Mesh_Point *neighbours[8]) {
+internal void get_neighbours(int index, Nav_Mesh_Point *neighbours[8]) {
 	int offsets[8][2] = {
 		{1,0},
 		{-1,0},
@@ -88,7 +88,7 @@ void get_neighbours(int index, Nav_Mesh_Point *neighbours[8]) {
 	}
 }
 
-void position_to_grid_index(Vec2 position, int *grid_x, int *grid_y) {
+internal void position_to_grid_index(Vec2 position, int *grid_x, int *grid_y) {
 	int grid_index_x = (int)(position.x / game.current_level->nav_points_size);
 	grid_index_x += (game.current_level->nav_points_width / 2);
 	if (grid_index_x < 0) grid_index_x += game.current_level->nav_points_width;

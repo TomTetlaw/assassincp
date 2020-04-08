@@ -1,6 +1,19 @@
 #ifndef __CONFIG_H__
 #define __CONFIG_H__
 
+// if you want to put a var into the config file (data/config.txt) so that you can easily change it at runtime.
+// you can also make a callback that will be called whenever the value changes.
+// 
+// config.txt will be written every time the game closes which will add the new var to the 
+// file if it is not in the file already.
+//
+// void callback(Config_Var *var) {
+//     console_printf("var %s was changed!\n", var->name);
+// }
+//
+// float my_value = 0.0f; // put its default value here which it will take if not found in the file
+// register_var("my_value", &my_value, callback);
+
 enum Config_Var_Type {
 	VAR_INT,
 	VAR_FLOAT,

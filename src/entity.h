@@ -1,6 +1,60 @@
 #ifndef __ENTITY_H__
 #define __ENTITY_H__
 
+// if you want to create your own entity type:
+//
+// class My_Entity : public Entity {
+//     void spawn() {} // gets called on spawn
+//     void shutdown() {} // gets called when deleted
+//     void update(float dt) {} // gets called every frame, don't put rendering code in here
+//     void render() {} // gets called every frame, use for rendering code only
+//     void think() {} // gets called at think_time, which you can set like this: think_time = current_time + 1.0f; to run think() again one second from when it was called
+//     // these handle input if input.player is your entity
+//     void handle_mouse_press(int mouse_button, bool down, Vec2 position, bool is_double_click) {}
+//     void handle_mouse_move(int relx, int rely) {}
+//     void handle_key_press(SDL_Scancode scancode, bool down, int mods) {}
+//     void handle_mouse_wheel(int amount) {}
+// };
+//
+// you must then declare your entity type to make it available in the editor.
+// do this in the global scope just after your entity class:
+//
+// declare_entity_type(My_Entity, "ent_my_entity", ENTITY_MY_ENTITY);
+//
+// ENTITY_MY_ENTITY is an enum member that you must add to Entity_Classify in entity.h.
+//
+// if you want to create an entity and put it in the game immediately without specifying its properties use:
+//
+// create_entity("my_entity_type");
+//
+// if you want to do the same but specify properties first use:
+//
+// Entity *entity = create_entity("my_entity_type", "individual entity's name", false, false);
+// entity->position = ...
+// entity->scale = ...
+// spawn_entity(entity);
+//
+// if you want to hold a reference to an entity for longer than one frame
+// you cannot hold the pointer because it might not be valid the next frame.
+// instead you must hold its handle, and check the handle when you want to use 
+// the entity, like this:
+//
+// Entity_Handle player_handle;
+// 
+// void start_following_player() {
+//     player_handle = player->handle;
+// }
+//
+// void follow_player() {
+//     Entity *player = find_entity(player_handle);
+//     if(player) {
+//         // follow the player
+//     }
+// }
+//
+// there is also delete_entity which will mark it for removal and deletion at the end of the frame.
+// eg: delete_entity(my_entity);
+
 enum Entity_Classify {
 	ENTITY_BASE = 0,
 	ENTITY_PLAYER = 1,
@@ -107,11 +161,12 @@ void entity_shutdown();
 void entity_on_level_load();
 void entity_render();
 void entity_update(float dt);
+void entity_delete_all_entities();
+
 void add_entity(Entity *entity);
 void spawn_entity(Entity *entity);
 Entity *create_entity(const char *type_name, const char *name = nullptr, bool spawn = true, bool add = true);
 void delete_entity(Entity *entity);
-void entity_delete_all_entities();
-Entity *entity_get_entity_from_handle(Entity_Handle handle);
+Entity *find_entity(Entity_Handle handle);
 
 #endif

@@ -1,6 +1,14 @@
 #ifndef __GAME_H__
 #define __GAME_H__
 
+// if you want to use path finding to follow a path, first generate the path like this:
+//
+// Nav_Path my_path;
+// make_path(my_position, player_position);
+//
+// then in your update function you can call: //@todo: implement this
+// follow_path(&my_path);
+
 struct Debug_Draw;
 struct Contact_Listener;
 
@@ -15,8 +23,6 @@ struct Nav_Path {
 	Array<Nav_Mesh_Point *> points;
 };
 
-void get_neighbours(int index, Nav_Mesh_Point *neighbours[8]);
-void position_to_grid_index(Vec2 position, int *grid_x, int *grid_y);
 bool make_path(Nav_Path *path, Vec2 from, Vec2 to);
 
 struct Level {

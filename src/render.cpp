@@ -229,6 +229,9 @@ void render_texture(Render_Texture *rt) {
 	glEnd();
 
 	glScalef(1, 1, 1);
+	glRotatef(-rad2deg(rt->angle), 0, 0, 1);
+
+	render_point(x, y, 10.0f, Vec4(1,1,1,1));
 
 	glDisable(GL_TEXTURE_2D);
 }
@@ -244,7 +247,7 @@ void render_string(Vec2 position, const char *text, Vec4 colour, Font *font, flo
 
 	int length = (int)strlen(text);
 	for (int i = 0; i < length; i++) {
-		if (text[i] == '\n' || ((position.x - origin_x + font->glyphs[(int)text[i]].advance) >= wrap && wrap > 0)) {
+		if (rap > 0 && text[i] == '\n' || ((position.x - origin_x + font->glyphs[(int)text[i]].advance) >= wrap)) {
 			position.x = origin_x;
 			position.y += font->line_skip;
 		}

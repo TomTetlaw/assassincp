@@ -23,7 +23,9 @@ extern System sys;
 
 void system_init(int argc, char *argv[]);
 void system_quit();
+// call this if you encounter a fatal error that the program can't recover from.
 void system_error(const char *text, ...);
+// file picker dialogue.
 void system_open_file_dialogue(const char *dir, const char *filters, char *out);
 
 #endif

@@ -9,7 +9,7 @@ void console_init() {
 }
 
 void console_print(const char *text) {
-	puts(text);
+	fwrite(text, 1, strlen(text), stdout);
 
 	FILE *log = nullptr;
 	fopen_s(&log, "data/console.log", "a");
@@ -20,7 +20,7 @@ void console_print(const char *text) {
 }
 void console_printf(const char *text, ...) {
 	va_list argptr;
-	char message[2048];
+	char message[2048]; //@todo: make this better
 
 	va_start(argptr, text);
 	vsnprintf_s(message, 2048, _TRUNCATE, text, argptr);
