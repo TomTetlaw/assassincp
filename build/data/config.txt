@@ -4,7 +4,7 @@ draw_debug true
 debug_string_start_y 400.000000
 z_near 0.000000
 z_far 1.000000
-default_font_file data/fonts/consolas.ttf
+default_font_file data/fonts/Cascadia.ttf
 default_font_size 16
 edit_window_top 0.000000
 edit_window_left 91.000000

@@ -639,8 +639,6 @@ void editor_render() {
 
 	render_box2(edit_window_top, edit_window_left, 
 		edit_window_bottom, edit_window_right);
-
-	render_debug_string("[%.2f, %.2f] -> [%.2f, %.2f]", v2parms(drag_start_point), v2parms(drag_size));
 }
 
 void editor_handle_mouse_press(int mouse_button, bool down, Vec2 _, bool is_double_click) {
