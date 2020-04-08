@@ -6,7 +6,8 @@ internal bool should_clear = true;
 internal Vec4 clear_colour;
 internal bool debug_draw = true;
 internal Font *default_font = nullptr;
-internal Vec2 debug_string_position;
+internal float debug_string_start_y = 10.0f;
+internal Vec2 debug_string_position = Vec2(debug_string_start_y, 0.0f);
 internal char *default_font_file = "data/fonts/consolas.ttf";
 internal char **default_font_file_ptr = &default_font_file;
 internal int default_font_size = 16;
@@ -38,6 +39,7 @@ void render_init() {
 	register_var("clear_colour", &clear_colour);
 	register_var("should_clear_screen", &should_clear);
 	register_var("draw_debug", &debug_draw);
+	register_var("debug_string_start_y", &debug_string_start_y);
 	register_var("z_near", &z_near);
 	register_var("z_far", &z_far);
 	register_var("default_font_file", default_font_file_ptr, reload_default_font);
@@ -50,7 +52,6 @@ void render_init() {
 	}
 
 	default_font = load_font(*default_font_file_ptr, default_font_size);
-	debug_string_position = Vec2(-sys.window_size.x, -sys.window_size.y);
 }
 
 void render_shutdown() {
@@ -69,23 +70,26 @@ void render_begin_frame() {
 
 	glClear(GL_DEPTH_BUFFER_BIT);
 
-	debug_string_position = Vec2(-(sys.window_size.x / 2) + 10, -(sys.window_size.y / 2) + (float)default_font->line_skip);
-}
-
-internal void setup_camera_and_zoom() {
-	glTranslatef(-renderer.camera_position.x, -renderer.camera_position.y, 0);
-	float scale = render_scale_for_zoom_level();
-	glScalef(scale, scale, 1);
+	debug_string_position = Vec2(debug_string_start_y, 10.0f);
 }
 
 // scissor means that everything outside of the box will not be rendered
 void render_start_scissor(float top, float left, float bottom, float right) {
 	glEnable(GL_SCISSOR_TEST);
-	glScissor(left + (sys.window_size.x / 2), -bottom + (sys.window_size.y / 2), right - left, bottom - top);
+	// we have to adjust the y coord because glScissor uses bottom left as origin
+	glScissor(left, bottom - screen_height, right - left, bottom - top);
 }
 
 void render_end_scissor() {
 	glDisable(GL_SCISSOR_TEST);
+}
+
+internal void setup_camera_and_zoom(bool use_camera, bool use_zoom) {
+	if(use_camera) glTranslatef(-renderer.camera_position.x, -renderer.camera_position.y, 0);
+	if(use_zoom) {
+		float scale = render_scale_for_zoom_level();
+		glScalef(scale, scale, 1);
+	}
 }
 
 void render_setup_for_world() {
@@ -93,25 +97,25 @@ void render_setup_for_world() {
 
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
-	float hw = sys.window_size.x / 2;
-	float hh = sys.window_size.y / 2;
+	float hw = screen_width / 2;
+	float hh = screen_height / 2;
 	glOrtho(-hw, hw, hh, -hh, z_near, z_far);
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 
-	//setup_camera_and_zoom();
+	setup_camera_and_zoom(true, true);
 }
 
-void render_setup_for_ui() {
+void render_setup_for_ui(bool use_camera, bool use_zoom) {
 	centered = false;
 
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
-	glOrtho(0, sys.window_size.x, 0, sys.window_size.y, z_near, z_far);
+	glOrtho(0, screen_width, screen_height, 0, z_near, z_far);
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();	
 
-	//setup_camera_and_zoom();
+	setup_camera_and_zoom(use_camera, use_zoom);
 }
 
 void render_end_frame() {
@@ -146,7 +150,7 @@ float render_inverse_scale_for_zoom_level() {
 	return scale;
 }
 
-Vec2 render_to_world_pos(Vec2 a) {
+Vec2 to_world_pos(Vec2 a) {
 	return (a + renderer.camera_position) * render_inverse_scale_for_zoom_level();
 }
 
@@ -206,11 +210,6 @@ void render_texture(Render_Texture *rt) {
 	glEnable(GL_TEXTURE_2D);
 	glBindTexture(GL_TEXTURE_2D, rt->texture->api_object);
 
-	//@todo_now: test if this makes opengl ignore out render_setup calls
-	glMatrixMode(GL_MODELVIEW);
-	glLoadIdentity();
-	glPushMatrix();
-
 	//@todo_now: test if this works for both centered/not centered
 	glTranslatef(x, y, 0);
 	glRotatef(rad2deg(rt->angle), 0, 0, 1);
@@ -229,7 +228,7 @@ void render_texture(Render_Texture *rt) {
 	glVertex2f(x + w, y);
 	glEnd();
 
-	glPopMatrix();
+	glScalef(1, 1, 1);
 
 	glDisable(GL_TEXTURE_2D);
 }
@@ -338,7 +337,7 @@ void render_line(float ax, float ay, float bx, float by, Vec4 colour) {
 void render_line2(Vec2 start, float length, float angle, Vec4 colour) {
 	Vec2 end;
 	end.x = start.x + (length * cos(angle));
-	end.y = start.y + (length * -sin(angle)); // using -sin because y is up in our coord system
+	end.y = start.y + (length * -sin(angle)); // using -sin because y is down in our coord system
 	render_line(start, end, colour);
 }
 
@@ -389,10 +388,10 @@ void render_box2(float top, float left, float bottom, float right, bool fill, Ve
 
 	glColor4f(v4parms(colour));
 	glBegin(GL_QUADS);
+	glVertex2f(right, top);
 	glVertex2f(left, top);
 	glVertex2f(left, bottom);
 	glVertex2f(right, bottom);
-	glVertex2f(right, top);
 	glEnd();
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 }

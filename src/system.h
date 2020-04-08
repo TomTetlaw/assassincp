@@ -4,7 +4,7 @@
 struct System {
 	SDL_Window *window = nullptr;
 	SDL_GLContext context = nullptr;
-	Vec2 cursor_position;
+	Vec2 raw_cursor_position;
 	Vec2 window_size;
 	bool running = true;
 	float delta = 0.0f;
@@ -15,6 +15,9 @@ struct System {
 // these are here instead of in System for convinience of typing
 extern float screen_width;
 extern float screen_height;
+
+extern Vec2 cursor_position;
+extern Vec2 cursor_position_tl;
 
 extern System sys;
 

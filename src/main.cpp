@@ -48,7 +48,9 @@ int main(int argc, char *argv[]) {
 					input_handle_key_press(ev.key.keysym.scancode, false, ctrl_pressed, alt_pressed, shift_pressed);
 				} break;
 				case SDL_MOUSEMOTION:
-					sys.cursor_position = Vec2((float)ev.motion.x, (float)ev.motion.y) - (sys.window_size * 0.5f);
+					sys.raw_cursor_position = Vec2((float)ev.motion.x, (float)ev.motion.y);
+					cursor_position = sys.raw_cursor_position - (sys.window_size * 0.5f);
+					cursor_position_tl = sys.raw_cursor_position;
 					input_handle_mouse_move(ev.motion.xrel, ev.motion.yrel);
 					break;
 				case SDL_MOUSEBUTTONDOWN:

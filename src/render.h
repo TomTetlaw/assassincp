@@ -22,7 +22,7 @@ struct Render {
 
 extern Render renderer;
 
-Vec2 render_to_world_pos(Vec2 a);
+Vec2 to_world_pos(Vec2 a);
 float render_scale_for_zoom_level();
 float render_inverse_scale_for_zoom_level();
 void render_on_level_load();
@@ -37,7 +37,7 @@ void render_end_scissor();
 
 // you must call one of these before rendering
 void render_setup_for_world(); // middle of screen is (0,0) + boxes/textures etc are rendered from centrepoint
-void render_setup_for_ui(); // top left of screen is (0,0) + boxes/textures etc are rendered from top left
+void render_setup_for_ui(bool use_camera, bool use_zoom); // top left of screen is (0,0) + boxes/textures etc are rendered from top left
 
 // if rt->size or rt->sl/tl/sh/th are -1 then this function will use default values
 void render_texture(Render_Texture *rt);
@@ -52,6 +52,7 @@ void render_string_format_lazy(Vec2 position, const char *text, ...);
 // renders string at the top of the screen underneath last debug string
 // usually used to print out debug info that changes every frame
 // won't draw if var renderer_draw_debug is false
+// note: expects to be drawn after a call to render_setup_for_ui
 void render_debug_string(const char *text, ...);
 
 void render_line(Vec2 a, Vec2 b, Vec4 colour = Vec4(1, 1, 1, 1));

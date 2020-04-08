@@ -35,7 +35,7 @@ class Player : public Entity {
 
 		renderer.camera_position = position;
 
-		angle = position.angle_to(render_to_world_pos(sys.cursor_position));
+		angle = position.angle_to(to_world_pos(cursor_position));
 
 		fov.position = position;
 		//fov.update();

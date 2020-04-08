@@ -300,8 +300,6 @@ void Editor_Entity::on_delete() {
 }
 
 void Editor_Polygon::render() {
-	render_setup_for_ui();
-
 	for (int i = 0; i < points.num; i++) {
 		if (i + 1 < points.num) {
 			Vec2 a = points[i]->position;
@@ -318,7 +316,7 @@ void Editor_Polygon::render() {
 
 	if (currently_editing_polygon == this) {
 		Vec2 a = points[points.num - 1]->position;
-		Vec2 b = render_to_world_pos(sys.cursor_position);
+		Vec2 b = to_world_pos(cursor_position);
 		render_line(a, b, Vec4(1, 1, 1, 1));
 	}
 
@@ -436,9 +434,9 @@ void editor_init() {
 	polygon_mode_off_image = load_texture("data/textures/editor/polygon_mode_off.png");
 
 	edit_window_top = 0;
-	edit_window_left = 91.0f + 1; // width of mode select panel + 1
-	edit_window_bottom = screen_height;
-	edit_window_right = screen_width;
+	edit_window_left = 91.0f; // width of mode select panel
+	edit_window_bottom = screen_height - 1;
+	edit_window_right = screen_width - 342; // - width of properties panel
 
 	register_var("edit_window_top", &edit_window_top);
 	register_var("edit_window_left", &edit_window_left);
@@ -619,7 +617,7 @@ void editor_render() {
 		it->render();
 	}
 
-	render_setup_for_ui();
+	render_setup_for_ui(true, true);
 
 	if (drag_select) {
 		render_box(drag_start_point, drag_size, false, Vec4(0, 1, 0, 1));
@@ -637,8 +635,12 @@ void editor_render() {
 
 	render_end_scissor();
 
+	render_setup_for_ui(false, false);
+
 	render_box2(edit_window_top, edit_window_left, 
 		edit_window_bottom, edit_window_right);
+
+	render_debug_string("[%.2f, %.2f] -> [%.2f, %.2f]", v2parms(drag_start_point), v2parms(drag_size));
 }
 
 void editor_handle_mouse_press(int mouse_button, bool down, Vec2 _, bool is_double_click) {
@@ -649,16 +651,16 @@ void editor_handle_mouse_press(int mouse_button, bool down, Vec2 _, bool is_doub
 		middle_button_down = down;
 	}
 
-	if (sys.cursor_position.x < edit_window_left) {
+	if (cursor_position_tl.x < edit_window_left) {
 		return;
 	}
-	if (sys.cursor_position.x > edit_window_right) {
+	if (cursor_position_tl.x > edit_window_right) {
 		return;
 	}
-	if (sys.cursor_position.y < edit_window_top) {
+	if (cursor_position_tl.y < edit_window_top) {
 		return;
 	}
-	if (sys.cursor_position.y > edit_window_bottom) {
+	if (cursor_position_tl.y > edit_window_bottom) {
 		return;
 	}
 
@@ -668,7 +670,7 @@ void editor_handle_mouse_press(int mouse_button, bool down, Vec2 _, bool is_doub
 				Editor_Entity *entity = nullptr;
 				For(entities) {
 					auto it = entities[it_index]; // don't start drag select if dragging a thing
-					if (point_intersects_centered_box(render_to_world_pos(sys.cursor_position), it->position, it->size)) {
+					if (point_intersects_centered_box(to_world_pos(cursor_position_tl), it->position, it->size)) {
 						entity = it;
 						break;
 					}
@@ -678,7 +680,7 @@ void editor_handle_mouse_press(int mouse_button, bool down, Vec2 _, bool is_doub
 				}
 				else {
 					drag_select = true;
-					drag_start_point = render_to_world_pos(sys.cursor_position);
+					drag_start_point = to_world_pos(cursor_position_tl);
 				}
 			}
 			else {
@@ -688,10 +690,10 @@ void editor_handle_mouse_press(int mouse_button, bool down, Vec2 _, bool is_doub
 				else {
 					// if clicked and didn't move mouse
 					if (drag_start_point.x == 0) {
-						drag_start_point.x = render_to_world_pos(sys.cursor_position).x;
+						drag_start_point.x = to_world_pos(cursor_position_tl).x;
 					}
 					if (drag_start_point.y == 0) {
-						drag_start_point.y = render_to_world_pos(sys.cursor_position).y;
+						drag_start_point.y = to_world_pos(cursor_position_tl).y;
 					}
 
 					// if drawing a box to the left or above where initially clicked
@@ -732,7 +734,7 @@ void editor_handle_mouse_press(int mouse_button, bool down, Vec2 _, bool is_doub
 		if (mouse_button == SDL_BUTTON_LEFT) {
 			if (down) {
 				Editor_Entity *new_entity = new Editor_Entity;
-				new_entity->position = render_to_world_pos(sys.cursor_position);
+				new_entity->position = to_world_pos(cursor_position);
 				editor_add_entity(new_entity);
 				clear_selected_entities();
 				selected_entities.append(new_entity);
@@ -745,14 +747,14 @@ void editor_handle_mouse_press(int mouse_button, bool down, Vec2 _, bool is_doub
 				Editor_Polygon *polygon = nullptr;
 				int point_index = -1;
 
-				if(find_polygon_point_at(render_to_world_pos(sys.cursor_position), &polygon, &point_index)) {
+				if(find_polygon_point_at(to_world_pos(cursor_position), &polygon, &point_index)) {
 					polygon->closed = true;
 					currently_editing_polygon = nullptr;
 				}
 				else {
 					Editor_Polygon_Point *point = new Editor_Polygon_Point;
 					point->parent = currently_editing_polygon;
-					point->position = render_to_world_pos(sys.cursor_position);
+					point->position = to_world_pos(cursor_position);
 					point->current_entity_type_num = ENTITY_INFO_POLYGON_POINT;
 					editor_add_entity(point);
 					currently_editing_polygon->points.append(point);
@@ -765,7 +767,7 @@ void editor_handle_mouse_press(int mouse_button, bool down, Vec2 _, bool is_doub
 				Editor_Polygon_Point *point = new Editor_Polygon_Point;
 				point->current_entity_type_num = ENTITY_INFO_POLYGON_POINT;
 				point->parent = polygon;
-				point->position = render_to_world_pos(sys.cursor_position);
+				point->position = to_world_pos(cursor_position);
 				editor_add_entity(point);
 				polygon->points.append(point);
 				polygon->calculate_properties();
@@ -791,17 +793,17 @@ void editor_handle_mouse_move(int relx, int rely) {
 		}
 
 		if (drag_select) {
-			drag_size = render_to_world_pos(sys.cursor_position) - drag_start_point;
+			drag_size = to_world_pos(cursor_position_tl) - drag_start_point;
 
 			Vec2 start_point = drag_start_point;
 			Vec2 size = drag_size;
 
 			// if clicked and didn't move mouse
 			if (start_point.x == 0) {
-				start_point.x = render_to_world_pos(sys.cursor_position).x;
+				start_point.x = to_world_pos(cursor_position_tl).x;
 			}
 			if (start_point.y == 0) {
-				start_point.y = render_to_world_pos(sys.cursor_position).y;
+				start_point.y = to_world_pos(cursor_position_tl).y;
 			}
 
 			// if drawing a box to the left or above where initially clicked
@@ -837,7 +839,7 @@ void editor_handle_mouse_move(int relx, int rely) {
 				auto it = entities[it_index];
 				float hw = (it->size.x / 2);
 				float hh = (it->size.y / 2);
-				if (point_intersects_box(render_to_world_pos(sys.cursor_position), it->position - Vec2(hw, hh), it->size)) {
+				if (point_intersects_box(to_world_pos(cursor_position_tl), it->position - Vec2(hw, hh), it->size)) {
 					it->hovered = true;
 				}
 				else {
@@ -871,7 +873,7 @@ void editor_handle_key_press(SDL_Scancode scancode, bool down, int mods) {
 
 void editor_handle_mouse_wheel(int amount) {
 	//@todo: zoom to mouse position
-	//renderer.camera_position = renderer.to_world_pos(sys.cursor_position);
+	//renderer.camera_position = renderer.to_world_pos(sys.cursor_position_tl);
 	renderer.zoom_level += amount;
 }
 

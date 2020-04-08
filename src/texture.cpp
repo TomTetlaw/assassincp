@@ -149,7 +149,7 @@ internal void texture_hotload_callback(const char *filename, void *data) {
 	load_texture_data(texture);
 }
 
-Texture *load_texture(const char *filename) {
+Texture *load_texture(const char *filename, bool never_unload) {
 	if (!filename || filename[0] == 0) {
 		return nullptr;
 	}
@@ -169,6 +169,7 @@ Texture *load_texture(const char *filename) {
 	strcpy(texture->filename, filename);
 	if (load_texture_data(texture)) {
 		texture->used = true;
+		texture->never_unload = never_unload;
 		textures.append(texture);
 
 		hotload_add_file(filename, texture, texture_hotload_callback);
