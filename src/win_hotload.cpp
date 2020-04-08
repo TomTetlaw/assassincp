@@ -5,7 +5,7 @@ internal Array<Hotloaded_File *> files;
 internal HANDLE dir_change_notification;
 
 void hotload_init() {
-	dir_change_notification = FindFirstChangeNotificationA("w:/build/data", TRUE, FILE_NOTIFY_CHANGE_LAST_WRITE); //@IncompletePath
+	dir_change_notification = FindFirstChangeNotificationA("w:/build/data", TRUE, FILE_NOTIFY_CHANGE_LAST_WRITE); //@todo: check if this works on other machines
 }
 
 void hotload_shutdown() {

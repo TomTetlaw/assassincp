@@ -426,17 +426,17 @@ void editor_init() {
 	ImGui_ImplSDL2_InitForOpenGL(sys.window, sys.context);
 	ImGui_ImplOpenGL3_Init();
 
-	select_mode_on_image = load_texture("data/textures/editor/select_mode_on.png");
-	select_mode_off_image = load_texture("data/textures/editor/select_mode_off.png");
-	entity_mode_on_image = load_texture("data/textures/editor/entity_mode_on.png");
-	entity_mode_off_image = load_texture("data/textures/editor/entity_mode_off.png");
-	polygon_mode_on_image = load_texture("data/textures/editor/polygon_mode_on.png");
-	polygon_mode_off_image = load_texture("data/textures/editor/polygon_mode_off.png");
+	select_mode_on_image = load_texture("data/textures/editor/select_mode_on.png", true);
+	select_mode_off_image = load_texture("data/textures/editor/select_mode_off.png", true);
+	entity_mode_on_image = load_texture("data/textures/editor/entity_mode_on.png", true);
+	entity_mode_off_image = load_texture("data/textures/editor/entity_mode_off.png", true);
+	polygon_mode_on_image = load_texture("data/textures/editor/polygon_mode_on.png", true);
+	polygon_mode_off_image = load_texture("data/textures/editor/polygon_mode_off.png", true);
 
 	edit_window_top = 0;
 	edit_window_left = 91.0f; // width of mode select panel
 	edit_window_bottom = screen_height - 1;
-	edit_window_right = screen_width - 342; // - width of properties panel
+	edit_window_right = screen_width - 342; // screen_width - width of properties panel
 
 	register_var("edit_window_top", &edit_window_top);
 	register_var("edit_window_left", &edit_window_left);
@@ -620,7 +620,7 @@ void editor_render() {
 	render_setup_for_ui(true, true);
 
 	if (drag_select) {
-		render_box(drag_start_point, drag_size, false, Vec4(0, 1, 0, 1));
+		render_box(drag_start_point + (sys.window_size * 0.5f), drag_size, false, Vec4(0, 1, 0, 1));
 	}
 
 	int grid_size = 32;
@@ -678,7 +678,7 @@ void editor_handle_mouse_press(int mouse_button, bool down, Vec2 _, bool is_doub
 				}
 				else {
 					drag_select = true;
-					drag_start_point = to_world_pos(cursor_position_tl);
+					drag_start_point = to_world_pos(cursor_position);
 				}
 			}
 			else {
@@ -688,10 +688,10 @@ void editor_handle_mouse_press(int mouse_button, bool down, Vec2 _, bool is_doub
 				else {
 					// if clicked and didn't move mouse
 					if (drag_start_point.x == 0) {
-						drag_start_point.x = to_world_pos(cursor_position_tl).x;
+						drag_start_point.x = to_world_pos(cursor_position).x;
 					}
 					if (drag_start_point.y == 0) {
-						drag_start_point.y = to_world_pos(cursor_position_tl).y;
+						drag_start_point.y = to_world_pos(cursor_position).y;
 					}
 
 					// if drawing a box to the left or above where initially clicked
@@ -791,7 +791,7 @@ void editor_handle_mouse_move(int relx, int rely) {
 		}
 
 		if (drag_select) {
-			drag_size = to_world_pos(cursor_position_tl) - drag_start_point;
+			drag_size = to_world_pos(cursor_position) - drag_start_point;
 
 			Vec2 start_point = drag_start_point;
 			Vec2 size = drag_size;

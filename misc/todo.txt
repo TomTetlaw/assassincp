@@ -19,5 +19,6 @@ this caused only the first point to get updated:
 // add todos
 // add asserts
 // rewrite renderer
+// rewrite fonts to use stb_truetype and support ligatures!
 // rewrite physics
 // rewrite ui
