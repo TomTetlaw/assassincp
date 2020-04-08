@@ -619,8 +619,10 @@ void editor_render() {
 
 	render_setup_for_ui(true, true);
 
+	// need to fix this, and also fix grid rendering when zooming.
+	
 	if (drag_select) {
-		render_box(drag_start_point + (sys.window_size * 0.5f), drag_size, false, Vec4(0, 1, 0, 1));
+		render_box(to_world_pos(drag_start_point) + (sys.window_size * 0.5f), drag_size, false, Vec4(0, 1, 0, 1));
 	}
 
 	int grid_size = 32;
@@ -639,6 +641,9 @@ void editor_render() {
 
 	render_box2(edit_window_top, edit_window_left, 
 		edit_window_bottom, edit_window_right);
+
+	render_debug_string("[%.2f, %.2f]", cursor_position.x, cursor_position.y);
+	render_debug_string("[%.2f, %.2f]", drag_start_point.x, drag_start_point.y);
 }
 
 void editor_handle_mouse_press(int mouse_button, bool down, Vec2 _, bool is_double_click) {
@@ -668,7 +673,7 @@ void editor_handle_mouse_press(int mouse_button, bool down, Vec2 _, bool is_doub
 				Editor_Entity *entity = nullptr;
 				For(entities) {
 					auto it = entities[it_index]; // don't start drag select if dragging a thing
-					if (point_intersects_centered_box(to_world_pos(cursor_position_tl), it->position, it->size)) {
+					if (point_intersects_centered_box(to_world_pos(cursor_position), it->position, it->size)) {
 						entity = it;
 						break;
 					}
@@ -798,10 +803,10 @@ void editor_handle_mouse_move(int relx, int rely) {
 
 			// if clicked and didn't move mouse
 			if (start_point.x == 0) {
-				start_point.x = to_world_pos(cursor_position_tl).x;
+				start_point.x = to_world_pos(cursor_position).x;
 			}
 			if (start_point.y == 0) {
-				start_point.y = to_world_pos(cursor_position_tl).y;
+				start_point.y = to_world_pos(cursor_position).y;
 			}
 
 			// if drawing a box to the left or above where initially clicked
@@ -837,7 +842,7 @@ void editor_handle_mouse_move(int relx, int rely) {
 				auto it = entities[it_index];
 				float hw = (it->size.x / 2);
 				float hh = (it->size.y / 2);
-				if (point_intersects_box(to_world_pos(cursor_position_tl), it->position - Vec2(hw, hh), it->size)) {
+				if (point_intersects_box(to_world_pos(cursor_position), it->position - Vec2(hw, hh), it->size)) {
 					it->hovered = true;
 				}
 				else {

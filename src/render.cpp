@@ -247,7 +247,7 @@ void render_string(Vec2 position, const char *text, Vec4 colour, Font *font, flo
 
 	int length = (int)strlen(text);
 	for (int i = 0; i < length; i++) {
-		if (rap > 0 && text[i] == '\n' || ((position.x - origin_x + font->glyphs[(int)text[i]].advance) >= wrap)) {
+		if (text[i] == '\n' || ((position.x - origin_x + font->glyphs[(int)text[i]].advance) >= wrap && wrap > 0)) {
 			position.x = origin_x;
 			position.y += font->line_skip;
 		}

@@ -19,8 +19,10 @@ internal void generate_nav_points() {
 	int grid_size = game.current_level->nav_points_size;
 	int num_x = nav_grid_width / grid_size;
 	int num_y = nav_grid_height / grid_size;
+	
 	game.current_level->nav_points_width = num_x * 2;
 	game.current_level->nav_points_height = num_y * 2;
+
 	for (int y = -num_y; y < num_y; y++) {
 		for (int x = -num_x; x < num_x; x++) {
 			Vec2 p = Vec2(x * grid_size, y * grid_size);
@@ -125,7 +127,7 @@ bool make_path(Nav_Path *path, Vec2 from, Vec2 to) {
 		get_neighbours(current, neighbours);
 
 		int lowest_index = -1;
-		float lowest = 10000.0f;
+		float lowest = 10000.0f; //@todo large enough?
 		for (int i = 0; i < 8; i++) {
 			if (!neighbours[i]) continue;
 			if (!neighbours[i]->valid) continue;
