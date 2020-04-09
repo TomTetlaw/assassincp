@@ -18,8 +18,11 @@ void texture_end_level_load();
 // and ui images
 Texture *load_texture(const char *filename, bool never_unload = false);
 
-// create texture from data you already have, for both of these, never_unload = true
+// create texture from data you already have, for both of these, never_unload = true.
+
+// frees the surface after it creates the texture
 Texture *create_texture_from_surface(const char *name, SDL_Surface *surface);
+
 Texture *create_texture(const char *name, const unsigned char *data, int width, int height);
 
 #endif

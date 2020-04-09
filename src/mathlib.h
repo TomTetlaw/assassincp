@@ -110,7 +110,12 @@ struct Vec2 {
 	inline float angle_to(Vec2 other) {
 		Vec2 delta = (other - *this).normalized();
 		float a = atan2f(-delta.y, delta.x);
-		return a;
+		return rad2deg(a);
+	}
+
+	inline float to_angle() {
+		Vec2 n = normalized();
+		return atan2f(-n.y, n.x);
 	}
 
 	inline void scale(float x, float y) {

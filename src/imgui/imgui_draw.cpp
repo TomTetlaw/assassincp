@@ -26,6 +26,10 @@ Index of this file:
 #define _CRT_SECURE_NO_WARNINGS
 #endif
 
+#if 0
+#include "precompiled.h"
+#endif
+
 #include "imgui.h"
 #ifndef IMGUI_DISABLE
 

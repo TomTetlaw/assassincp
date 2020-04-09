@@ -11,33 +11,38 @@ class Player : public Entity {
 	void spawn() {
 		set_texture("data/textures/player.png");
 		fov_init(&fov);
+
+		po->shape_type = PHYSICS_SHAPE_BOX;
+		po->box.size = rt.size;
+		po->velocity_ramp_speed = 500.0f;
 	}
 
 	void shutdown() {
 		fov_shutdown(&fov);
 	}
 
-	void update(float dt) {
+	void update() {
 		const Uint8* state = SDL_GetKeyboardState(nullptr);
-		velocity = Vec2(0,0);
+		Vec2 goal_velocity = Vec2(0,0);
 		if (state[SDL_SCANCODE_W]) {
-			velocity = velocity + Vec2(0, -300);
+			goal_velocity = goal_velocity + Vec2(0, -300);
 		}
 		if (state[SDL_SCANCODE_S]) {
-			velocity = velocity + Vec2(0, 300);
+			goal_velocity = goal_velocity + Vec2(0, 300);
 		}
 		if (state[SDL_SCANCODE_A]) {
-			velocity = velocity + Vec2(-300, 0);
+			goal_velocity = goal_velocity + Vec2(-300, 0);
 		}
 		if (state[SDL_SCANCODE_D]) {
-			velocity = velocity + Vec2(300, 0);
+			goal_velocity = goal_velocity + Vec2(300, 0);
 		}
+		po->goal_velocity = goal_velocity;
 
-		renderer.camera_position = position;
+		renderer.camera_position = po->position;
 
-		angle = position.angle_to(to_world_pos(cursor_position));
+		rt.angle = po->position.angle_to(to_world_pos(cursor_position));
 
-		fov.position = position;
+		fov.position = po->position;
 		//fov.update();
 	}
 

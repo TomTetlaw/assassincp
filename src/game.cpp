@@ -52,7 +52,7 @@ void game_update() {
 	last_time = SDL_GetTicks() / 1000.0f;
 
 	if (!paused) {
-		game.game_time = real_time - total_time_paused;
+		game.now = real_time - total_time_paused;
 	}
 
 	real_delta_time = last_time - temp;
@@ -221,7 +221,7 @@ internal void process_level() {
 		player_start = entity_manager.entity_types[ENTITY_INFO_PLAYER_START]->entities[0];
 
 		Entity *player = create_entity("ent_player", nullptr, false, false);
-		player->position = player_start->position;
+		player->po->position = player_start->po->position;
 		spawn_entity(player);
 
 		input.player = player;
@@ -230,7 +230,7 @@ internal void process_level() {
 		delete_entity(player_start);
 	}
 
-	generate_nav_points();
+	//generate_nav_points();
 }
 
 void load_level(const char *file_name) {
@@ -274,11 +274,13 @@ void load_level(const char *file_name) {
 
 			Entity *ent = create_entity(entity.type_name, entity.name, false, false);
 			if (ent) {
-				ent->position = entity.position;
-				ent->size = entity.size;
+				ent->po->position = entity.position;
+				ent->rt.size = entity.size;
+				ent->po->shape_type = PHYSICS_SHAPE_BOX; //@todo: make the editor acomodate for different shapes
+				ent->po->box.size = entity.size; //@todo: make the editor acomodate for seperate render and shape sizes
 				ent->rt.scale = entity.scale;
 				ent->set_texture(entity.texture_name, false);
-				ent->colour = entity.colour;
+				ent->rt.colour = entity.colour;
 				spawn_entity(ent);
 			}
 		}

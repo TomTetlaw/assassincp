@@ -20,8 +20,7 @@ struct Font {
 	int ascent = 0;
 	int descent = 0;
 	int line_skip = 0;
-	int num_glyphs = 0;
-	Glyph glyphs[256];
+	Glyph glyphs[256]; //@todo: what size should this be?
 	const char *filename = nullptr;
 };
 

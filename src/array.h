@@ -104,4 +104,55 @@ int Array<T>::find_index(const T &val) {
 	return -1;
 }
 
+template<typename T, int size>
+class Contiguous_Array {
+public:
+    Array<T> elements;
+    int last_freed_index = 0;
+	int max_index = 0;
+
+	inline void init() {
+		elements.ensure_size(size);
+		for (int i = 0; i < size; i++) {
+			elements.data[i].deleted = true;
+		}
+	}
+
+    inline T *alloc() {
+		assert(elements.size > 0);
+		assert(max_index < size);
+
+        if(max_index > 0) {
+            T &last_freed = elements[last_freed_index];
+            // can be false if none have been freed yet.
+			if (last_freed.deleted) {
+				last_freed.deleted = false;
+				return &last_freed;
+			}
+        }
+
+        for(int i = last_freed_index; i < elements.num; i++) {
+            if(elements[i].deleted) {
+                elements[i].deleted = false;
+                return &elements[i];
+            }
+        }
+
+        T *value = elements.alloc();
+		value->deleted = false;
+        max_index = elements.num;
+        return value;
+    }
+
+    inline void remove(T *value) {
+		assert(value);
+        value->deleted = true;
+    }
+
+	inline T *operator[](int i) { 
+		if (elements[i].deleted) return nullptr;
+		return &elements[i];
+	}
+};
+
 #endif

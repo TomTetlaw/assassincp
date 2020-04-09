@@ -288,6 +288,7 @@ void Editor_Entity::render() {
 	if (selected_entities.find(this) || hovered) {
 		colour = Vec4(0, 1, 0, 1);
 	}
+	
 	render_box(position, size * scale, false, colour);
 }
 
@@ -617,12 +618,22 @@ void editor_render() {
 		it->render();
 	}
 
-	render_setup_for_ui(true, true);
-
-	// need to fix this, and also fix grid rendering when zooming.
-	
+	// @cleanup: have to do this manually because the drag box has a top-left
+	// origin but also needs to use camera and zoom. If we need to do this in
+	// more places than this it will be worth it to make a new function to
+	// handle this case, but until then I just want to make this work.
 	if (drag_select) {
-		render_box(to_world_pos(drag_start_point) + (sys.window_size * 0.5f), drag_size, false, Vec4(0, 1, 0, 1));
+		Vec2 position = drag_start_point;
+		Vec2 size = drag_size;
+		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+		glColor4f(0, 1, 0, 1);
+		glBegin(GL_QUADS);
+		glVertex2f(position.x, position.y);
+		glVertex2f(position.x, position.y + size.y);
+		glVertex2f(position.x + size.x, position.y + size.y);
+		glVertex2f(position.x + size.x, position.y);
+		glEnd();
+		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 	}
 
 	int grid_size = 32;
@@ -637,7 +648,7 @@ void editor_render() {
 
 	render_end_scissor();
 
-	render_setup_for_ui(false, false);
+	render_setup_for_ui();
 
 	render_box2(edit_window_top, edit_window_left, 
 		edit_window_bottom, edit_window_right);

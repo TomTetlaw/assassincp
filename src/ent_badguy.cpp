@@ -8,14 +8,14 @@ class Bad_Guy : public Entity {
 	void think() {
 		path.points.num = 0;
 		current_point_index = 0;
-		make_path(&path, position, game.player->position);
+		make_path(&path, po->position, game.player->po->position);
 
-		think_time = game.game_time + 1.0f;
+		think_time = game.now + 1.0f;
 	}
 
-	void update(float dt) {
+	void update() {
 		if (path.points.num > 0) {
-			if (position.distance_to(path.points[current_point_index]->point) < game.current_level->nav_points_size) {
+			if (po->position.distance_to(path.points[current_point_index]->point) < game.current_level->nav_points_size) {
 				current_point_index += 1;
 				if (current_point_index >= path.points.num) {
 					path.points.num = 0;

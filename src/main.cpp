@@ -5,11 +5,11 @@ int main(int argc, char *argv[]) {
 
 	float last_time = 0.0f;
 
-	bool use_editor = true;
-	input.target = INPUT_EDITOR;
-	editor_load_map_into_editor("data/levels/test.acp");
+	bool use_editor = false;
+	input.target = INPUT_GAME;
+	on_level_load();
+	load_level("data/levels/test.acp");
 
-	system("cd");
 	SDL_Event ev;
 	while(sys.running) {
 		while (SDL_PollEvent(&ev)) {
@@ -72,7 +72,6 @@ int main(int argc, char *argv[]) {
 
 		srand((unsigned)time(nullptr));
 
-		//@todo: add a first check so that the files aren't hotloaded when the game starts and they're loaded for the first time
 		hotload_check_files_non_blocking();
 
 		float now = SDL_GetTicks() / 1000.0f;
@@ -91,7 +90,7 @@ int main(int argc, char *argv[]) {
 		}
 		
 		game_update();
-		entity_update(game.delta_time);
+		entity_update();
 
 		render_begin_frame();
 

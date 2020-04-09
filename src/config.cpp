@@ -1,6 +1,7 @@
 #include "precompiled.h"
 
-Config config;
+internal Array<Config_Var *> vars;
+internal const char *file_name = nullptr;
 
 internal void set_var_string(Config_Var *var) {
 	switch (var->type) {
@@ -37,8 +38,7 @@ internal void set_var_string(Config_Var *var) {
 
 internal void add_var(Config_Var *v) {
 	set_var_string(v);
-	config.vars.append(v);
-	console_printf("added var: %s (=%s)\n", v->name, v->print_string);
+	vars.append(v);
 }
 
 void register_var(const char *name, float *var, Config_Var_Callback callback) {
@@ -108,15 +108,13 @@ void register_var(const char *name, Vec4 *var, Config_Var_Callback callback) {
 }
 
 void config_shutdown() {
-	For(config.vars) {
-		auto it = config.vars[it_index];
+	For(vars) {
+		auto it = vars[it_index];
 		delete it;
 	}
 }
 
 internal void set_var_from_string(Config_Var *var, const char *string) {
-	console_printf("setting var %s to %s\n", var->name, string);
-	
 	switch (var->type) {
 	case VAR_FLOAT:
 		*var->float_dest = (float)atof(string); // atof returns double by default... for some reason
@@ -154,9 +152,9 @@ internal void set_var_from_string(Config_Var *var, const char *string) {
 }
 
 void config_load(const char *filename) {
-	config.filename = filename;
+	file_name = filename;
 
-	const char *text = load_file(config.filename).data;
+	const char *text = load_file(file_name).data;
 	char token[MAX_TOKEN_LENGTH] = { 0 };
 
 	while (true) {
@@ -167,8 +165,8 @@ void config_load(const char *filename) {
 
 		bool found = false;
 
-		for(int i = 0; i < config.vars.num; i++) {
-			Config_Var *var = config.vars[i];
+		for(int i = 0; i < vars.num; i++) {
+			Config_Var *var = vars[i];
 			if (!strcmp(var->name, token)) {
 				text = parse_token(text, token);
 				set_var_from_string(var, token);
@@ -188,8 +186,8 @@ void config_write_file(const char *filename) {
 		return;
 	}
 
-	For(config.vars) {
-		auto it = config.vars[it_index];
+	For(vars) {
+		auto it = vars[it_index];
 		switch (it->type) {
 		case VAR_FLOAT:
 			fprintf_s(file, "%s %f\n", it->name, *it->float_dest);

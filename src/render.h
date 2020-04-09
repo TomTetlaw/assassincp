@@ -36,8 +36,8 @@ void render_start_scissor(float top, float left, float bottom, float right);
 void render_end_scissor();
 
 // you must call one of these before rendering
-void render_setup_for_world(); // middle of screen is (0,0) + boxes/textures etc are rendered from centrepoint
-void render_setup_for_ui(bool use_camera, bool use_zoom); // top left of screen is (0,0) + boxes/textures etc are rendered from top left
+void render_setup_for_world(); // middle of screen is (0,0) and boxes/textures etc are rendered from centrepoint
+void render_setup_for_ui(); // top left of screen is (0,0) and boxes/textures etc are rendered from top left
 
 // if rt->size or rt->sl/tl/sh/th are -1 then this function will use default values
 void render_texture(Render_Texture *rt);
@@ -64,8 +64,12 @@ void render_line2(float x, float y, float length, float angle, Vec4 colour = Vec
 
 void render_box(Vec2 position, Vec2 size, bool fill = false, Vec4 colour = Vec4(1, 1, 1, 1));
 void render_box(float x, float y, float w, float h, bool fill = false, Vec4 colour = Vec4(1, 1, 1, 1));
+
 // render a box using top/left/bottom/right values (ignores render_setup_centered)
 void render_box2(float top, float left, float bottom, float right, bool fill = false, Vec4 colour = Vec4(1, 1, 1, 1));
+
+void render_circle(Vec2 position, float radius, bool fill = false, Vec4 colour = Vec4(1, 1, 1, 1));
+void render_circle(float x, float y, float radius, bool fill = false, Vec4 colour = Vec4(1, 1, 1, 1));
 
 void render_point(Vec2 position, float size = 10.0f, Vec4 colour = Vec4(1, 1, 1, 1));
 void render_point(float x, float y, float size = 10.0f, Vec4 colour = Vec4(1, 1, 1, 1));

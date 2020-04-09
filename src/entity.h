@@ -6,7 +6,7 @@
 // class My_Entity : public Entity {
 //     void spawn() {} // gets called on spawn
 //     void shutdown() {} // gets called when deleted
-//     void update(float dt) {} // gets called every frame, don't put rendering code in here
+//     void update() {} // gets called every frame, don't put rendering code in here
 //     void render() {} // gets called every frame, use for rendering code only
 //     void think() {} // gets called at think_time, which you can set like this: think_time = current_time + 1.0f; to run think() again one second from when it was called
 //     // these handle input if input.player is your entity
@@ -82,8 +82,6 @@ enum Collision_Type {
 };
 
 struct Entity {
-	Entity();
-
 	Entity_Handle handle;
 	bool delete_me = false;
 	int num_in_type = -1;
@@ -93,9 +91,14 @@ struct Entity {
 
 	float think_time = 0.0f;
 
+	Render_Texture rt;
+	Physics_Object *po = nullptr;
+
+	void set_texture(const char *file_name, bool set_render_size = true);
+
 	virtual void spawn() {}
 	virtual void shutdown() {}
-	virtual void update(float dt) {}
+	virtual void update() {}
 	virtual void render() {}
 	virtual void think() {}
 
@@ -103,26 +106,6 @@ struct Entity {
 	virtual void handle_mouse_move(int relx, int rely) {}
 	virtual void handle_key_press(SDL_Scancode scancode, bool down, int mods) {}
 	virtual void handle_mouse_wheel(int amount) {}
-
-	void set_position(Vec2 pos);
-
-	//@refactor: need these passthrough variables?
-	Texture *texture = nullptr;
-	Vec2 size;
-	Vec4 colour;
-	float angle = 0.0f;
-	float sl = -1;
-	float sh = -1;
-	float tl = -1;
-	float th = -1;
-	Render_Texture rt;
-	void set_texture(const char *filename, bool set_size = true);
-	void update_render_texture();
-
-	Vec2 position;
-	Vec2 velocity;
-	Vec2 goal_velocity;
-	float velocity_ramp_speed = 1.0f;
 };
 
 struct Entity_Type_Decl {
@@ -160,7 +143,7 @@ void entity_init();
 void entity_shutdown();
 void entity_on_level_load();
 void entity_render();
-void entity_update(float dt);
+void entity_update();
 void entity_delete_all_entities();
 
 void add_entity(Entity *entity);

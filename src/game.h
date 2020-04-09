@@ -35,7 +35,7 @@ struct Level {
 };
 
 struct Game {
-	float game_time = 0.0f;
+	float now = 0.0f;
 	float delta_time = 0.0f;
 	Level *current_level = nullptr;
 	Entity *player = nullptr;

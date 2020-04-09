@@ -49,11 +49,6 @@ struct Config_Var {
 	Config_Var_Callback callback = nullptr;
 };
 
-struct Config {
-	Array<Config_Var *> vars;
-	const char *filename = nullptr;
-};
-
 void config_load(const char *filename); // all vars must be registered before calling this
 void config_shutdown();
 void register_var(const char *name, float *var, Config_Var_Callback callback = nullptr);
@@ -64,7 +59,5 @@ void register_var(const char *name, int *var, Config_Var_Callback callback = nul
 void register_var(const char *name, Vec2 *var, Config_Var_Callback callback = nullptr);
 void register_var(const char *name, Vec4 *var, Config_Var_Callback callback = nullptr);
 void config_write_file(const char *filename);
-
-extern Config config;
 
 #endif

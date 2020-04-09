@@ -77,6 +77,7 @@ void system_init(int argc, char *argv[]) {
 	entity_init();
 	editor_init();
 	game_init();
+	physics_init();
 
 	config_load("data/config.txt");
 	hotload_add_file("data/config.txt", nullptr, hotload_config_file);

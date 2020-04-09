@@ -14,7 +14,6 @@ internal void load_data_into_font(Font *font_info, TTF_Font *font) {
 	font_info->ascent = TTF_FontAscent(font);
 	font_info->descent = TTF_FontDescent(font);
 	font_info->line_skip = TTF_FontLineSkip(font);
-	font_info->num_glyphs = TTF_FontFaces(font);
 
 	for (int i = 32; i < 127; i++) {
 		int index = TTF_GlyphIsProvided(font, (char)i);
@@ -26,13 +25,7 @@ internal void load_data_into_font(Font *font_info, TTF_Font *font) {
 			memset(font_info->glyphs[i].name, 0, font_info->glyphs[i].name_length);
 			sprintf_s(font_info->glyphs[i].name, "%s_%c_%d", font_info->filename, (char)i, font_info->point_size);
 
-			SDL_Colour colour;
-			colour.r = 255;
-			colour.g = 255;
-			colour.b = 255;
-			colour.a = 255;
-
-			SDL_Surface *surface = TTF_RenderGlyph_Blended(font, (char)i, colour);
+			SDL_Surface *surface = TTF_RenderGlyph_Blended(font, (char)i, {255, 255, 255, 255});
 			font_info->glyphs[i].texture = create_texture_from_surface(font_info->glyphs[i].name, surface);
 		}
 	}

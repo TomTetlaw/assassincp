@@ -8,19 +8,13 @@ internal bool debug_draw = true;
 internal Font *default_font = nullptr;
 internal float debug_string_start_y = 10.0f;
 internal Vec2 debug_string_position = Vec2(debug_string_start_y, 0.0f);
-internal char *default_font_file = "data/fonts/Cascadia.ttf";
-internal char **default_font_file_ptr = &default_font_file;
+internal const char *default_font_file = "data/fonts/Cascadia.ttf";
 internal int default_font_size = 16;
 internal bool centered = false;
 internal double z_near = 0.0;
 internal double z_far = 1.0;
 
 internal void opengl_debug_callback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* userParam);
-
-internal void reload_default_font(Config_Var *var) {
-	default_font = load_font(*default_font_file_ptr, default_font_size);
-	assert(default_font != nullptr);
-}
 
 void render_init() {
 	glewInit();
@@ -42,8 +36,6 @@ void render_init() {
 	register_var("debug_string_start_y", &debug_string_start_y);
 	register_var("z_near", &z_near);
 	register_var("z_far", &z_far);
-	register_var("default_font_file", default_font_file_ptr, reload_default_font);
-	register_var("default_font_size", &default_font_size, reload_default_font);
 
 	FILE *f = nullptr;
 	fopen_s(&f, "data/opengl.log", "w");
@@ -51,7 +43,7 @@ void render_init() {
 		fclose(f);
 	}
 
-	default_font = load_font(*default_font_file_ptr, default_font_size);
+	default_font = load_font(default_font_file, default_font_size);
 }
 
 void render_shutdown() {
@@ -106,7 +98,7 @@ void render_setup_for_world() {
 	setup_camera_and_zoom(true, true);
 }
 
-void render_setup_for_ui(bool use_camera, bool use_zoom) {
+void render_setup_for_ui() {
 	centered = false;
 
 	glMatrixMode(GL_PROJECTION);
@@ -115,7 +107,7 @@ void render_setup_for_ui(bool use_camera, bool use_zoom) {
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();	
 
-	setup_camera_and_zoom(use_camera, use_zoom);
+	setup_camera_and_zoom(false, false);
 }
 
 void render_end_frame() {
@@ -128,7 +120,7 @@ float render_scale_for_zoom_level() {
 		scale = 1.0f;
 	}
 	else if (renderer.zoom_level < 0) {
-		scale = 1.0f / (((renderer.zoom_level * 0.125f)*-1) + 1);
+		scale = 1.0f / (((renderer.zoom_level * 0.125f) * -1) + 1);
 	}
 	else if (renderer.zoom_level > 0) {
 		scale = (renderer.zoom_level * 0.25f) + 1;
@@ -163,8 +155,6 @@ void render_texture(Render_Texture *rt) {
 	float y = rt->position.y;
 	float w = rt->size.x;
 	float h = rt->size.y;
-	float hw = w / 2;
-	float hh = h / 2;
 
 	if (rt->size.x == 0) {
 		w = 1;
@@ -197,13 +187,8 @@ void render_texture(Render_Texture *rt) {
 		repeat_count_y = 1;
 	}
 
-	//@todo_now test that this works
-	if(centered) {
-		x -= hw;
-		y -= hh;
-		w += hw;
-		h += hh;
-	}
+	float hw = w / 2;
+	float hh = h / 2;
 
 	glColor4f(v4parms(rt->colour));
 
@@ -211,27 +196,41 @@ void render_texture(Render_Texture *rt) {
 	glBindTexture(GL_TEXTURE_2D, rt->texture->api_object);
 
 	//@todo_now: test if this works for both centered/not centered
+	float angle = rt->angle - 90;
+
 	glTranslatef(x, y, 0);
-	glRotatef(rad2deg(rt->angle), 0, 0, 1);
+	glRotatef(angle, 0, 0, 1);
 	glTranslatef(-x, -y, 0);
 
 	glScalef(rt->scale.x, rt->scale.y, 1);
 
 	glBegin(GL_QUADS);
-	glTexCoord2f(sl, tl);
-	glVertex2f(x, y);
-	glTexCoord2f(sl, th * repeat_count_y);
-	glVertex2f(x, y + h);
-	glTexCoord2f(sh * repeat_count_x, th * repeat_count_y);
-	glVertex2f(x + w, y + h);
-	glTexCoord2f(sh * repeat_count_x, tl);
-	glVertex2f(x + w, y);
-	glEnd();
+	if(centered) {
+		glTexCoord2f(sl, tl);
+		glVertex2f(x + hw, y - hh);
+		glTexCoord2f(sl, th * repeat_count_y);
+		glVertex2f(x - hw, y - hh);
+		glTexCoord2f(sh * repeat_count_x, th * repeat_count_y);
+		glVertex2f(x - hw, y + hh);
+		glTexCoord2f(sh * repeat_count_x, tl);
+		glVertex2f(x + hw, y + hh);
+		glEnd();
+	} else {
+		glTexCoord2f(sl, tl);
+		glVertex2f(x, y);
+		glTexCoord2f(sl, th * repeat_count_y);
+		glVertex2f(x, y + h);
+		glTexCoord2f(sh * repeat_count_x, th * repeat_count_y);
+		glVertex2f(x + w, y + h);
+		glTexCoord2f(sh * repeat_count_x, tl);
+		glVertex2f(x + w, y);
+		glEnd();
+	}
 
 	glScalef(1, 1, 1);
-	glRotatef(-rad2deg(rt->angle), 0, 0, 1);
-
-	render_point(x, y, 10.0f, Vec4(1,1,1,1));
+	glTranslatef(x, y, 0);
+	glRotatef(-angle, 0, 0, 1);
+	glTranslatef(-x, -y, 0);
 
 	glDisable(GL_TEXTURE_2D);
 }
@@ -256,10 +255,13 @@ void render_string(Vec2 position, const char *text, Vec4 colour, Font *font, flo
 			rt.texture = font->glyphs[(int)text[i]].texture;
 			rt.position = position;
 			rt.colour = colour;
-			
+			rt.angle = 90.0f; //@todo: figure out why texture surfaces are rotated 90 degrees
+
 			bool old_centered = centered;
 			centered = false;
+
 			render_texture(&rt);
+			
 			centered = old_centered;
 
 			position.x += font->glyphs[(int)text[i]].advance;
@@ -340,7 +342,7 @@ void render_line(float ax, float ay, float bx, float by, Vec4 colour) {
 void render_line2(Vec2 start, float length, float angle, Vec4 colour) {
 	Vec2 end;
 	end.x = start.x + (length * cos(angle));
-	end.y = start.y + (length * -sin(angle)); // using -sin because y is down in our coord system
+	end.y = start.y + (length * -sin(angle)); // using -sin because +y is down in our coord system
 	render_line(start, end, colour);
 }
 
@@ -349,16 +351,6 @@ void render_line2(float x, float y, float length, float angle, Vec4 colour) {
 }
 
 void render_box(Vec2 position, Vec2 size, bool fill, Vec4 colour) {
-	float hw = size.x / 2;
-	float hh = size.y / 2;
-	
-	if(centered) {
-		position.x -= hw;
-		position.y -= hh;
-		size.x += hw;
-		size.y += hh;
-	}
-
 	if (fill) {
 		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 	}
@@ -367,12 +359,28 @@ void render_box(Vec2 position, Vec2 size, bool fill, Vec4 colour) {
 	}
 
 	glColor4f(v4parms(colour));
-	glBegin(GL_QUADS);
-	glVertex2f(position.x, position.y);
-	glVertex2f(position.x, position.y + size.y);
-	glVertex2f(position.x + size.x, position.y + size.y);
-	glVertex2f(position.x + size.x, position.y);
-	glEnd();
+
+	float x = position.x;
+	float y = position.y;
+	float w = size.x;
+	float h = size.y;
+	if(centered) {
+		float hw = w / 2;
+		float hh = h / 2;
+		glBegin(GL_QUADS);
+		glVertex2f(x + hw, y - hh);
+		glVertex2f(x - hw, y - hh);
+		glVertex2f(x - hw, y + hh);
+		glVertex2f(x + hw, y + hh);
+		glEnd();
+	} else {
+		glBegin(GL_QUADS);
+		glVertex2f(x + w, y);
+		glVertex2f(x, y);
+		glVertex2f(x, y + h);
+		glVertex2f(x + w, y + h);
+		glEnd();
+	}
 
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 }
@@ -397,6 +405,22 @@ void render_box2(float top, float left, float bottom, float right, bool fill, Ve
 	glVertex2f(right, bottom);
 	glEnd();
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+}
+
+void render_circle(Vec2 position, float radius, bool fill, Vec4 colour) {
+    glBegin(GL_LINE_LOOP);
+	int num_segments = 5; //@todo: make this scale for larger radius
+    for(int i = 0; i < num_segments; i++) {
+        float theta = 2.0f * math_pi * (float)i / (float)num_segments;
+        float x = radius * cosf(theta);
+        float y = radius * sinf(theta);
+        glVertex2f(position.x + x, position.y + y);
+    }
+    glEnd();
+}
+
+void render_circle(float x, float y, float radius, bool fill, Vec4 colour) {
+	render_circle(Vec2(x, y), radius, fill, colour);
 }
 
 void render_point(Vec2 position, float size, Vec4 colour) {

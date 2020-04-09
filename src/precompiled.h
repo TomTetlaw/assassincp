@@ -2,7 +2,6 @@
 #define __PRECOMPILED_H__
 
 #define _CRT_SECURE_NO_WARNINGS
-#define _MBCS
 
 #include <stdarg.h>
 #include <stdio.h>
@@ -45,6 +44,7 @@
 #include "font.h"
 #include "console.h"
 #include "render.h"
+#include "physics.h"
 #include "entity.h"
 #include "game.h"
 #include "editor.h"

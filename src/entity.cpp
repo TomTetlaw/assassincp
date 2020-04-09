@@ -11,38 +11,6 @@ internal int next_parity = 0;
 Entity_Type_Decl *Entity_Type_Decl::list = nullptr;
 int Entity_Type_Decl::list_num = 0;
 
-Entity::Entity() {
-	colour = Vec4(1, 1, 1, 1);
-	size = Vec2(1, 1);
-}
-
-void Entity::update_render_texture() {
-	rt.texture = texture;
-	rt.position = position;
-	rt.size = size;
-	rt.colour = colour;
-	rt.angle = angle;
-	rt.sl = sl;
-	rt.sh = sh;
-	rt.tl = tl;
-	rt.th = th;
-}
-
-void Entity::set_texture(const char *filename, bool set_size) {
-	texture = load_texture(filename);
-
-	if (set_size) {
-		if (texture) {
-			size.x = (float)texture->width;
-			size.y = (float)texture->height;
-		}
-		else {
-			size.x = 1.0f;
-			size.y = 1.0f;
-		}
-	}
-}
-
 void entity_init() {
 	entity_manager.entity_types.ensure_size(Entity_Type_Decl::list_num);
 	entity_manager.entity_types.num = Entity_Type_Decl::list_num;
@@ -67,28 +35,28 @@ void entity_on_level_load() {
 	entity_delete_all_entities();
 }
 
+internal void update_render_texture(Entity *entity) {
+	entity->rt.position = entity->po->position;
+}
+
 void entity_render() {
 	render_setup_for_world();
 	
 	For(entities) {
 		auto it = entities[it_index];
 		if (it) {
+			update_render_texture(it);
 			render_texture(&it->rt);
+
 			it->render();
+
+			physics_render_debug(it->po);
 		}
 	}
 }
 
-void entity_update(float dt) {
-	for (int i = 0; i < entities.num; i++) {
-		Entity *entity = entities[i];
-		if (!entity) {
-			continue;
-		}
-
-		entity->velocity = approach(entity->velocity, entity->goal_velocity, dt * entity->velocity_ramp_speed);
-		entity->position = entity->position + (entity->velocity * dt);
-	}
+void entity_update() {
+	physics_step_world();
 
 	for (int i = 0; i < entities.num; i++) {
 		Entity *entity = entities[i];
@@ -96,10 +64,9 @@ void entity_update(float dt) {
 			continue;
 		}
 
-		entity->update(dt);
-		entity->update_render_texture();
+		entity->update();
 
-		if (entity->think_time <= game.game_time) {
+		if (entity->think_time <= game.now) {
 			entity->think_time = 0.0f;
 			entity->think();
 		}
@@ -194,7 +161,8 @@ Entity *create_entity(const char *type_name, const char *name, bool spawn, bool 
 				strcpy(entity->name, name);
 			}
 			entity->classify = type->classify;
-
+			entity->po = physics_add_object();
+			
 			if (add) {
 				add_entity(entity);
 			}
@@ -218,6 +186,8 @@ void delete_entity(Entity *entity) {
 		return;
 	}
 
+	physics_remove_object(entity->po);
+
 	entities[entity->handle.num] = nullptr;
 	entity_manager.entity_types[entity->classify]->entities[entity->num_in_type] = nullptr;
 
@@ -231,11 +201,12 @@ void entity_delete_all_entities() {
 		delete_entity(entities[i]);
 	}
 	entities.num = 0;
-	for (int i = 0; i < entity_manager.entity_types.num; i++) {
-		Entity_Type_Decl *decl = entity_manager.entity_types[i];
-		for (int j = 0; j < decl->entities.num; j++) {
-			decl->entities[j] = nullptr;
-		}
-		decl->entities.num = 0;
+}
+
+void Entity::set_texture(const char *file_name, bool set_render_size) {
+	rt.texture = load_texture(file_name);
+
+	if(set_render_size) {
+		rt.size = Vec2(rt.texture->width, rt.texture->height);
 	}
 }
