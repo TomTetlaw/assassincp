@@ -7,7 +7,7 @@ struct System {
 	Vec2 raw_cursor_position;
 	Vec2 window_size;
 	bool running = true;
-	float delta = 0.0f;
+	float delta_time = 0.0f;
 	float current_time = 0.0f;
 	int frame_num = 0;
 };

@@ -33,6 +33,8 @@
 
 #define internal static
 
+typedef unsigned int uint;
+
 #include "mathlib.h"
 #include "common.h"
 #include "array.h"

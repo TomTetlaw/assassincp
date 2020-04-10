@@ -10,3 +10,4 @@ edit_window_bottom 1079.000000
 edit_window_right 1578.000000
 nav_grid_width 2000
 nav_grid_height 2000
+physics_fps 60

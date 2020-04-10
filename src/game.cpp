@@ -2,17 +2,31 @@
 
 Game game;
 
-internal float real_time = 0.0f;
-internal float last_time = 0.0f;
-internal float real_delta_time = 0.0f;
-internal bool paused = false;
-internal float time_paused = 0.0f;
-internal float total_time_paused = 0.0f;
 internal int nav_grid_width = 2000;
 internal int nav_grid_height = 2000;
 
 internal bool check_nav_point(Vec2 point) {
-	return false;
+	float offset = game.current_level->nav_points_size;
+	Vec2 offsets[] = {
+		{offset, 0},
+		{-offset, 0},
+		{0, offset},
+		{0, -offset},
+
+		{-offset, -offset},
+		{offset, -offset},
+		{offset, offset},
+		{-offset, offset}
+	};
+
+	for(int i = 0; i < 8; i++) {
+		Raycast_Hit hit;
+		Collision_Filter filter;
+		filter.mask = phys_group_wall;
+		if(raycast(point, point + offsets[i], &hit, filter)) return false;
+	}
+
+	return true;
 }
 
 internal void generate_nav_points() {
@@ -48,22 +62,8 @@ void game_init() {
 }
 
 void game_update() {
-	float temp = last_time;
-	last_time = SDL_GetTicks() / 1000.0f;
-
-	if (!paused) {
-		game.now = real_time - total_time_paused;
-	}
-
-	real_delta_time = last_time - temp;
-	real_time += game.delta_time;
-
-	if (paused) {
-		game.delta_time = 0;
-	}
-	else {
-		game.delta_time = real_delta_time;
-	}
+	game.now = sys.current_time;
+	game.delta_time = sys.delta_time;
 }
 
 internal void get_neighbours(int index, Nav_Mesh_Point *neighbours[8]) {
@@ -167,21 +167,6 @@ void game_render() {
 	}
 }
 
-void game_toggle_paused() {
-	game_set_paused(!paused);
-}
-
-void game_set_paused(bool paused) {
-	paused = paused;
-
-	if (paused) {
-		total_time_paused += real_time - time_paused;
-	}
-	else {
-		time_paused = real_time;
-	}
-}
-
 class Poly : public Entity {
 public:
 	Array<Vec2> verts;
@@ -230,7 +215,7 @@ internal void process_level() {
 		delete_entity(player_start);
 	}
 
-	//generate_nav_points();
+	generate_nav_points();
 }
 
 void load_level(const char *file_name) {
@@ -274,13 +259,16 @@ void load_level(const char *file_name) {
 
 			Entity *ent = create_entity(entity.type_name, entity.name, false, false);
 			if (ent) {
-				ent->po->position = entity.position;
 				ent->rt.size = entity.size;
-				ent->po->shape_type = PHYSICS_SHAPE_BOX; //@todo: make the editor acomodate for different shapes
-				ent->po->box.size = entity.size; //@todo: make the editor acomodate for seperate render and shape sizes
 				ent->rt.scale = entity.scale;
 				ent->set_texture(entity.texture_name, false);
 				ent->rt.colour = entity.colour;
+
+				ent->po->position = entity.position;
+				ent->po->set_mass(0.0f);
+				ent->po->groups = phys_group_wall;
+				ent->po->size = entity.size; //@todo: make the editor acomodate for seperate render and shape sizes
+
 				spawn_entity(ent);
 			}
 		}

@@ -46,8 +46,6 @@ extern Game game;
 void game_init();
 void game_update();
 void game_render();
-void game_toggle_paused();
-void game_set_paused(bool paused);
 void load_level(const char *file_name);
 
 void on_level_load(); // the central function for changing level

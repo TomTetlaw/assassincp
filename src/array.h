@@ -42,7 +42,6 @@ void Array<T>::ensure_size(int new_size) {
 
 	T *old_data = data;
 	data = new T[new_size];
-	memset(data, 0, sizeof(T) * new_size);
 	for (int i = 0; i < num; i++) {
 		data[i] = old_data[i];
 	}

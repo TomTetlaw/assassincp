@@ -56,7 +56,9 @@ void entity_render() {
 }
 
 void entity_update() {
-	physics_step_world();
+	//@todo: maybe the entity update also needs to step at a different frame rate?
+	//@todo: this might break when pausing.
+	physics_step_world(game.delta_time);
 
 	for (int i = 0; i < entities.num; i++) {
 		Entity *entity = entities[i];

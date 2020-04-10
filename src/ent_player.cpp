@@ -12,9 +12,9 @@ class Player : public Entity {
 		set_texture("data/textures/player.png");
 		fov_init(&fov);
 
-		po->shape_type = PHYSICS_SHAPE_BOX;
-		po->box.size = rt.size;
-		po->velocity_ramp_speed = 500.0f;
+		po->size = rt.size;
+		po->set_mass(1.0f);
+		po->groups = phys_group_player;
 	}
 
 	void shutdown() {
@@ -24,17 +24,22 @@ class Player : public Entity {
 	void update() {
 		const Uint8* state = SDL_GetKeyboardState(nullptr);
 		Vec2 goal_velocity = Vec2(0,0);
+		po->velocity_ramp_speed = 500.0f;
 		if (state[SDL_SCANCODE_W]) {
 			goal_velocity = goal_velocity + Vec2(0, -300);
+			po->velocity_ramp_speed = 2000.0f;
 		}
 		if (state[SDL_SCANCODE_S]) {
 			goal_velocity = goal_velocity + Vec2(0, 300);
+			po->velocity_ramp_speed = 2000.0f;
 		}
 		if (state[SDL_SCANCODE_A]) {
 			goal_velocity = goal_velocity + Vec2(-300, 0);
+			po->velocity_ramp_speed = 2000.0f;
 		}
 		if (state[SDL_SCANCODE_D]) {
 			goal_velocity = goal_velocity + Vec2(300, 0);
+			po->velocity_ramp_speed = 2000.0f;
 		}
 		po->goal_velocity = goal_velocity;
 

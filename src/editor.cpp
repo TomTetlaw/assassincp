@@ -39,10 +39,7 @@ internal float edit_window_left = 0.0f;
 internal float edit_window_bottom = 0.0f;
 internal float edit_window_right = 0.0f;
 
-bool lines_intersect(Vec2 p1, Vec2 q1, Vec2 p2, Vec2 q2)
-{
-	return false;
-
+bool lines_intersect(Vec2 p1, Vec2 q1, Vec2 p2, Vec2 q2) {
 	auto orientation = [](Vec2 p, Vec2 q, Vec2 r) -> int {
 		int val = (q.y - p.y) * (r.x - q.x) -
 			(q.x - p.x) * (r.y - q.y);
@@ -653,8 +650,8 @@ void editor_render() {
 	render_box2(edit_window_top, edit_window_left, 
 		edit_window_bottom, edit_window_right);
 
-	render_debug_string("[%.2f, %.2f]", cursor_position.x, cursor_position.y);
-	render_debug_string("[%.2f, %.2f]", drag_start_point.x, drag_start_point.y);
+	debug_string("[%.2f, %.2f]", cursor_position.x, cursor_position.y);
+	debug_string("[%.2f, %.2f]", drag_start_point.x, drag_start_point.y);
 }
 
 void editor_handle_mouse_press(int mouse_button, bool down, Vec2 _, bool is_double_click) {

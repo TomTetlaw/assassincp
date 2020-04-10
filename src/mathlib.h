@@ -86,8 +86,17 @@ struct Vec2 {
 		return delta.length();
 	}
 
+	inline float distance_squared_to(Vec2 &other) {
+		Vec2 delta = *this - other;
+		return delta.length_squared();		
+	}
+
 	inline float length() {
 		return sqrtf(x*x + y*y);
+	}
+
+	inline float length_squared() {
+		return x*x + y*y;
 	}
 
 	inline float dot(Vec2 &other) {

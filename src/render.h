@@ -53,7 +53,7 @@ void render_string_format_lazy(Vec2 position, const char *text, ...);
 // usually used to print out debug info that changes every frame
 // won't draw if var renderer_draw_debug is false
 // note: expects to be drawn after a call to render_setup_for_ui
-void render_debug_string(const char *text, ...);
+void debug_string(const char *text, ...);
 
 void render_line(Vec2 a, Vec2 b, Vec4 colour = Vec4(1, 1, 1, 1));
 void render_line(float ax, float ay, float bx, float by, Vec4 colour = Vec4(1, 1, 1, 1));

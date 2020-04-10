@@ -305,7 +305,7 @@ void render_string_format_lazy(Vec2 position, const char *text, ...) {
 // renders string at the top of the screen underneath last debug string
 // usually used to print out debug info that changes every frame.
 // won't draw if var renderer_draw_debug is false
-void render_debug_string(const char *text, ...) {
+void debug_string(const char *text, ...) {
 	//@todo: make this better?
 	constexpr int max_string_length = 1024;
 

@@ -3,13 +3,12 @@
 int main(int argc, char *argv[]) {
 	system_init(argc, argv);
 
-	float last_time = 0.0f;
-
 	bool use_editor = false;
 	input.target = INPUT_GAME;
 	on_level_load();
 	load_level("data/levels/test.acp");
 
+	float last_time = SDL_GetTicks() / 1000.0f;
 	SDL_Event ev;
 	while(sys.running) {
 		while (SDL_PollEvent(&ev)) {
@@ -75,12 +74,15 @@ int main(int argc, char *argv[]) {
 		hotload_check_files_non_blocking();
 
 		float now = SDL_GetTicks() / 1000.0f;
-		sys.delta = now - last_time;
+		sys.delta_time = now - last_time;
 		sys.current_time = now;
 		last_time = now;
 
-		if(sys.delta < 0.001f) {
-			sys.delta = 0.001f;
+		if(sys.delta_time < 0.001f) {
+			sys.delta_time = 0.001f;
+		}
+		if(sys.delta_time > 0.25f) {
+			sys.delta_time = 0.25f;
 		}
 
 		sys.frame_num++;
