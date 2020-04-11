@@ -16,7 +16,7 @@ struct Console_Line {
 internal Array<Console_Line> lines;
 
 internal Vec4 input_colour = Vec4(1, 1, 1, 1);
-internal char input_text[console_line_size] = "Hello, world!";
+internal char input_text[console_line_size] = {0};
 internal int cursor = 0;
 
 internal Console_State state = STATE_CLOSED;
@@ -38,6 +38,7 @@ internal float line_height = 0.0f;
 internal float margin_x = 10.0f;
 
 internal Font *font = nullptr;
+internal float char_width = 16.0f;
 
 void console_init() {
 	FILE *log = nullptr;
@@ -52,6 +53,9 @@ void console_init() {
 
 	font = load_font("data/fonts/cascadia.ttf", 16);
 	line_height = font->line_skip;
+	char_width = font->advance;
+
+	memset(input_text, 0, console_line_size);
 }
 
 void console_print(const char *text) {
@@ -70,10 +74,10 @@ void console_print(const char *text) {
 
 void console_printf(const char *text, ...) {
 	va_list argptr;
-	char message[2048]; //@todo: make this better
+	char message[console_line_size];
 
 	va_start(argptr, text);
-	vsnprintf_s(message, 2048, _TRUNCATE, text, argptr);
+	vsnprintf_s(message, console_line_size, _TRUNCATE, text, argptr);
 	va_end(argptr);
 
 	console_print(message);
@@ -117,18 +121,59 @@ void console_render() {
 	}
 
 	render_string(Vec2(margin_x, input_top), input_text, input_colour, font);
+	render_line(Vec2(margin_x + (cursor * char_width), input_top), Vec2(margin_x + (cursor * char_width), input_bottom));
 }
 
 void console_toggle_open() {
 	switch(state) {
 	case STATE_OPEN:
 		state = STATE_OPEN_MORE;
+		cursor = 0;
+		memset(input_text, 0, console_line_size);
 		break;
 	case STATE_OPEN_MORE:
 		state = STATE_CLOSED;
+		cursor = 0;
+		memset(input_text, 0, console_line_size);
 		break;
 	case STATE_CLOSED:
 		state = STATE_OPEN;
 		break;
 	}
+}
+
+bool console_handle_key_press(SDL_Scancode scancode, bool down, bool ctrl_pressed, bool alt_pressed, bool shift_pressed) {
+	if(state == STATE_CLOSED) return false;
+
+	if(down) {
+		bool handled = false;
+
+		char ch = '\0';
+		if(input_translate_scancode(scancode, shift_pressed, &ch)) {
+			int length = strlen(input_text);
+			// figure out how to insert characters? shouldn't be that hard ey?
+			input_text[cursor] = ch;
+			cursor += 1;
+			handled = true;
+		} else {
+			if(scancode == SDL_SCANCODE_LEFT) {
+				cursor -= 1;
+				handled = true;
+			}
+			else if(scancode == SDL_SCANCODE_RIGHT) {
+				cursor += 1;
+				handled = true;
+			}
+			else if(scancode == SDL_SCANCODE_ESCAPE) {
+				state = STATE_CLOSED;
+				handled = true;
+			}
+		}
+
+		if(cursor < 0) cursor = 0;
+		if(cursor > strlen(input_text)) cursor = strlen(input_text);
+		if(handled) return true;
+	}
+
+	return false;
 }

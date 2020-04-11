@@ -51,7 +51,8 @@ class Player : public Entity {
 		fov_update(&fov);
 	}
 
-	void handle_key_press(SDL_Scancode scancode, bool down, int mods) {
+	bool handle_key_press(SDL_Scancode scancode, bool down, int mods) {
+		return false;
 	}
 
 	void render() {

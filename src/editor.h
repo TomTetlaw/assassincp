@@ -90,7 +90,7 @@ bool editor_gui_handle_event(SDL_Event *ev);
 
 void editor_handle_mouse_press(int mouse_button, bool down, Vec2 position, bool is_double_click);
 void editor_handle_mouse_move(int relx, int rely);
-void editor_handle_key_press(SDL_Scancode scancode, bool down, int mods);
+bool editor_handle_key_press(SDL_Scancode scancode, bool down, int mods);
 void editor_handle_mouse_wheel(int amount);
 
 void editor_save(const char *file_name);

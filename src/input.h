@@ -23,8 +23,9 @@ extern Input input;
 
 void input_handle_mouse_press(int mouse_button, bool down, Vec2 position, bool is_double_click);
 void input_handle_mouse_move(int relx, int rely);
-void input_handle_key_press(SDL_Scancode scancode, bool down, bool ctrl_pressed, bool alt_pressed, bool shift_pressed);
+bool input_handle_key_press(SDL_Scancode scancode, bool down, bool ctrl_pressed, bool alt_pressed, bool shift_pressed);
 void input_handle_mouse_wheel(int amount);
 bool input_get_key_state(SDL_Scancode scancode);
+bool input_translate_scancode(SDL_Scancode scancode, bool shift_pressed, char *ch);
 
 #endif

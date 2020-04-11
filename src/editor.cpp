@@ -863,7 +863,7 @@ void editor_handle_mouse_move(int relx, int rely) {
 	}
 }
 
-void editor_handle_key_press(SDL_Scancode scancode, bool down, int mods) {
+bool editor_handle_key_press(SDL_Scancode scancode, bool down, int mods) {
 	if (scancode == SDL_SCANCODE_LSHIFT) {
 		shift_down = down;
 	}
@@ -878,8 +878,11 @@ void editor_handle_key_press(SDL_Scancode scancode, bool down, int mods) {
 				}
 				clear_selected_entities();
 			}
+			return true;
 		}
 	}
+
+	return false;
 }
 
 void editor_handle_mouse_wheel(int amount) {

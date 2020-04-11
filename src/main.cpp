@@ -21,25 +21,26 @@ int main(int argc, char *argv[]) {
 					bool ctrl_pressed = (ev.key.keysym.mod & KMOD_CTRL) > 0;
 					bool alt_pressed = (ev.key.keysym.mod & KMOD_ALT) > 0;
 					bool shift_pressed = (ev.key.keysym.mod & KMOD_SHIFT) > 0;
-					input_handle_key_press(ev.key.keysym.scancode, true, ctrl_pressed, alt_pressed, shift_pressed);
-					if (ev.key.keysym.scancode == SDL_SCANCODE_SPACE) {
-						use_editor = !use_editor;
-						if (use_editor) {
-							input.target = INPUT_EDITOR;
-							on_level_load();
-							editor_load_map_into_editor("data/levels/test.acp");
+					if(!input_handle_key_press(ev.key.keysym.scancode, true, ctrl_pressed, alt_pressed, shift_pressed)) {
+						if (ev.key.keysym.scancode == SDL_SCANCODE_SPACE) {
+							use_editor = !use_editor;
+							if (use_editor) {
+								input.target = INPUT_EDITOR;
+								on_level_load();
+								editor_load_map_into_editor("data/levels/test.acp");
+							}
+							else {
+								editor_save("data/levels/test.acp");
+								input.target = INPUT_GAME;
+								on_level_load();
+								load_level("data/levels/test.acp");
+							}
 						}
-						else {
-							editor_save("data/levels/test.acp");
-							input.target = INPUT_GAME;
-							on_level_load();
-							load_level("data/levels/test.acp");
+						else if (ev.key.keysym.scancode == SDL_SCANCODE_ESCAPE) {
+							sys.running = false;
+						} else if (ev.key.keysym.scancode == SDL_SCANCODE_GRAVE) {
+							console_toggle_open();
 						}
-					}
-					else if (ev.key.keysym.scancode == SDL_SCANCODE_ESCAPE) {
-						sys.running = false;
-					} else if (ev.key.keysym.scancode == SDL_SCANCODE_GRAVE) {
-						console_toggle_open();
 					}
 				} break;
 				case SDL_KEYUP: {

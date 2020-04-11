@@ -21,7 +21,8 @@ internal void load_data_into_font(Font *font_info, TTF_Font *font) {
 			font_info->glyphs[i].available = true;
 			TTF_GlyphMetrics(font, (char)i, &font_info->glyphs[i].min_x, &font_info->glyphs[i].max_x, &font_info->glyphs[i].min_y, &font_info->glyphs[i].max_y, &font_info->glyphs[i].advance);
 			font_info->glyphs[i].ch = (char)i;
-
+			font_info->advance = font_info->glyphs[i].advance;
+			
 			memset(font_info->glyphs[i].name, 0, font_info->glyphs[i].name_length);
 			sprintf_s(font_info->glyphs[i].name, "%s_%c_%d", font_info->filename, (char)i, font_info->point_size);
 

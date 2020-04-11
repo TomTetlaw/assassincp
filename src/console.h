@@ -11,5 +11,6 @@ void console_printf(const char *text, ...);
 void console_update();
 void console_render();
 void console_toggle_open();
+bool console_handle_key_press(SDL_Scancode scancode, bool down, bool ctrl_pressed, bool alt_pressed, bool shift_pressed);
 
 #endif

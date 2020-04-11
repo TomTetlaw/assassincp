@@ -105,7 +105,7 @@ struct Entity {
 
 	virtual void handle_mouse_press(int mouse_button, bool down, Vec2 position, bool is_double_click) {}
 	virtual void handle_mouse_move(int relx, int rely) {}
-	virtual void handle_key_press(SDL_Scancode scancode, bool down, int mods) {}
+	virtual bool handle_key_press(SDL_Scancode scancode, bool down, int mods) { return false; }
 	virtual void handle_mouse_wheel(int amount) {}
 };
 
