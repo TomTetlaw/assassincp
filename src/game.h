@@ -28,7 +28,6 @@ bool make_path(Nav_Path *path, Vec2 from, Vec2 to);
 struct Level {
 	Array<Vec2> fov_check_points;
 	Array<Nav_Mesh_Point> nav_points;
-	float nav_points_size = 32.0f;
 	int nav_points_width = 0;
 	int nav_points_height = 0;
 	const char *file_name = nullptr;

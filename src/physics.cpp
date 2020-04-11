@@ -54,14 +54,10 @@ internal bool box_box_intersects(Intersection *intersection) {
     return false;
 }
 
-internal void physics_step_object(Physics_Object *po, float dt) {
-    po->velocity = approach(po->velocity, po->goal_velocity, dt * po->velocity_ramp_speed);
-    po->position = po->position + (po->velocity * dt);
-
+internal void update_object_properties(Physics_Object *po) {
     po->hw = po->size.x / 2;
     po->hh = po->size.y / 2;
     po->extents = { po->position.y - po->hh, po->position.x - po->hw, po->position.y + po->hh, po->position.x + po->hw };
-
     po->edges[0].a = Vec2(po->extents.left, po->extents.top);
     po->edges[0].b = Vec2(po->extents.right, po->extents.top);
     po->edges[1].a = Vec2(po->extents.right, po->extents.top);
@@ -70,6 +66,12 @@ internal void physics_step_object(Physics_Object *po, float dt) {
     po->edges[2].b = Vec2(po->extents.left, po->extents.bottom);
     po->edges[3].a = Vec2(po->extents.left, po->extents.bottom);
     po->edges[3].b = Vec2(po->extents.left, po->extents.top);
+}
+
+internal void physics_step_object(Physics_Object *po, float dt) {
+    po->velocity = approach(po->velocity, po->goal_velocity, dt * po->velocity_ramp_speed);
+    po->position = po->position + (po->velocity * dt);
+    update_object_properties(po);
 }
 
 internal void check_for_intersects() {
@@ -101,7 +103,7 @@ internal void check_for_intersects() {
 struct Line_Intersection {
     Vec2 a, b, c, d;
     Vec2 point;
-    float alpha = 0.0f;
+    float t1 = 0.0f;
 };
 
 internal float det(float a, float b, float c, float d) {
@@ -137,12 +139,13 @@ internal bool lines_intersect(Line_Intersection *intersection) {
     float t2 = (r_dx*(s_py-r_py) + r_dy*(r_px-s_px))/(s_dx*r_dy - s_dy*r_dx);
     float t1 = (s_px+s_dx*t2-r_px)/r_dx;
 
+    if(isnan(t1)) return false;
     if(t1 < 0.0f || t1 > 1.0f) return false;
     if(t2 < 0.0f || t2 > 1.0f) return false;
 
     intersection->point.x = r_px + r_dx * t1;
     intersection->point.y = r_py + r_dy * t1;
-    intersection->alpha = t1;
+    intersection->t1 = t1;
     return true;
 }
 
@@ -166,6 +169,10 @@ internal void get_edges(Array<Edge> &edges, Collision_Filter filter) {
         auto it = objects[i];
         if(!it) continue;
         if(!should_collide(it, filter)) continue;
+        // @todo: we do this here so that the raycasts in generate_nav_mesh in 
+        // game.cpp will give correct results, but probably should do it in a
+        // better place.
+        update_object_properties(it);
         for(int j = 0; j < 4; j++) edges.append(it->edges[j]);
     }
 }
@@ -204,7 +211,7 @@ bool raycast(Vec2 a, Vec2 b, Raycast_Hit *hit, Collision_Filter filter) {
     }
 
     hit->point = line_intersections[lowest_index].point;
-    hit->alpha = line_intersections[lowest_index].alpha;
+    hit->alpha = line_intersections[lowest_index].t1;
     return true;
 }
 

@@ -340,6 +340,7 @@ void render_line(float ax, float ay, float bx, float by, Vec4 colour) {
 
 // render a line projected length units from a position 
 void render_line2(Vec2 start, float length, float angle, Vec4 colour) {
+	angle = deg2rad(angle);
 	Vec2 end;
 	end.x = start.x + (length * cos(angle));
 	end.y = start.y + (length * -sin(angle)); // using -sin because +y is down in our coord system

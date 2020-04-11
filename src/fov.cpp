@@ -32,10 +32,13 @@ void fov_update(Field_Of_View *fov) {
 		for (int j = 0; j < num_rays; j++) {
 			Vec2 points[num_rays];
 			points[0] = game.current_level->fov_check_points[i];
-			points[1] = fov->position + Vec2::from_angle(fov->position.angle_to(game.current_level->fov_check_points[i]) - 0.00001f) * 10000;
-			points[2] = fov->position + Vec2::from_angle(fov->position.angle_to(game.current_level->fov_check_points[i]) + 0.00001f) * 10000;
-			if (false /*raycast*/) {
-				//verts[vert_num] = Vec2(info[j].point.x, info[j].point.y);
+			points[1] = fov->position + Vec2::from_angle(fov->position.angle_to(game.current_level->fov_check_points[i]) - 0.000572958f) * 10000;
+			points[2] = fov->position + Vec2::from_angle(fov->position.angle_to(game.current_level->fov_check_points[i]) + 0.000572958f) * 10000;
+			Collision_Filter filter;
+			filter.mask = phys_group_wall;
+			Raycast_Hit hit;
+			if (raycast(fov->position, points[j], &hit, filter)) {
+				fov->verts[vert_num] = hit.point;
 			}
 			else {
 				fov->verts[vert_num] = points[j];

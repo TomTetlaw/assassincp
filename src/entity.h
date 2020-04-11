@@ -92,6 +92,7 @@ struct Entity {
 	float think_time = 0.0f;
 
 	Render_Texture rt;
+	
 	Physics_Object *po = nullptr;
 
 	void set_texture(const char *file_name, bool set_render_size = true);

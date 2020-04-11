@@ -38,6 +38,8 @@ int main(int argc, char *argv[]) {
 					}
 					else if (ev.key.keysym.scancode == SDL_SCANCODE_ESCAPE) {
 						sys.running = false;
+					} else if (ev.key.keysym.scancode == SDL_SCANCODE_GRAVE) {
+						console_toggle_open();
 					}
 				} break;
 				case SDL_KEYUP: {
@@ -87,6 +89,8 @@ int main(int argc, char *argv[]) {
 
 		sys.frame_num++;
 
+		console_update();
+
 		if (use_editor) {
 			editor_update();
 		}
@@ -103,6 +107,8 @@ int main(int argc, char *argv[]) {
 			editor_render();
 		}
 
+		console_render();
+		
 		render_end_frame();
 	}
 

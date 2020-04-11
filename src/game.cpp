@@ -4,10 +4,11 @@ Game game;
 
 internal int nav_grid_width = 2000;
 internal int nav_grid_height = 2000;
+internal int nav_grid_size = 32.0f;
 
 internal bool check_nav_point(Vec2 point) {
-	float offset = game.current_level->nav_points_size;
-	Vec2 offsets[] = {
+	float offset = nav_grid_size / 2;
+	Vec2 offsets[8] = {
 		{offset, 0},
 		{-offset, 0},
 		{0, offset},
@@ -30,7 +31,7 @@ internal bool check_nav_point(Vec2 point) {
 }
 
 internal void generate_nav_points() {
-	int grid_size = game.current_level->nav_points_size;
+	int grid_size = nav_grid_size;
 	int num_x = nav_grid_width / grid_size;
 	int num_y = nav_grid_height / grid_size;
 	
@@ -59,6 +60,7 @@ internal void regen_nav_points(Config_Var *var) {
 void game_init() {
 	register_var("nav_grid_width", &nav_grid_width, regen_nav_points);
 	register_var("nav_grid_height", &nav_grid_height, regen_nav_points);
+	register_var("nav_grid_size", &nav_grid_size, regen_nav_points);
 }
 
 void game_update() {
@@ -91,12 +93,12 @@ internal void get_neighbours(int index, Nav_Mesh_Point *neighbours[8]) {
 }
 
 internal void position_to_grid_index(Vec2 position, int *grid_x, int *grid_y) {
-	int grid_index_x = (int)(position.x / game.current_level->nav_points_size);
+	int grid_index_x = (int)(position.x / nav_grid_size);
 	grid_index_x += (game.current_level->nav_points_width / 2);
 	if (grid_index_x < 0) grid_index_x += game.current_level->nav_points_width;
 	*grid_x = grid_index_x;
 
-	int grid_index_y = (int)(position.y / game.current_level->nav_points_size);
+	int grid_index_y = (int)(position.y / nav_grid_size);
 	grid_index_y += (game.current_level->nav_points_height / 2);
 	if (grid_index_y < 0) grid_index_y += game.current_level->nav_points_height;
 	*grid_y = grid_index_y;
@@ -272,17 +274,17 @@ void load_level(const char *file_name) {
 				spawn_entity(ent);
 			}
 		}
-		else if (type == EDITOR_ENTITY_POLYGON) {
-			Editor_Polygon polygon;
-			polygon.read_save(&file);
-
-			Poly *poly = (Poly *)create_entity("info_polygon", nullptr, false, false);
-			For(polygon.points) {
-				auto it = polygon.points[it_index];
-				poly->verts.append(it->position);
-			}
-			spawn_entity(poly);
-		}
+		//else if (type == EDITOR_ENTITY_POLYGON) {
+		//	Editor_Polygon polygon;
+		//	polygon.read_save(&file);
+//
+		//	Poly *poly = (Poly *)create_entity("info_polygon", nullptr, false, false);
+		//	For(polygon.points) {
+		//		auto it = polygon.points[it_index];
+		//		poly->verts.append(it->position);
+		//	}
+		//	spawn_entity(poly);
+		//}
 	}
 
 	save_close(&file);

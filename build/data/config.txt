@@ -1,3 +1,6 @@
+console_bottom 250.000000
+console_bottom_more 800.000000
+console_open_speed 2000.000000
 clear_colour (0.000000 0.000000 0.000000 0.000000)
 should_clear_screen true
 draw_debug true
@@ -8,6 +11,7 @@ edit_window_top 0.000000
 edit_window_left 91.000000
 edit_window_bottom 1079.000000
 edit_window_right 1578.000000
-nav_grid_width 2000
-nav_grid_height 2000
+nav_grid_width 1000
+nav_grid_height 1000
+nav_grid_size 32
 physics_fps 60

@@ -129,14 +129,17 @@ internal void create_texture_data_from_surface(Texture *texture, SDL_Surface *su
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, surf->w, surf->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, surf->pixels);
-	glObjectLabel(GL_TEXTURE, t, -1, texture->filename);
+	// @todo: this crashed when loading a font from within console_init in console.cpp. We should figure out 
+	// why this happened but we don't need the label for now so it's a problem for future Tom to solve.
+	//glObjectLabel(GL_TEXTURE, t, -1, texture->filename);
 
 	SDL_FreeSurface(surf);
 
 	texture->width = surf->w;
 	texture->height = surf->h;
 	if (texture->width <= 0 || texture->height <= 0) {
-		console_printf("Texture with zero width but valid SDL surface! [%s: (%d, %d) (%d, %d)]\n", texture->filename, texture->width, texture->height, surf->clip_rect.w, surf->clip_rect.h);
+		//@todo: figure out why this happens. It doesn't seem to mess anything up.
+		//console_printf("Texture with zero width but valid SDL surface! [%s: (%d, %d) (%d, %d)]\n", texture->filename, texture->width, texture->height, surf->clip_rect.w, surf->clip_rect.h);
 		texture->width = surf->clip_rect.w;
 		texture->height = surf->clip_rect.h;
 	}

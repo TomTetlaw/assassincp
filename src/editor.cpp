@@ -529,7 +529,7 @@ void editor_update() {
 
 		{
 			float data[2] = { entity->size.x, entity->size.y };
-			if (ImGui::DragFloat2("Size", data)) {
+			if (ImGui::DragFloat2("Texture Size", data)) {
 				entity->size.x = data[0];
 				entity->size.y = data[1];
 			}

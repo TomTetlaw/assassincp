@@ -7,6 +7,7 @@ enum Physics_Shape_Type {
 
 constexpr uint phys_group_player = 2;
 constexpr uint phys_group_wall = 4;
+constexpr uint phys_group_badguy = 8;
 
 struct Physics_Box {
     Vec2 size = Vec2(123, 123);

@@ -8,4 +8,8 @@ void console_init();
 void console_print(const char *text);
 void console_printf(const char *text, ...);
 
+void console_update();
+void console_render();
+void console_toggle_open();
+
 #endif

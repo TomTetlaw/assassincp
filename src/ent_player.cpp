@@ -48,7 +48,7 @@ class Player : public Entity {
 		rt.angle = po->position.angle_to(to_world_pos(cursor_position));
 
 		fov.position = po->position;
-		//fov.update();
+		fov_update(&fov);
 	}
 
 	void handle_key_press(SDL_Scancode scancode, bool down, int mods) {
@@ -56,7 +56,7 @@ class Player : public Entity {
 
 	void render() {
 		Entity::render();
-		//fov.render();
+		fov_render(&fov);
 	}
 };
 
