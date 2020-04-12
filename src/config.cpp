@@ -35,7 +35,7 @@ internal void set_var_string(Config_Var *var) {
 
 internal void add_var(Config_Var *v) {
 	for(int i = 0; i < vars.num; i++) {
-		if(!strcmp(vars.name, v->name)) {
+		if(!strcmp(vars[i]->name, v->name)) {
 			console_printf("Var %s already exists!\n", v->name);
 			return;
 		}
