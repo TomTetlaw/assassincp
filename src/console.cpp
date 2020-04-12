@@ -15,7 +15,7 @@ struct Console_Line {
 
 internal Array<Console_Line> lines;
 internal Array<Console_Line> history;
-int history_index = 0;
+internal int history_index = 0;
 
 internal Vec4 input_colour = Vec4(1, 1, 1, 1);
 internal char input_text[console_line_size] = {0};
@@ -50,20 +50,6 @@ void cmd_list_commands(Array<Command_Argument> &args) {
 	}
 }
 
-void cmd_add(Array<Command_Argument> &args) {
-	if(args.num <= 1) {
-		console_printf("cmd_add requires atleast 2 arguments.\n");
-		return;
-	}
-
-	int total = 0;
-	for(int i = 0; i < args.num; i++) {
-		total += atoi(args[i]);
-	}
-
-	console_printf("total: %d.\n", total);
-}
-
 void console_init() {
 	FILE *log = nullptr;
 	fopen_s(&log, "data/console.log", "w");
@@ -75,7 +61,6 @@ void console_init() {
 	register_var("console_bottom_more", &console_bottom_more);
 	register_var("console_open_speed", &console_open_speed);
 	register_command("list_commands", cmd_list_commands);
-	register_command("add", cmd_add);
 
 	font = load_font("data/fonts/cascadia.ttf", 16);
 	line_height = font->line_skip;

@@ -57,7 +57,7 @@ class Player : public Entity {
 
 	void render() {
 		Entity::render();
-		fov_render(&fov);
+		//fov_render(&fov);
 	}
 };
 

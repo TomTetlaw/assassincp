@@ -109,7 +109,7 @@ bool input_translate_scancode(SDL_Scancode scancode, bool shift_pressed, char *c
 	else if(scancode == SDL_SCANCODE_RIGHTBRACKET) { *ch = shift_pressed ? '}'  : ']';  return true; }
 	else if(scancode == SDL_SCANCODE_BACKSLASH)    { *ch = shift_pressed ? '|'  : '\\'; return true; }
 	else if(scancode == SDL_SCANCODE_SEMICOLON)    { *ch = shift_pressed ? ':'  : ';';  return true; }
-	else if(scancode == SDL_SCANCODE_APOSTROPHE)   { *ch = shift_pressed ? '\'' : '"';  return true; }
+	else if(scancode == SDL_SCANCODE_APOSTROPHE)   { *ch = shift_pressed ? '"'  : '\''; return true; }
 	else if(scancode == SDL_SCANCODE_COMMA) 	   { *ch = shift_pressed ? '<'  : ',';  return true; }
 	else if(scancode == SDL_SCANCODE_PERIOD) 	   { *ch = shift_pressed ? '>'  : '.';  return true; }
 	else if(scancode == SDL_SCANCODE_SLASH) 	   { *ch = shift_pressed ? '?'  : '/';  return true; }

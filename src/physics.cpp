@@ -291,20 +291,5 @@ void physics_render_debug(Physics_Object *po) {
     render_box(po->position, po->size, false, colour);
 
     render_line2(po->position, po->velocity.length(), po->velocity.to_angle(), Vec4(0, 1, 0, 1));
-
-    //render_line(po->edges[0].a + Vec2(0, -5), po->edges[0].b + Vec2(0, -5), Vec4(1, 1, 1, 1));
-    //render_line(po->edges[1].a + Vec2(5, 0), po->edges[1].b + Vec2(5, 0), Vec4(1, 1, 1, 1));
-    //render_line(po->edges[2].a + Vec2(0, 5), po->edges[2].b + Vec2(0, 5), Vec4(1, 1, 1, 1));
-    //render_line(po->edges[3].a + Vec2(-5, 0), po->edges[3].b + Vec2(-5, 0), Vec4(1, 1, 1, 1));
-
     render_line(game.player->po->position, to_world_pos(cursor_position));
-
-    Collision_Filter filter;
-    filter.mask = phys_group_wall;
-    Raycast_Hit hit;
-    if(raycast(game.player->po->position, to_world_pos(cursor_position), &hit, filter)) {
-        render_point(hit.point);
-    } else {
-        render_point(to_world_pos(cursor_position));
-    }
 }
