@@ -8,8 +8,6 @@ internal bool debug_draw = true;
 internal Font *default_font = nullptr;
 internal float debug_string_start_y = 10.0f;
 internal Vec2 debug_string_position = Vec2(debug_string_start_y, 0.0f);
-internal const char *default_font_file = "data/fonts/Cascadia.ttf";
-internal int default_font_size = 16;
 internal bool centered = false;
 internal double z_near = 0.0;
 internal double z_far = 1.0;
@@ -43,7 +41,7 @@ void render_init() {
 		fclose(f);
 	}
 
-	default_font = load_font(default_font_file, default_font_size);
+	default_font = load_font("data/fonts/Cascadia.ttf", 16);
 }
 
 void render_shutdown() {

@@ -42,6 +42,13 @@ internal float margin_x = 10.0f;
 internal Font *font = nullptr;
 internal float char_width = 16.0f;
 
+struct Console_Command {
+	const char *name = nullptr;
+	Console_Command_Callback callback = nullptr;
+};
+
+internal Array<Console_Command> commands;
+
 void console_init() {
 	FILE *log = nullptr;
 	fopen_s(&log, "data/console.log", "w");
@@ -219,4 +226,16 @@ bool console_handle_key_press(SDL_Scancode scancode, bool down, bool ctrl_presse
 	}
 
 	return false;
+}
+
+void register_command(const char *name, Console_Command_Callback callback) {
+	for(int i = 0; i < commands.num; i++) {
+		if(!strcmp(commands[i].name, name)) {
+			console_printf("Command %s already exists!\n", name);
+			return;
+		}
+	}
+	
+	Console_Command command = { name, callback };
+	commands.append(command);
 }

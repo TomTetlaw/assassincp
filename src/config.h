@@ -43,7 +43,6 @@ struct Config_Var {
 		Vec4 *vec4_dest;
 	};
 
-	char string_data[var_string_length];
 	char print_string[var_string_length];
 
 	Config_Var_Callback callback = nullptr;
@@ -53,7 +52,6 @@ void config_load(const char *filename); // all vars must be registered before ca
 void config_shutdown();
 void register_var(const char *name, float *var, Config_Var_Callback callback = nullptr);
 void register_var(const char *name, double *var, Config_Var_Callback callback = nullptr);
-void register_var(const char *name, char **var, Config_Var_Callback callback = nullptr);
 void register_var(const char *name, bool *var, Config_Var_Callback callback = nullptr);
 void register_var(const char *name, int *var, Config_Var_Callback callback = nullptr);
 void register_var(const char *name, Vec2 *var, Config_Var_Callback callback = nullptr);

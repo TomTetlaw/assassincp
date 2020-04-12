@@ -22,9 +22,6 @@ internal void set_var_string(Config_Var *var) {
 			strcpy_s(var->print_string, var_string_length, "false");
 		}
 		break;
-	case VAR_STRING:
-		strncpy_s(var->print_string, var_string_length, var->string_data, var_string_length);
-		break;
 	case VAR_VEC2:
 		sprintf_s(var->print_string, var_string_length, "(%f %f)", var->vec2_dest->x, var->vec2_dest->y);
 		break;
@@ -37,6 +34,12 @@ internal void set_var_string(Config_Var *var) {
 }
 
 internal void add_var(Config_Var *v) {
+	for(int i = 0; i < vars.num; i++) {
+		if(!strcmp(vars.name, v->name)) {
+			console_printf("Var %s already exists!\n", v->name);
+			return;
+		}
+	}
 	set_var_string(v);
 	vars.append(v);
 }
@@ -57,18 +60,6 @@ void register_var(const char *name, double *var, Config_Var_Callback callback) {
 	v->double_dest = var;
 	v->callback = callback;
 	add_var(v);	
-}
-
-void register_var(const char *name, char **var, Config_Var_Callback callback) {
-	Config_Var *v = new Config_Var;
-	v->type = VAR_STRING;
-	v->name = name;
-	if(*var) {
-		strcpy_s(v->string_data, var_string_length, *var);
-	}
-	*var = v->string_data;
-	v->callback = callback;
-	add_var(v);
 }
 
 void register_var(const char *name, bool *var, Config_Var_Callback callback) {
@@ -133,9 +124,6 @@ internal void set_var_from_string(Config_Var *var, const char *string) {
 			*var->bool_dest = false;
 		}
 		break;
-	case VAR_STRING: {
-			strcpy_s(var->string_data, var_string_length, string);
-		} break;
 	case VAR_VEC2:
 		sscanf_s(string, "%f %f", &var->vec2_dest->x, &var->vec2_dest->y);
 		break;
@@ -200,9 +188,6 @@ void config_write_file(const char *filename) {
 			break;
 		case VAR_BOOL:
 			fprintf_s(file, "%s %s\n", it->name, *it->bool_dest ? "true" : "false");
-			break;
-		case VAR_STRING:
-			fprintf_s(file, "%s %s\n", it->name, it->string_data);
 			break;
 		case VAR_VEC2:
 			fprintf_s(file, "%s (%f %f)\n", it->name, it->vec2_dest->x, it->vec2_dest->y);
