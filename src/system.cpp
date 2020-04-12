@@ -10,6 +10,10 @@ internal void hotload_config_file(const char *filename, void *data) {
 	config_load(filename);
 }
 
+void cmd_quit(Array<Command_Argument> &args) {
+	sys.running = false;
+}
+
 void system_init(int argc, char *argv[]) {
 	if (SDL_Init(SDL_INIT_EVERYTHING)) {
 		system_error("Failed to initialize SDL: %s", SDL_GetError());
@@ -71,7 +75,10 @@ void system_init(int argc, char *argv[]) {
 		system_error("Failed to initialize SDL_IMG: %s", IMG_GetError());
 	}
 
+	register_command("quit", cmd_quit);
+
 	console_init();
+	config_init();
 	hotload_init();
 	render_init();
 	entity_init();
@@ -99,8 +106,6 @@ void system_quit() {
 	SDL_GL_DeleteContext(sys.context);
 	SDL_DestroyWindow(sys.window);
 	SDL_Quit();
-
-	sys.running = false;
 }
 
 void system_error(const char *text, ...) {
@@ -112,5 +117,5 @@ void system_error(const char *text, ...) {
 	va_end(argptr);
 
 	SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "ERROR", message, sys.window);
-	system_quit();
+	sys.running = false;
 }

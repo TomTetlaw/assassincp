@@ -42,12 +42,27 @@ internal float margin_x = 10.0f;
 internal Font *font = nullptr;
 internal float char_width = 16.0f;
 
-struct Console_Command {
-	const char *name = nullptr;
-	Console_Command_Callback callback = nullptr;
-};
-
 internal Array<Console_Command> commands;
+
+void cmd_list_commands(Array<Command_Argument> &args) {
+	for(int i = 0; i < commands.num; i++) {
+		console_printf("%s\n", commands[i].name);
+	}
+}
+
+void cmd_add(Array<Command_Argument> &args) {
+	if(args.num <= 1) {
+		console_printf("cmd_add requires atleast 2 arguments.\n");
+		return;
+	}
+
+	int total = 0;
+	for(int i = 0; i < args.num; i++) {
+		total += atoi(args[i]);
+	}
+
+	console_printf("total: %d.\n", total);
+}
 
 void console_init() {
 	FILE *log = nullptr;
@@ -59,6 +74,8 @@ void console_init() {
 	register_var("console_bottom", &console_bottom);
 	register_var("console_bottom_more", &console_bottom_more);
 	register_var("console_open_speed", &console_open_speed);
+	register_command("list_commands", cmd_list_commands);
+	register_command("add", cmd_add);
 
 	font = load_font("data/fonts/cascadia.ttf", 16);
 	line_height = font->line_skip;
@@ -147,6 +164,40 @@ void console_toggle_open() {
 	}
 }
 
+void process_input() {
+	Array<Command_Argument> arguments;
+
+	const char *text = input_text;
+	char token[MAX_TOKEN_LENGTH] = { 0 };
+	while (true) {
+	    text = parse_token(text, token);
+	    if (!text) break;
+
+		Command_Argument arg;
+		strcpy(arg.text, token);
+		arguments.append(arg);
+	}
+
+	Config_Var *var = config_find_var(arguments[0].text);
+	if(var) {
+		console_printf("%s = %s\n", var->name, var->print_string);
+		return;
+	}
+
+	Console_Command *command = console_find_command(arguments[0].text);
+	if(command) {
+		arguments.remove(0);
+		command->callback(arguments);
+		return;
+	}
+
+	// if no command or var found, just print the input.
+	Console_Line line;
+	strcpy(line.text, input_text);
+	line.from_user = true;
+	lines.append(line);
+}
+
 bool console_handle_key_press(SDL_Scancode scancode, bool down, bool ctrl_pressed, bool alt_pressed, bool shift_pressed) {
 	if(state == STATE_CLOSED) return false;
 
@@ -178,14 +229,17 @@ bool console_handle_key_press(SDL_Scancode scancode, bool down, bool ctrl_presse
 				state = STATE_CLOSED;
 				handled = true;
 			} else if(scancode == SDL_SCANCODE_RETURN) {
+				process_input();
+
 				Console_Line line;
 				strcpy(line.text, input_text);
 				line.from_user = true;
-				lines.append(line);
 				history.append(line);
+
 				memset(input_text, 0, console_line_size);
-				handled = true;
 				history_index = 0;
+
+				handled = true;
 			} else if(scancode == SDL_SCANCODE_DELETE) {
 				char input_copy[console_line_size] = {0};
 				memcpy(input_copy, input_text, console_line_size);
@@ -211,12 +265,14 @@ bool console_handle_key_press(SDL_Scancode scancode, bool down, bool ctrl_presse
 					if(history_index < 0) history_index = history.num - 1;
 					strcpy(input_text, history[history_index].text);
 				}
+				handled = true;
 			} else if(scancode == SDL_SCANCODE_DOWN) {
 				if(history.num > 0) {
 					strcpy(input_text, history[history_index].text);
 					history_index++;
 					if(history_index >= history.num) history_index = 0;
 				}
+				handled = true;
 			}
 		}
 
@@ -229,13 +285,28 @@ bool console_handle_key_press(SDL_Scancode scancode, bool down, bool ctrl_presse
 }
 
 void register_command(const char *name, Console_Command_Callback callback) {
+	Config_Var *var = config_find_var(name);
+	if(var) {
+		console_printf("%s already exists as a config var!\n", name);
+	}
+
 	for(int i = 0; i < commands.num; i++) {
 		if(!strcmp(commands[i].name, name)) {
 			console_printf("Command %s already exists!\n", name);
 			return;
 		}
 	}
-	
+
 	Console_Command command = { name, callback };
 	commands.append(command);
+}
+
+Console_Command *console_find_command(const char *name) {
+	for(int i = 0; i < commands.num; i++) {
+		if(!strcmp(commands[i].name, name)) {
+			return &commands[i];
+		}
+	}	
+
+	return nullptr;
 }

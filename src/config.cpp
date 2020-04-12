@@ -3,6 +3,16 @@
 internal Array<Config_Var *> vars;
 internal const char *file_name = nullptr;
 
+void cmd_list_vars(Array<Command_Argument> &args) {
+	for(int i = 0; i < vars.num; i++) {
+		console_printf("%s\n", vars[i]->name);
+	}
+}
+
+void config_init() {
+	register_command("list_vars", cmd_list_vars);
+}
+
 internal void set_var_string(Config_Var *var) {
 	switch (var->type) {
 	case VAR_FLOAT:
@@ -34,14 +44,29 @@ internal void set_var_string(Config_Var *var) {
 }
 
 internal void add_var(Config_Var *v) {
+	Console_Command *command = console_find_command(v->name);
+	if(command) {
+		console_printf("%s is already registered as a command!\n", v->name);
+		return;
+	}
+
 	for(int i = 0; i < vars.num; i++) {
 		if(!strcmp(vars[i]->name, v->name)) {
 			console_printf("Var %s already exists!\n", v->name);
 			return;
 		}
 	}
+
 	set_var_string(v);
 	vars.append(v);
+}
+
+Config_Var *config_find_var(const char *name) {
+	for(int i = 0; i < vars.num; i++) {
+		if(!strcmp(vars[i]->name, name)) return vars[i];
+	}
+
+	return nullptr;
 }
 
 void register_var(const char *name, float *var, Config_Var_Callback callback) {
