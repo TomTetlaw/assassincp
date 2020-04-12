@@ -14,6 +14,8 @@ struct Console_Line {
 };
 
 internal Array<Console_Line> lines;
+internal Array<Console_Line> history;
+int history_index = 0;
 
 internal Vec4 input_colour = Vec4(1, 1, 1, 1);
 internal char input_text[console_line_size] = {0};
@@ -128,13 +130,9 @@ void console_toggle_open() {
 	switch(state) {
 	case STATE_OPEN:
 		state = STATE_OPEN_MORE;
-		cursor = 0;
-		memset(input_text, 0, console_line_size);
 		break;
 	case STATE_OPEN_MORE:
 		state = STATE_CLOSED;
-		cursor = 0;
-		memset(input_text, 0, console_line_size);
 		break;
 	case STATE_CLOSED:
 		state = STATE_OPEN;
@@ -150,9 +148,14 @@ bool console_handle_key_press(SDL_Scancode scancode, bool down, bool ctrl_presse
 
 		char ch = '\0';
 		if(input_translate_scancode(scancode, shift_pressed, &ch)) {
-			int length = strlen(input_text);
-			// figure out how to insert characters? shouldn't be that hard ey?
-			input_text[cursor] = ch;
+			char input_copy[console_line_size] = {0};
+			memcpy(input_copy, input_text, console_line_size);
+			for(int i = 0; i < console_line_size; i++) {
+				if(i < cursor) input_text[i] = input_copy[i];
+				else if(i > cursor) input_text[i] = input_copy[i-1];
+				else if(i == cursor) input_text[i] = ch;
+			}
+
 			cursor += 1;
 			handled = true;
 		} else {
@@ -167,6 +170,46 @@ bool console_handle_key_press(SDL_Scancode scancode, bool down, bool ctrl_presse
 			else if(scancode == SDL_SCANCODE_ESCAPE) {
 				state = STATE_CLOSED;
 				handled = true;
+			} else if(scancode == SDL_SCANCODE_RETURN) {
+				Console_Line line;
+				strcpy(line.text, input_text);
+				line.from_user = true;
+				lines.append(line);
+				history.append(line);
+				memset(input_text, 0, console_line_size);
+				handled = true;
+				history_index = 0;
+			} else if(scancode == SDL_SCANCODE_DELETE) {
+				char input_copy[console_line_size] = {0};
+				memcpy(input_copy, input_text, console_line_size);
+				for(int i = 0; i < console_line_size - 1; i++) {
+					if(i < cursor) input_text[i] = input_copy[i];
+					else if(i >= cursor) input_text[i] = input_copy[i + 1];
+				}
+				handled = true;
+			} else if(scancode == SDL_SCANCODE_BACKSPACE) {
+				if(cursor > 0) {
+					char input_copy[console_line_size] = {0};
+					memcpy(input_copy, input_text, console_line_size);
+					cursor -= 1;
+					for(int i = 0; i < console_line_size - 1; i++) {
+						if(i < cursor) input_text[i] = input_copy[i];
+						else if(i >= cursor) input_text[i] = input_copy[i + 1];
+					}
+				}
+				handled = true;
+			} else if(scancode == SDL_SCANCODE_UP) {
+				if(history.num > 0) {
+					history_index--;
+					if(history_index < 0) history_index = history.num - 1;
+					strcpy(input_text, history[history_index].text);
+				}
+			} else if(scancode == SDL_SCANCODE_DOWN) {
+				if(history.num > 0) {
+					strcpy(input_text, history[history_index].text);
+					history_index++;
+					if(history_index >= history.num) history_index = 0;
+				}
 			}
 		}
 
