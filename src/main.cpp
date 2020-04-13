@@ -1,6 +1,65 @@
 #include "precompiled.h"
 
+struct test_entity {
+	int a, b;
+	float c, d;
+	char buffer[1024] = {0};
+	bool deleted = false;
+};
+
+void test1() {
+	test_entity entities[10000];
+	float now = SDL_GetTicks() / 1000.0f;
+	for(int i = 0; i < 10000; i++) {
+		entities[i].a = rand() % 100;
+		entities[i].b = rand() % 1000;
+		entities[i].c = entities[i].a / entities[i].b * (entities[i].a * entities[i].a) + sqrt(entities[i].a);
+		entities[i].d = (entities[i].b*entities[i].b)*(entities[i].a*entities[i].a)*(entities[i].b*entities[i].b)*(entities[i].a*entities[i].a);
+	}
+	float t2 = (SDL_GetTicks() / 1000.0f) - now;
+	printf("best case time: %f\n", t2);
+}
+
+void test2() {
+	test_entity entities[10000];
+	for(int i = 0; i < 10000; i++) {
+		if(i%2) entities[i].deleted = true;
+	}
+
+	float now = SDL_GetTicks() / 1000.0f;
+	for(int i = 0; i < 10000; i++) {
+		if(entities[i].deleted) continue;
+		entities[i].a = rand() % 100;
+		entities[i].b = rand() % 1000;
+		entities[i].c = entities[i].a / entities[i].b * (entities[i].a * entities[i].a) + sqrt(entities[i].a);
+		entities[i].d = (entities[i].b*entities[i].b)*(entities[i].a*entities[i].a)*(entities[i].b*entities[i].b)*(entities[i].a*entities[i].a);
+	}
+	float t2 = (SDL_GetTicks() / 1000.0f) - now;
+	printf("some deleted time: %f\n", t2);
+}
+
+void test3() {
+	test_entity *entities[10000] = {0};
+	for(int i = 0; i < 10000; i++) {
+		entities[i] = new test_entity;
+		if(i%2) entities[i]->deleted = true;
+	}
+
+	float now = SDL_GetTicks() / 1000.0f;
+	for(int i = 0; i < 10000; i++) {
+		if(entities[i]->deleted) continue;
+		entities[i]->a = rand() % 100;
+		entities[i]->b = rand() % 1000;
+		entities[i]->c = entities[i]->a / entities[i]->b * (entities[i]->a * entities[i]->a) + sqrt(entities[i]->a);
+		entities[i]->d = (entities[i]->b*entities[i]->b)*(entities[i]->a*entities[i]->a)*(entities[i]->b*entities[i]->b)*(entities[i]->a*entities[i]->a);
+	}
+	float t2 = (SDL_GetTicks() / 1000.0f) - now;
+	printf("best case time: %f\n", t2);
+}
+
 int main(int argc, char *argv[]) {
+	test1(); test2(); test3();
+	
 	system_init(argc, argv);
 
 	Test_Entity *test = create_entity(Test_Entity);
