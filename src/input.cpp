@@ -3,25 +3,9 @@
 Input input;
 
 void input_handle_mouse_press(int mouse_button, bool down, Vec2 position, bool is_double_click) {
-	if (input.target == INPUT_EDITOR) {
-		editor_handle_mouse_press(mouse_button, down, position, is_double_click);
-	}
-	else {
-		if (input.player) {
-			input.player->handle_mouse_press(mouse_button, down, position, is_double_click);
-		}
-	}
 }
 
 void input_handle_mouse_move(int relx, int rely) {
-	if (input.target == INPUT_EDITOR) {
-		editor_handle_mouse_move(relx, rely);
-	}
-	else {
-		if (input.player) {
-			input.player->handle_mouse_move(relx, rely);
-		}
-	}
 }
 
 bool input_handle_key_press(SDL_Scancode scancode, bool down, bool ctrl_pressed, bool alt_pressed, bool shift_pressed) {
@@ -39,27 +23,10 @@ bool input_handle_key_press(SDL_Scancode scancode, bool down, bool ctrl_pressed,
 	if(console_handle_key_press(scancode, down, ctrl_pressed, alt_pressed, shift_pressed))
 		return true;
 
-	if (input.target == INPUT_EDITOR) {
-		if(editor_handle_key_press(scancode, down, mods)) return true;
-	}
-	else {
-		if (input.player) {
-			if(input.player->handle_key_press(scancode, down, mods)) return true;
-		}
-	}
-
 	return false;
 }
 
 void input_handle_mouse_wheel(int amount) {
-	if (input.target == INPUT_EDITOR) {
-		editor_handle_mouse_wheel(amount);
-	}
-	else {
-		if (input.player) {
-			input.player->handle_mouse_wheel(amount);
-		}
-	}
 }
 
 bool input_get_key_state(SDL_Scancode scancode) {

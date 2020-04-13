@@ -257,13 +257,12 @@ internal void resolve_intersections() {
 
 void physics_init() {
     register_var("physics_fps", &physics_fps);
-    objects.init();
 }
 
 internal void integrate(float dt) {
     for(int i = 0; i < objects.max_index; i++) {
         auto it = objects[i];
-        if(it && !it->deleted) { physics_step_object(it, dt); }
+        if(!it->_deleted) { physics_step_object(it, dt); }
     }
 
     intersections.num = 0;
@@ -291,5 +290,4 @@ void physics_render_debug(Physics_Object *po) {
     render_box(po->position, po->size, false, colour);
 
     render_line2(po->position, po->velocity.length(), po->velocity.to_angle(), Vec4(0, 1, 0, 1));
-    render_line(game.player->po->position, to_world_pos(cursor_position));
 }

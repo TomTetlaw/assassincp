@@ -37,7 +37,6 @@ struct Game {
 	float now = 0.0f;
 	float delta_time = 0.0f;
 	Level *current_level = nullptr;
-	Entity *player = nullptr;
 };
 
 extern Game game;

@@ -30,6 +30,9 @@ struct Collision_Filter {
 };
 
 struct Physics_Object {
+    bool _deleted = false;
+    int _index = -1;
+    
     Vec2 position = Vec2(0, 0);
     Vec2 velocity = Vec2(0, 0);
     Vec2 goal_velocity = Vec2(0, 0);
@@ -47,7 +50,6 @@ struct Physics_Object {
     float restitution = 0.0f;
 
     bool colliding = false;
-    bool deleted = false;
 
     uint groups = (uint)1;
     uint mask = (uint)~0;

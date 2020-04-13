@@ -112,44 +112,55 @@ public:
 
 	inline void init() {
 		elements.ensure_size(size);
-		for (int i = 0; i < size; i++) {
-			elements.data[i].deleted = true;
-		}
+		remove_all();
 	}
 
     inline T *alloc() {
-		assert(elements.size > 0);
 		assert(max_index < size);
+		
+		if(elements.size < size) init();
 
         if(max_index > 0) {
             T &last_freed = elements[last_freed_index];
             // can be false if none have been freed yet.
-			if (last_freed.deleted) {
-				last_freed.deleted = false;
+			if (last_freed._deleted) {
+				last_freed._deleted = false;
+				last_freed._index = last_freed_index;
 				return &last_freed;
 			}
         }
 
         for(int i = last_freed_index; i < elements.num; i++) {
-            if(elements[i].deleted) {
-                elements[i].deleted = false;
+            if(elements[i]._deleted) {
+                elements[i]._deleted = false;
+				elements[i]._index = i;
                 return &elements[i];
             }
         }
 
+		int index = elements.num;
         T *value = elements.alloc();
-		value->deleted = false;
+		value->_deleted = false;
+		value->_index = index;
         max_index = elements.num;
         return value;
     }
 
     inline void remove(T *value) {
 		assert(value);
-        value->deleted = true;
+        value->_deleted = true;
+		value->_index = -1;
     }
 
+	inline void remove_all() {
+		for (int i = 0; i < size; i++) {
+			elements.data[i]._deleted = true;
+			elements.data[i]._index = -1;
+		}
+	}
+
 	inline T *operator[](int i) { 
-		if (elements[i].deleted) return nullptr;
+		if (elements[i]._deleted) return nullptr;
 		return &elements[i];
 	}
 };

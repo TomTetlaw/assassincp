@@ -5,7 +5,6 @@ struct Render_Texture {
 	Texture *texture = nullptr;
 	Vec2 position;
 	Vec2 size = Vec2(-1, -1);
-	Vec2 scale = Vec2(1, 1);
 	Vec4 colour = Vec4(1, 1, 1, 1);
 	float angle = 0.0f;
 	float sl = -1;

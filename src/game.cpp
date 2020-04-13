@@ -169,127 +169,15 @@ void game_render() {
 	}
 }
 
-class Poly : public Entity {
-public:
-	Array<Vec2> verts;
-
-	void render() {
-	}
-};
-
-declare_entity_type(Poly, "info_polygon", ENTITY_INFO_POLYGON);
-
-class Poly_Point : public Entity {
-};
-
-declare_entity_type(Poly_Point, "info_poly_point", ENTITY_INFO_POLYGON_POINT);
-
 void on_level_load() {
 	render_on_level_load();
 	entity_on_level_load();
-	editor_on_level_load();
 	delete game.current_level;
 	game.current_level = nullptr;
 }
 
 internal void process_level() {
-	bool has_one_player_start = true;
-	Entity *player_start = nullptr;
-
-	if (entity_manager.entity_types[ENTITY_INFO_PLAYER_START]->entities.num == 0) {
-		console_printf("Warning: no info_player_start found!\n");
-		has_one_player_start = false;
-	}
-	if (entity_manager.entity_types[ENTITY_INFO_PLAYER_START]->entities.num > 1) {
-		console_printf("Warning: more than one info_player_start found!\n");
-	}
-
-	if (has_one_player_start) {
-		player_start = entity_manager.entity_types[ENTITY_INFO_PLAYER_START]->entities[0];
-
-		Entity *player = create_entity("ent_player", nullptr, false, false);
-		player->po->position = player_start->po->position;
-		spawn_entity(player);
-
-		input.player = player;
-		game.player = player;
-
-		delete_entity(player_start);
-	}
-
-	generate_nav_points();
 }
 
 void load_level(const char *file_name) {
-	game.current_level = new Level;
-
-	Vec2 p[] = {
-		Vec2(-10000, -10000),
-		Vec2(-10000, 10000),
-		Vec2(10000, -10000),
-		Vec2(10000, 10000)
-	};
-
-	for (int i = 0; i < 4; i++) {
-		game.current_level->fov_check_points.append(p[i]);
-	}
-
-	Save_File file;
-	if (!save_open_read(file_name, &file)) {
-		console_printf("Failed to open map file for reading from game: %d", errno);
-		return;
-	}
-
-	int version = 0;
-	save_read_int(&file, &version);
-	if (version != map_file_version) {
-		console_printf("Attempting to open map file with old version from game (wanted %d, got %d): %s\n", map_file_version, version, file_name);
-		save_close(&file);
-		return;
-	}
-
-	texture_begin_level_load();
-
-	int num = 0;
-	save_read_int(&file, &num);
-	for (int i = 0; i < num; i++) {
-		int type = 0;
-		save_read_int(&file, &type);
-		if (type == EDITOR_ENTITY_ENTITY) {
-			Editor_Entity entity;
-			entity.read_save(&file);
-
-			Entity *ent = create_entity(entity.type_name, entity.name, false, false);
-			if (ent) {
-				ent->rt.size = entity.size;
-				ent->rt.scale = entity.scale;
-				ent->set_texture(entity.texture_name, false);
-				ent->rt.colour = entity.colour;
-
-				ent->po->position = entity.position;
-				ent->po->set_mass(0.0f);
-				ent->po->groups = phys_group_wall;
-				ent->po->size = entity.size; //@todo: make the editor acomodate for seperate render and shape sizes
-
-				spawn_entity(ent);
-			}
-		}
-		//else if (type == EDITOR_ENTITY_POLYGON) {
-		//	Editor_Polygon polygon;
-		//	polygon.read_save(&file);
-//
-		//	Poly *poly = (Poly *)create_entity("info_polygon", nullptr, false, false);
-		//	For(polygon.points) {
-		//		auto it = polygon.points[it_index];
-		//		poly->verts.append(it->position);
-		//	}
-		//	spawn_entity(poly);
-		//}
-	}
-
-	save_close(&file);
-
-	texture_end_level_load();
-
-	process_level();
 }

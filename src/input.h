@@ -16,7 +16,6 @@ enum Input_Target {
 
 struct Input {
 	Input_Target target = INPUT_EDITOR;
-	Entity *player = nullptr;
 };
 
 extern Input input;

@@ -193,25 +193,22 @@ void render_texture(Render_Texture *rt) {
 	glEnable(GL_TEXTURE_2D);
 	glBindTexture(GL_TEXTURE_2D, rt->texture->api_object);
 
-	//@todo_now: test if this works for both centered/not centered
+	//@todo: fix rotation!
 	float angle = rt->angle - 90;
-
 	glTranslatef(x, y, 0);
-	glRotatef(angle, 0, 0, 1);
+	//glRotatef(angle, 0, 0, 1);
 	glTranslatef(-x, -y, 0);
-
-	glScalef(rt->scale.x, rt->scale.y, 1);
 
 	glBegin(GL_QUADS);
 	if(centered) {
 		glTexCoord2f(sl, tl);
-		glVertex2f(x + hw, y - hh);
-		glTexCoord2f(sl, th * repeat_count_y);
 		glVertex2f(x - hw, y - hh);
-		glTexCoord2f(sh * repeat_count_x, th * repeat_count_y);
+		glTexCoord2f(sl, th * repeat_count_y);
 		glVertex2f(x - hw, y + hh);
-		glTexCoord2f(sh * repeat_count_x, tl);
+		glTexCoord2f(sh * repeat_count_x, th * repeat_count_y);
 		glVertex2f(x + hw, y + hh);
+		glTexCoord2f(sh * repeat_count_x, tl);
+		glVertex2f(x + hw, y - hh);
 		glEnd();
 	} else {
 		glTexCoord2f(sl, tl);
@@ -225,9 +222,8 @@ void render_texture(Render_Texture *rt) {
 		glEnd();
 	}
 
-	glScalef(1, 1, 1);
 	glTranslatef(x, y, 0);
-	glRotatef(-angle, 0, 0, 1);
+	//glRotatef(-angle, 0, 0, 1);
 	glTranslatef(-x, -y, 0);
 
 	glDisable(GL_TEXTURE_2D);
