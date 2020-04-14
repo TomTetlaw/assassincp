@@ -262,7 +262,7 @@ void physics_init() {
 internal void integrate(float dt) {
     for(int i = 0; i < objects.max_index; i++) {
         auto it = objects[i];
-        if(!it->_deleted) { physics_step_object(it, dt); }
+        if(it) { physics_step_object(it, dt); }
     }
 
     intersections.num = 0;

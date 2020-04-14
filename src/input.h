@@ -9,18 +9,7 @@ enum Key_Mods {
 
 struct Entity;
 
-enum Input_Target {
-	INPUT_EDITOR,
-	INPUT_GAME,
-};
-
-struct Input {
-	Input_Target target = INPUT_EDITOR;
-};
-
-extern Input input;
-
-void input_handle_mouse_press(int mouse_button, bool down, Vec2 position, bool is_double_click);
+bool input_handle_mouse_press(int mouse_button, bool down, Vec2 position, bool is_double_click);
 void input_handle_mouse_move(int relx, int rely);
 bool input_handle_key_press(SDL_Scancode scancode, bool down, bool ctrl_pressed, bool alt_pressed, bool shift_pressed);
 void input_handle_mouse_wheel(int amount);

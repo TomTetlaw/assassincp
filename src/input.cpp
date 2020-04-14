@@ -1,8 +1,13 @@
 #include "precompiled.h"
 
-Input input;
+bool input_handle_mouse_press(int mouse_button, bool down, Vec2 position, bool is_double_click) {
+	if(console_handle_mouse_press(mouse_button, down, position, is_double_click))
+		return true;
 
-void input_handle_mouse_press(int mouse_button, bool down, Vec2 position, bool is_double_click) {
+	if(editor_handle_mouse_press(mouse_button, down, position, is_double_click))
+		return true;
+
+	return false;
 }
 
 void input_handle_mouse_move(int relx, int rely) {
@@ -20,7 +25,10 @@ bool input_handle_key_press(SDL_Scancode scancode, bool down, bool ctrl_pressed,
 		mods |= KEY_MOD_SHIFT;
 	}
 	
-	if(console_handle_key_press(scancode, down, ctrl_pressed, alt_pressed, shift_pressed))
+	if(console_handle_key_press(scancode, down, mods))
+		return true;
+
+	if(editor_handle_key_press(scancode, down, mods))
 		return true;
 
 	return false;

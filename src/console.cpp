@@ -183,14 +183,18 @@ void process_input() {
 	lines.append(line);
 }
 
-bool console_handle_key_press(SDL_Scancode scancode, bool down, bool ctrl_pressed, bool alt_pressed, bool shift_pressed) {
+bool console_handle_mouse_press(int mouse_button, bool down, Vec2 position, bool is_double_click) {
+	return false;
+}
+
+bool console_handle_key_press(SDL_Scancode scancode, bool down, uint mods) {
 	if(state == STATE_CLOSED) return false;
 
 	if(down) {
 		bool handled = false;
 
 		char ch = '\0';
-		if(input_translate_scancode(scancode, shift_pressed, &ch)) {
+		if(input_translate_scancode(scancode, mods & KEY_MOD_SHIFT, &ch)) {
 			char input_copy[console_line_size] = {0};
 			memcpy(input_copy, input_text, console_line_size);
 			for(int i = 0; i < console_line_size; i++) {

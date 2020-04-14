@@ -1,17 +1,10 @@
 #ifndef __GAME_H__
 #define __GAME_H__
 
-// if you want to use path finding to follow a path, first generate the path like this:
-//
-// Nav_Path my_path;
-// make_path(my_position, player_position);
-//
-// then in your update function you can call: //@todo: implement this
-// follow_path(&my_path);
-
 struct Debug_Draw;
 struct Contact_Listener;
 
+//@todo: refactor nav mesh stuff into its own struct/file
 struct Nav_Mesh_Point {
 	Vec2 point;
 	bool valid = false;

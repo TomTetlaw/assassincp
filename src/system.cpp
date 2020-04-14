@@ -82,6 +82,7 @@ void system_init(int argc, char *argv[]) {
 	hotload_init();
 	render_init();
 	entity_init();
+	editor_init();
 	game_init();
 	physics_init();
 
@@ -92,6 +93,7 @@ void system_init(int argc, char *argv[]) {
 void system_quit() {
 	config_write_file("data/config.txt");
 
+	editor_shutdown();
 	entity_shutdown();
 	font_shutdown();
 	texture_shutdown();

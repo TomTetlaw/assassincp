@@ -48,6 +48,7 @@ typedef unsigned int uint;
 #include "render.h"
 #include "physics.h"
 #include "entity.h"
+#include "editor.h"
 #include "game.h"
 #include "fov.h"
 
