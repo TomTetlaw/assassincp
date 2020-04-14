@@ -11,6 +11,7 @@ bool input_handle_mouse_press(int mouse_button, bool down, Vec2 position, bool i
 }
 
 void input_handle_mouse_move(int relx, int rely) {
+	editor_handle_mouse_move(relx, rely);
 }
 
 bool input_handle_key_press(SDL_Scancode scancode, bool down, bool ctrl_pressed, bool alt_pressed, bool shift_pressed) {
