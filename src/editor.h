@@ -1,0 +1,16 @@
+#ifndef __EDITOR_H__
+#define __EDITOR_H__
+
+void editor_init();
+void editor_shutdown();
+void editor_render();
+void editor_update();
+
+bool editor_gui_handle_event(SDL_Event *ev);
+
+bool editor_handle_mouse_press(int mouse_button, bool down, Vec2 position, bool is_double_click);
+void editor_handle_mouse_move(int relx, int rely);
+bool editor_handle_key_press(SDL_Scancode scancode, bool down, int mods);
+void editor_handle_mouse_wheel(int amount);
+
+#endif
