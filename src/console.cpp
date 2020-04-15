@@ -32,9 +32,19 @@ internal float input_right = 0.0f;
 internal float input_top = 0.0f;
 internal float input_bottom = 0.0f;
 
-internal float console_bottom = 250.0f;
-internal float console_bottom_more = 800.0f;
+internal float console_bottom = 27.0f * 9.0f;
+internal float console_bottom_more = 88.0f * 9.0f;
 internal float console_open_speed = 100.0f;
+
+internal float scroll_y = 0.0f;
+internal float scroll_size = 0.0f;
+internal float scroll_left = 0.0f;
+internal float scroll_right = 0.0f;
+internal float scroll_top = 0.0f;
+internal float scroll_bottom = 0.0f;
+internal bool dragging_scroll = false;
+internal bool show_scroll = false;
+internal float percent_visible = 0.0f;
 
 internal float line_height = 0.0f;
 internal float margin_x = 10.0f;
@@ -115,6 +125,36 @@ void console_update() {
 	input_left = 0.0f;
 	input_right = screen_width;
 	input_bottom = box_bottom + line_height;
+	
+	scroll_size = 32.0f;
+	
+	if(state == STATE_CLOSED) {
+		show_scroll = false;
+	} else {
+		if(lines.num > 0) {
+			percent_visible = 0.0f;
+			if(state == STATE_OPEN) {
+				percent_visible = console_bottom / (lines.num * line_height);
+			} else {
+				percent_visible = console_bottom_more / (lines.num * line_height);
+			}
+
+			if(percent_visible < 1.0f) {
+				show_scroll = true;
+			} else {
+				show_scroll = false;
+			}
+		}
+		if(show_scroll) {
+			scroll_size = box_bottom * percent_visible;
+			if(scroll_y > box_bottom - scroll_size) scroll_y = box_bottom - scroll_size;
+			if(scroll_y < box_top) scroll_y = box_top;
+			scroll_top = box_bottom - scroll_y - scroll_size;
+			scroll_left = screen_width - 16.0f;
+			scroll_right = screen_width;
+			scroll_bottom = box_bottom - scroll_y;
+		}
+	}
 }
 
 void console_render() {
@@ -122,8 +162,16 @@ void console_render() {
 	render_box2(box_top, box_left, box_bottom, box_right, true, Vec4(63.0f / 255.0f, 133.0f / 255.0f, 191.0f / 255.0f, 0.4f));
 	render_box2(input_top, input_left, input_bottom, input_right, true, Vec4(3.0f / 255.0f, 148.0f / 255.0f, 252.0f / 255.0f, 0.65f));
 
+	if(show_scroll) {
+		render_box2(0.0f, screen_width - 16.0f, box_bottom, screen_width, true, Vec4(52.0f / 255.0f, 232.0f / 255.0f, 235.0f / 255.0f, 0.65f));
+		render_box2(scroll_top, scroll_left, scroll_bottom, scroll_right, true, Vec4(52.0f / 255.0f, 232.0f / 255.0f, 235.0f / 255.0f, 1.0f));
+	}
+
 	float current_y = box_bottom - line_height;
-	for(int i = lines.num - 1; i >= 0; i--) {
+	int start = 0;
+	if(show_scroll) 
+		start = (int)((lines.num - (box_bottom / line_height)) * fabs(map_range(scroll_y, box_bottom - scroll_size, box_top, 0.0f, 1.0f)));
+	for(int i = lines.num - start - 1; i >= 0; i--) {
 		auto it = lines[i];
 		Vec4 colour = Vec4(1, 1, 1, 1);
 		if(it.from_user) colour = Vec4(0, 1, 0, 1);
@@ -163,28 +211,58 @@ void process_input() {
 		arguments.append(arg);
 	}
 
-	Config_Var *var = config_find_var(arguments[0].text);
-	if(var) {
-		console_printf("%s = %s\n", var->name, var->print_string);
-		return;
-	}
+	if(arguments.num > 0) {
+		Config_Var *var = config_find_var(arguments[0].text);
+		if(var) {
+			console_printf("%s = %s\n", var->name, var->print_string);
+			return;
+		}
 
-	Console_Command *command = console_find_command(arguments[0].text);
-	if(command) {
-		arguments.remove(0);
-		command->callback(arguments);
-		return;
-	}
+		Console_Command *command = console_find_command(arguments[0].text);
+		if(command) {
+			arguments.remove(0);
+			command->callback(arguments);
+			return;
+		}
 
-	// if no command or var found, just print the input.
-	Console_Line line;
-	strcpy(line.text, input_text);
-	line.from_user = true;
-	lines.append(line);
+		// if no command or var found, just print the input.
+		Console_Line line;
+		strcpy(line.text, input_text);
+		line.from_user = true;
+		lines.append(line);
+	}
+}
+
+internal bool point_intersects_box(Vec2 point, float top, float left, float bottom, float right) {
+	if(point.x < left || point.x > right) return false;
+	if(point.y < top || point.y > bottom) return false;
+	return true;
 }
 
 bool console_handle_mouse_press(int mouse_button, bool down, Vec2 position, bool is_double_click) {
+	if(mouse_button == 1) {
+		if(down) {
+			if(point_intersects_box(position, scroll_top, scroll_left, scroll_bottom, scroll_right)) {
+				dragging_scroll = true;
+				return true;
+			}
+		} else {
+			dragging_scroll = false;
+			return true;
+		}
+	}
+
 	return false;
+}
+
+void console_handle_mouse_move(int relx, int rely) {
+	if(dragging_scroll) {
+		scroll_y -= rely;
+	}
+}
+
+void console_handle_mouse_wheel(int amount) {
+	scroll_y += amount * line_height;
 }
 
 bool console_handle_key_press(SDL_Scancode scancode, bool down, uint mods) {
@@ -253,11 +331,13 @@ bool console_handle_key_press(SDL_Scancode scancode, bool down, uint mods) {
 					history_index--;
 					if(history_index < 0) history_index = history.num - 1;
 					strcpy(input_text, history[history_index].text);
+					cursor = strlen(input_text);
 				}
 				handled = true;
 			} else if(scancode == SDL_SCANCODE_DOWN) {
 				if(history.num > 0) {
 					strcpy(input_text, history[history_index].text);
+					cursor = strlen(input_text);
 					history_index++;
 					if(history_index >= history.num) history_index = 0;
 				}

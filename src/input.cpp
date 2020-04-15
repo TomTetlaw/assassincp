@@ -12,6 +12,7 @@ bool input_handle_mouse_press(int mouse_button, bool down, Vec2 position, bool i
 
 void input_handle_mouse_move(int relx, int rely) {
 	editor_handle_mouse_move(relx, rely);
+	console_handle_mouse_move(relx, rely);
 }
 
 bool input_handle_key_press(SDL_Scancode scancode, bool down, bool ctrl_pressed, bool alt_pressed, bool shift_pressed) {
@@ -36,6 +37,7 @@ bool input_handle_key_press(SDL_Scancode scancode, bool down, bool ctrl_pressed,
 }
 
 void input_handle_mouse_wheel(int amount) {
+	console_handle_mouse_wheel(amount);
 }
 
 bool input_get_key_state(SDL_Scancode scancode) {

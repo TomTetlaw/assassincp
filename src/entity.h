@@ -56,6 +56,12 @@ struct Entity {
 	void read(Save_File *file);
 };
 
+struct Entity_Manager {
+	Contiguous_Array<Entity, max_entities> entities;
+};
+
+extern Entity_Manager entity_manager;
+
 Entity *get_new_entity();
 void add_entity(Entity *entity);
 
@@ -104,6 +110,7 @@ void _remove_entity(Entity *entity);
 #define remove_entity(x) \
 	([&x]() -> void { \
 		x->stored_in->remove(x); \
+		physics_remove_object(x->inner->po);\
 		_remove_entity(x->inner); \
 	})()
 

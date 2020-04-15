@@ -13,6 +13,8 @@ void console_render();
 void console_toggle_open();
 bool console_handle_key_press(SDL_Scancode scancode, bool down, uint mods);
 bool console_handle_mouse_press(int mouse_button, bool down, Vec2 position, bool is_double_click);
+void console_handle_mouse_move(int relx, int rely);
+void console_handle_mouse_wheel(int amount);
 
 struct Command_Argument {
 	char text[1024] = {0};
