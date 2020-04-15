@@ -5,7 +5,7 @@ internal const char *file_name = nullptr;
 
 void cmd_list_vars(Array<Command_Argument> &args) {
 	for(int i = 0; i < vars.num; i++) {
-		console_printf("%s\n", vars[i]->name);
+		console_printf("%s = %s\n", vars[i]->name, vars[i]->print_string);
 	}
 }
 

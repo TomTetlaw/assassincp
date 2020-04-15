@@ -17,7 +17,7 @@ void console_handle_mouse_move(int relx, int rely);
 void console_handle_mouse_wheel(int amount);
 
 struct Command_Argument {
-	char text[1024] = {0};
+	char text[MAX_TOKEN_LENGTH] = {0};
     operator const char *() { return text; }
 };
 

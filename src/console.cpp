@@ -87,10 +87,24 @@ void console_print(const char *text) {
 		fclose(log);
 	}
 
-	Console_Line line;
-	strcpy(line.text, text);
-	line.from_user = false;
-	lines.append(line);
+	bool appended = false;
+
+	if(lines.num > 0) {
+		int length = strlen(lines[lines.num - 1].text);
+		if(lines[lines.num - 1].text[length - 1] != '\n') {
+			strcat_s(lines[lines.num -1].text, console_line_size, text);
+			appended = true;
+		}
+	}
+
+	if(!appended) {
+		Console_Line line;
+		strcpy_s(line.text, console_line_size, text);
+		line.from_user = false;
+		lines.append(line);
+	}
+
+	scroll_y = box_top;
 }
 
 void console_printf(const char *text, ...) {
@@ -207,29 +221,26 @@ void process_input() {
 	    if (!text) break;
 
 		Command_Argument arg;
-		strcpy(arg.text, token);
+		strcpy_s(arg.text, MAX_TOKEN_LENGTH, token);
 		arguments.append(arg);
 	}
 
 	if(arguments.num > 0) {
+		Console_Line line;
+		sprintf_s(line.text, console_line_size, "%s\n", input_text);
+		line.from_user = true;
+		lines.append(line);
+
 		Config_Var *var = config_find_var(arguments[0].text);
 		if(var) {
 			console_printf("%s = %s\n", var->name, var->print_string);
-			return;
 		}
 
 		Console_Command *command = console_find_command(arguments[0].text);
 		if(command) {
 			arguments.remove(0);
 			command->callback(arguments);
-			return;
 		}
-
-		// if no command or var found, just print the input.
-		Console_Line line;
-		strcpy(line.text, input_text);
-		line.from_user = true;
-		lines.append(line);
 	}
 }
 
@@ -299,7 +310,7 @@ bool console_handle_key_press(SDL_Scancode scancode, bool down, uint mods) {
 				process_input();
 
 				Console_Line line;
-				strcpy(line.text, input_text);
+				strcpy_s(line.text, console_line_size, input_text);
 				line.from_user = true;
 				history.append(line);
 
@@ -330,13 +341,13 @@ bool console_handle_key_press(SDL_Scancode scancode, bool down, uint mods) {
 				if(history.num > 0) {
 					history_index--;
 					if(history_index < 0) history_index = history.num - 1;
-					strcpy(input_text, history[history_index].text);
+					strcpy_s(input_text, console_line_size, history[history_index].text);
 					cursor = strlen(input_text);
 				}
 				handled = true;
 			} else if(scancode == SDL_SCANCODE_DOWN) {
 				if(history.num > 0) {
-					strcpy(input_text, history[history_index].text);
+					strcpy_s(input_text, console_line_size, history[history_index].text);
 					cursor = strlen(input_text);
 					history_index++;
 					if(history_index >= history.num) history_index = 0;

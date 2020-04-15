@@ -89,8 +89,19 @@ void _remove_entity(Entity *entity) {
 	entity_manager.entities.remove(entity);
 }
 
+internal void cmd_list_entities(Array<Command_Argument> &args) {
+	for(int i = 0; i < entity_manager.entities.max_index; i++) {
+		Entity *entity = entity_manager.entities[i];
+		if(!entity) continue;
+
+		console_printf("(%d, %d), %s\n", entity->handle.index, entity->handle.parity, entity->type_name);
+	}
+}
+
 void entity_init() {
 	entity_manager.entities.init();
+
+	register_command("list_entities", cmd_list_entities);
 }
 
 void entity_shutdown() {
