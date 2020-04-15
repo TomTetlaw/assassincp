@@ -34,8 +34,6 @@ void Entity::write(Save_File *file) {
 	else save_write_string(file, "");
 	save_write_bool(file, texture_repeat);
 
-	save_write_int(file, classify);
-
 	save_write_bool(file, grid_aligned);
 	save_write_int(file, grid_size_x);
 	save_write_int(file, grid_size_y);
@@ -59,19 +57,17 @@ void Entity::read(Save_File *file) {
 		save_read_vec2(file, &po->edges[i].a);
 		save_read_vec2(file, &po->edges[i].b);
 	}
-	save_write_float(file, po->mass);
-	save_write_float(file, po->inv_mass);
-	save_write_float(file, po->restitution);
-	save_write_bool(file, po->colliding);
-	save_write_uint(file, po->groups);
-	save_write_uint(file, po->mask);
+	save_read_float(file, &po->mass);
+	save_read_float(file, &po->inv_mass);
+	save_read_float(file, &po->restitution);
+	save_read_bool(file, &po->colliding);
+	save_read_uint(file, &po->groups);
+	save_read_uint(file, &po->mask);
 
 	char texture_file_name[1024] = {0};
 	save_read_string(file, texture_file_name);
 	if(texture_file_name[0]) texture = load_texture(texture_file_name);
 	save_read_bool(file, &texture_repeat);
-
-	save_read_int(file, &classify);
 
 	save_read_bool(file, &grid_aligned);
 	save_read_int(file, &grid_size_x);
@@ -147,4 +143,36 @@ void entity_update() {
 
 void entity_on_level_load() {
 	entities.remove_all();
+}
+
+void entity_write(Save_File *file) {
+	int num_entities = 0;
+	for(int i = 0; i < entities.max_index; i++) {
+		if(entities[i]) num_entities++;
+	}
+
+	save_write_int(file, num_entities);
+	for(int i = 0; i < entities.max_index; i++) {
+		if(!entities[i]) continue;
+		save_write_int(file, entities[i]->classify);
+		entities[i]->write(file);
+		entities[i]->outer->write(file);
+	}
+}
+
+void entity_read(Save_File *file) {
+	entities.remove_all();
+
+	int num_entities = 0;
+	save_read_int(file, &num_entities);
+
+	for(int i = 0; i < num_entities; i++) {
+		int classify = 0;
+		save_read_int(file, &classify);
+		if(classify == etypes._classify_Wall) {
+			Entity *entity = create_entity(Wall)->inner;
+			entity->read(file);
+			entity->outer->read(file);
+		}
+	}
 }

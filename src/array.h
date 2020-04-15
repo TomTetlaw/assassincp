@@ -157,6 +157,8 @@ public:
 			elements.data[i]._deleted = true;
 			elements.data[i]._index = -1;
 		}
+		max_index = 0;
+		last_freed_index = 0;
 	}
 
 	inline T *operator[](int i) { 

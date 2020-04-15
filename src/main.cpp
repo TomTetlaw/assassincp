@@ -20,6 +20,15 @@ int main(int argc, char *argv[]) {
 						sys.running = false;
 					} else if (ev.key.keysym.scancode == SDL_SCANCODE_GRAVE) {
 						console_toggle_open();
+					} else if (ev.key.keysym.scancode == SDL_SCANCODE_SPACE) {
+						Save_File file;
+						save_open_write("data/levels/test.acp", &file);
+						entity_write(&file);
+						save_close(&file);
+
+						save_open_read("data/levels/test.acp", &file);
+						entity_read(&file);
+						save_close(&file);
 					}
 				}
 			} break;

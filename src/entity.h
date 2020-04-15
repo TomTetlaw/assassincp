@@ -11,10 +11,21 @@ void entity_shutdown();
 void entity_render();
 void entity_update();
 void entity_on_level_load();
+void entity_write(Save_File *file);
+void entity_read(Save_File *file);
 
 struct Entity_Handle {
 	int index = -1;
 	int parity = -1;
+};
+
+struct Entity_Callbacks {
+	virtual void spawn() {}
+	virtual void shutdown() {}
+	virtual void update() {}
+	virtual void render() {}
+	virtual void write(Save_File *file) {}
+	virtual void read(Save_File *file) {}
 };
 
 struct Entity {
@@ -31,7 +42,7 @@ struct Entity {
 
 	int classify = 0;
 	const char *type_name = nullptr;
-	void *outer = nullptr;
+	Entity_Callbacks *outer = nullptr;
 
 	bool grid_aligned = false;
 	int grid_x = 0;
@@ -59,15 +70,6 @@ void add_entity(Entity *entity);
 	const char *_name_##x = #x; \
 	const int _classify_##x = __LINE__
 
-struct Entity_Callbacks {
-	virtual void spawn() {}
-	virtual void shutdown() {}
-	virtual void update() {}
-	virtual void render() {}
-	virtual void write(Save_File *file) {}
-	virtual void read(Save_File *file) {}
-};
-
 struct Wall : Entity_Callbacks {
 	entity_stuff(Wall);
 
@@ -90,7 +92,7 @@ extern Entity_Types etypes;
 		ent->stored_in = &etypes._##x; \
 		ent->inner = inner; \
 		inner->po = physics_add_object(); \
-		inner->outer = (void *)ent; \
+		inner->outer = ent; \
 		inner->classify = etypes._classify_##x; \
 		inner->type_name = etypes._name_##x; \
 		add_entity(inner); \
