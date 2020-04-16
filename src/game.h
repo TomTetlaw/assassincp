@@ -30,6 +30,7 @@ struct Game {
 	float now = 0.0f;
 	float delta_time = 0.0f;
 	Level *current_level = nullptr;
+	bool paused = false;
 };
 
 extern Game game;
@@ -37,7 +38,7 @@ extern Game game;
 void game_init();
 void game_update();
 void game_render();
-void load_level(const char *file_name);
+void load_level();
 
 void on_level_load(); // the central function for changing level
 

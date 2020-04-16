@@ -21,6 +21,21 @@ void physics_remove_object(Physics_Object *po) {
     objects.remove(po);
 }
 
+internal bool should_collide(uint a_groups, uint a_mask, uint b_groups, uint b_mask) {
+    return (a_mask & b_groups) != 0 &&
+        (a_groups & b_mask) != 0;
+}
+
+internal bool should_collide(Physics_Object *a, Physics_Object *b) {
+    return should_collide(a->groups, a->mask,
+        b->groups, b->mask);
+}
+
+internal bool should_collide(Physics_Object *a, Collision_Filter filter) {
+    return should_collide(a->groups, a->mask,
+        filter.groups, filter.mask);
+}
+
 internal bool box_box_intersects(Intersection *intersection) {
     Physics_Object *a = intersection->a;
     Physics_Object *b = intersection->b;
@@ -83,6 +98,8 @@ internal void check_for_intersects() {
 
             Physics_Object *a = objects[i];
             Physics_Object *b = objects[j];
+
+            if(!should_collide(a, b)) continue;
 
             bool intersects = false;
             Intersection intersection;
@@ -147,21 +164,6 @@ internal bool lines_intersect(Line_Intersection *intersection) {
     intersection->point.y = r_py + r_dy * t1;
     intersection->t1 = t1;
     return true;
-}
-
-internal bool should_collide(uint a_groups, uint a_mask, uint b_groups, uint b_mask) {
-    return (a_mask & b_groups) != 0 &&
-        (a_groups & b_mask) != 0;
-}
-
-internal bool should_collide(Physics_Object *a, Physics_Object *b) {
-    return should_collide(a->groups, a->mask,
-        b->groups, b->mask);
-}
-
-internal bool should_collide(Physics_Object *a, Collision_Filter filter) {
-    return should_collide(a->groups, a->mask,
-        filter.groups, filter.mask);
 }
 
 internal void get_edges(Array<Edge> &edges, Collision_Filter filter) {

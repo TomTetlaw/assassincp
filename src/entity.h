@@ -13,6 +13,7 @@ void entity_update();
 void entity_on_level_load();
 void entity_write(Save_File *file);
 void entity_read(Save_File *file);
+void entity_spawn_all();
 
 struct Entity_Handle {
 	int index = -1;
@@ -20,8 +21,12 @@ struct Entity_Handle {
 };
 
 struct Entity_Callbacks {
+	virtual void _remove() {}
+	// gets called when the entity is created. Do not put anything here that depends on game state.
+	virtual void add() {}
+	// gets called when the entity is live for the first time in the game world. Put things in here that depend on game state.
 	virtual void spawn() {}
-	virtual void shutdown() {}
+	virtual void remove() {}
 	virtual void update() {}
 	virtual void render() {}
 	virtual void write(Save_File *file) {}
@@ -49,8 +54,8 @@ struct Entity {
 	int grid_y = 0;
 	int grid_w = 1;
 	int grid_h = 1;
-	int grid_size_x = 32;
-	int grid_size_y = 32;
+	int grid_size_x = 16;
+	int grid_size_y = 16;
 
 	void write(Save_File *file);
 	void read(Save_File *file);
@@ -70,27 +75,96 @@ void add_entity(Entity *entity);
 	int _index = -1;\
 	Entity *inner = nullptr;\
 	Contiguous_Array<x, max_entities_by_type> *stored_in = nullptr;\
+	void _remove() { stored_in->remove(this); }
 
+// @todo: need to make this not use __LINE__ because if we add another
+// entity type and try to load an old file using an older entity type 
+// then the values will be wrong.
 #define declare_entity_type(x) \
 	Contiguous_Array<x, max_entities_by_type> _##x; \
 	const char *_name_##x = #x; \
-	const int _classify_##x = __LINE__
+	const int _classify_##x = __COUNTER__ 
 
 struct Wall : Entity_Callbacks {
 	entity_stuff(Wall);
 
-	void spawn() {
+	void add() {
+		inner->texture = load_texture("data/textures/wall.png");
+		inner->texture_repeat = true;
+
 		inner->grid_aligned = true;
+
+        inner->po->size = Vec2(32, 32);
 		inner->po->set_mass(0.0f);
+		inner->po->groups = phys_group_wall;
+	}
+};
+
+struct Player : Entity_Callbacks {
+	entity_stuff(Player);
+
+	Field_Of_View fov;
+
+	void add() {
+		inner->texture = load_texture("data/textures/player.png");
+		inner->po->size = Vec2(32, 32);
+		inner->po->set_mass(1);
+		inner->po->groups = phys_group_player;
+	}
+
+	void spawn() {
+		fov_init(&fov);
+	}
+
+	void update() {
+		inner->po->goal_velocity = Vec2(0, 0);
+		inner->po->velocity_ramp_speed = 300.0f;
+		if(input_get_key_state(SDL_SCANCODE_W)) {
+			inner->po->velocity_ramp_speed = 2000.0f;
+			inner->po->goal_velocity = inner->po->goal_velocity + Vec2(0.0f, -300.0f);
+		}
+		if(input_get_key_state(SDL_SCANCODE_A)) {
+			inner->po->velocity_ramp_speed = 2000.0f;
+			inner->po->goal_velocity = inner->po->goal_velocity + Vec2(-300.0f, 0.0f);
+		}
+		if(input_get_key_state(SDL_SCANCODE_S)) {
+			inner->po->velocity_ramp_speed = 2000.0f;
+			inner->po->goal_velocity = inner->po->goal_velocity + Vec2(0.0f, 300.0f);
+		}
+		if(input_get_key_state(SDL_SCANCODE_D)) {
+			inner->po->velocity_ramp_speed = 2000.0f;
+			inner->po->goal_velocity = inner->po->goal_velocity + Vec2(300.0f, 0.0f);
+		}
+
+		fov.position = inner->po->position;
+		//fov_update(&fov);
+	}
+
+	void render() {
+		//fov_render(&fov);
+	}
+
+	void remove() {
+		fov_shutdown(&fov);
+	}
+};
+
+struct Badguy : Entity_Callbacks {
+	Nav_Path path;
+
+	void update() {
+		
 	}
 };
 
 struct Entity_Types {
 	declare_entity_type(Wall);
+	declare_entity_type(Player);
 };
 
 extern Entity_Types etypes;
 
+// if anything gets added to this is should probably also be added to create_entity_at in entity.cpp.
 #define create_entity(x) \
 	([]() -> x* { \
 		Entity *inner = get_new_entity();\
@@ -102,16 +176,10 @@ extern Entity_Types etypes;
 		inner->classify = etypes._classify_##x; \
 		inner->type_name = etypes._name_##x; \
 		add_entity(inner); \
-		ent->spawn(); \
+		ent->add(); \
 		return ent;\
 	})()
 
-void _remove_entity(Entity *entity);
-#define remove_entity(x) \
-	([&x]() -> void { \
-		x->stored_in->remove(x); \
-		physics_remove_object(x->inner->po);\
-		_remove_entity(x->inner); \
-	})()
+void remove_entity(Entity *entity);
 
 #endif

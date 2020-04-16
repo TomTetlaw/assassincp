@@ -6,6 +6,8 @@ void editor_shutdown();
 void editor_render();
 void editor_update();
 
+void editor_on_level_load();
+
 bool editor_gui_handle_event(SDL_Event *ev);
 
 bool editor_handle_mouse_press(int mouse_button, bool down, Vec2 position, bool is_double_click);

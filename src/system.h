@@ -18,6 +18,7 @@ extern float screen_height;
 
 extern Vec2 cursor_position;
 extern Vec2 cursor_position_tl;
+extern Vec2 cursor_position_world;
 
 extern System sys;
 

@@ -7,8 +7,6 @@ enum Key_Mods {
 	KEY_MOD_SHIFT = 4,
 };
 
-struct Entity;
-
 bool input_handle_mouse_press(int mouse_button, bool down, Vec2 position, bool is_double_click);
 void input_handle_mouse_move(int relx, int rely);
 bool input_handle_key_press(SDL_Scancode scancode, bool down, bool ctrl_pressed, bool alt_pressed, bool shift_pressed);

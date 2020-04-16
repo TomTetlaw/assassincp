@@ -251,7 +251,9 @@ internal bool point_intersects_box(Vec2 point, float top, float left, float bott
 }
 
 bool console_handle_mouse_press(int mouse_button, bool down, Vec2 position, bool is_double_click) {
-	if(mouse_button == 1) {
+	if(state == STATE_CLOSED) return false;
+	
+	if(mouse_button == SDL_BUTTON_LEFT) {
 		if(down) {
 			if(point_intersects_box(position, scroll_top, scroll_left, scroll_bottom, scroll_right)) {
 				dragging_scroll = true;

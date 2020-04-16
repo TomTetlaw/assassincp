@@ -1,5 +1,0 @@
-this causes wrong angles:
-angle = position.angle_to(renderer.to_world_pos(sys.cursor_position));
-
-// rewrite entity system.
-// rewrite editor.

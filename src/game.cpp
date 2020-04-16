@@ -50,6 +50,29 @@ internal void generate_nav_points() {
 	}
 }
 
+internal void add_check_points() {
+	Vec2 points[4] = { 
+		{-10000, -10000},
+		{10000, -10000},
+		{-10000, 10000},
+		{10000, 10000},
+	};
+
+	for(int i = 0; i < 4; i++) {
+		game.current_level->fov_check_points.append(points[i]);
+	}
+
+	for(int i = 0; i < entity_manager.entities.max_index; i++) {
+		Entity *entity = entity_manager.entities[i];
+        if(!entity) continue;
+		if(entity->classify != etypes._classify_Wall) continue;
+
+		for(int j = 0; j < 4; j++) {
+			game.current_level->fov_check_points.append(entity->po->edges[j].a);
+		}
+	}	
+}
+
 internal void regen_nav_points(Config_Var *var) {
 	if(game.current_level) {
 		game.current_level->nav_points.num = 0;
@@ -66,6 +89,7 @@ void game_init() {
 void game_update() {
 	game.now = sys.current_time;
 	game.delta_time = sys.delta_time;
+	if(game.paused) game.delta_time = 0;
 }
 
 internal void get_neighbours(int index, Nav_Mesh_Point *neighbours[8]) {
@@ -172,12 +196,14 @@ void game_render() {
 void on_level_load() {
 	render_on_level_load();
 	entity_on_level_load();
+	editor_on_level_load();
 	delete game.current_level;
 	game.current_level = nullptr;
 }
 
-internal void process_level() {
-}
-
-void load_level(const char *file_name) {
+void load_level() {
+	game.current_level = new Level;
+	add_check_points();
+	generate_nav_points();
+	entity_spawn_all();
 }

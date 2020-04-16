@@ -38,6 +38,10 @@ void Entity::write(Save_File *file) {
 	save_write_bool(file, grid_aligned);
 	save_write_int(file, grid_size_x);
 	save_write_int(file, grid_size_y);
+	save_write_int(file, grid_x);
+	save_write_int(file, grid_y);
+	save_write_int(file, grid_w);
+	save_write_int(file, grid_h);
 }
 
 void Entity::read(Save_File *file) {
@@ -73,6 +77,10 @@ void Entity::read(Save_File *file) {
 	save_read_bool(file, &grid_aligned);
 	save_read_int(file, &grid_size_x);
 	save_read_int(file, &grid_size_y);
+	save_read_int(file, &grid_x);
+	save_read_int(file, &grid_y);
+	save_read_int(file, &grid_w);
+	save_read_int(file, &grid_h);
 }
 
 Entity *get_new_entity() {
@@ -85,8 +93,13 @@ void add_entity(Entity *entity) {
 	next_parity++;
 }
 
-void _remove_entity(Entity *entity) {
+void remove_entity(Entity *entity) {
+	entity->outer->remove();
+	entity->outer->_remove();
+	physics_remove_object(entity->po);
 	entity_manager.entities.remove(entity);
+	entity->handle.index = -1;
+	entity->handle.parity = -1;
 }
 
 internal void cmd_list_entities(Array<Command_Argument> &args) {
@@ -111,10 +124,12 @@ void entity_render() {
 	render_setup_for_world();
 
 	for(int i = 0; i < entity_manager.entities.max_index; i++) {
-		if(!entity_manager.entities[i]) continue;
+		Entity *entity = entity_manager.entities[i];
+		if(!entity) continue;
+
+		if(game.current_level) entity->outer->render();
 
 		Physics_Object *po = entity_manager.entities[i]->po;
-
 		Render_Texture rt;
 		rt.size.x = po->size.x;
 		rt.size.y = po->size.y;
@@ -140,58 +155,122 @@ void entity_update() {
 			entity->po->size.y = entity->grid_h * (float)entity->grid_size_y;
 			entity->po->position.x = entity->grid_x * (float)entity->grid_size_x;
 			entity->po->position.y = entity->grid_y * (float)entity->grid_size_y;
+		} else {
+			entity->grid_w = (int)(entity->po->size.x / (float)entity->grid_size_x);
+			entity->grid_h = (int)(entity->po->size.y / (float)entity->grid_size_y);
+			entity->grid_x = (int)(entity->po->position.x / (float)entity->grid_size_x);
+			entity->grid_y = (int)(entity->po->position.y / (float)entity->grid_size_y);
 		}
+
+		if(entity->grid_w <= 0) entity->grid_w = 1;
+		if(entity->grid_h <= 0) entity->grid_h = 1;
 
 		if(entity->po->mass == 0) {
 			entity->po->inv_mass = 0;
 		} else {
 			entity->po->inv_mass = 1 / entity->po->mass;
 		}
+
+		if(game.current_level) entity->outer->update();
 	}
 
-	// @todo: handle entity->delete_me.
-}
-
-void entity_on_level_load() {
-	entity_manager.entities.remove_all();
-}
-
-void entity_write(Save_File *file) {
-	int num_entities = 0;
 	for(int i = 0; i < entity_manager.entities.max_index; i++) {
-		if(entity_manager.entities[i]) num_entities++;
-	}
-
-	save_write_int(file, num_entities);
-	for(int i = 0; i < entity_manager.entities.max_index; i++) {
-		if(!entity_manager.entities[i]) continue;
-		save_write_int(file, entity_manager.entities[i]->classify);
-		entity_manager.entities[i]->write(file);
-		entity_manager.entities[i]->outer->write(file);
+		Entity *entity = entity_manager.entities[i];
+		if(!entity) continue;
+		if(entity->delete_me) remove_entity(entity);
 	}
 }
 
 internal void remove_all_entities() {
 	for(int i = 0; i < entity_manager.entities.max_index; i++) {
-		physics_remove_object(entity_manager.entities[i]->po);
+		if(!entity_manager.entities[i]) continue;
+		remove_entity(entity_manager.entities[i]);
 	}
-	entity_manager.entities.remove_all();
 }
+
+void entity_on_level_load() {
+	remove_all_entities();
+	next_parity = 0;
+}
+
+void entity_write(Save_File *file) {
+	save_write_int(file, next_parity);
+	save_write_int(file, entity_manager.entities.max_index);
+	save_write_int(file, entity_manager.entities.last_freed_index);
+	save_write_int(file, entity_manager.entities.elements.num);
+	
+	for(int i = 0; i < entity_manager.entities.max_index; i++) {
+		if(entity_manager.entities[i]) {
+			save_write_int(file, 1);
+
+			save_write_int(file, entity_manager.entities[i]->classify);
+			save_write_int(file, entity_manager.entities[i]->handle.parity);
+			save_write_int(file, entity_manager.entities[i]->handle.index);
+
+			entity_manager.entities[i]->write(file);
+			entity_manager.entities[i]->outer->write(file);
+		}
+		else {
+			save_write_int(file, 0);
+			continue;
+		}
+	}
+}
+
+// if anything gets added to this is should probably also be added to create_entity in entity.h.
+#define create_entity_at(x, index, parity) \
+	([&]() -> Entity * { \
+		Entity *inner = &entity_manager.entities.elements.data[index]; \
+		inner->_deleted = false; \
+		inner->_index = index; \
+		inner->handle.index = index; \
+		inner->handle.parity = parity; \
+		inner->po = physics_add_object(); \
+		inner->classify = etypes._classify_##x; \
+		inner->outer = etypes._##x.alloc(); \
+		inner->type_name = etypes._name_##x; \
+		((x *)inner->outer)->stored_in = &etypes._##x; \
+		((x *)inner->outer)->inner = inner; \
+		return inner; \
+	})()
+
 void entity_read(Save_File *file) {
 	remove_all_entities();
 
-	int num_entities = 0;
-	save_read_int(file, &num_entities);
-	entity_manager.entities.max_index = num_entities;
+	save_read_int(file, &next_parity);
+	save_read_int(file, &entity_manager.entities.max_index);
+	save_read_int(file, &entity_manager.entities.last_freed_index);
+	save_read_int(file, &entity_manager.entities.elements.num);
 
-	for(int i = 0; i < num_entities; i++) {
-		int classify = 0;
-		save_read_int(file, &classify);
-		Entity *entity = nullptr;
-		if(classify == etypes._classify_Wall) {
-			entity = create_entity(Wall)->inner;
+	for(int i = 0; i < entity_manager.entities.max_index; i++) {
+		int entity_there = 0;
+		save_read_int(file, &entity_there);
+
+		if(entity_there == 1) {
+			int classify = 0;
+			int parity = 0;
+			int index = 0;
+			save_read_int(file, &classify);
+			save_read_int(file, &parity);
+			save_read_int(file, &index);
+
+			Entity *inner = nullptr;
+			if(classify == etypes._classify_Wall) {
+				inner = create_entity_at(Wall, index, parity);
+			} else if(classify == etypes._classify_Player) {
+				inner = create_entity_at(Player, index, parity);
+			}
+
+			inner->read(file);
+			inner->outer->read(file);
 		}
-		entity->read(file);
-		entity->outer->read(file);
+	}
+}
+
+void entity_spawn_all() {
+	for(int i = 0; i < entity_manager.entities.max_index; i++) {
+		Entity *entity = entity_manager.entities[i];
+		if(!entity) continue;
+		entity->outer->spawn();
 	}
 }

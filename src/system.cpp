@@ -4,7 +4,8 @@ System sys;
 float screen_width = 0.0f;
 float screen_height = 0.0f;
 Vec2 cursor_position = Vec2(0.0f, 0.0f);
-Vec2 cursor_position_tl = Vec2(0.0f, 0.0f);;
+Vec2 cursor_position_world = Vec2(0.0f, 0.0f);
+Vec2 cursor_position_tl = Vec2(0.0f, 0.0f);
 
 internal void hotload_config_file(const char *filename, void *data) {
 	config_load(filename);

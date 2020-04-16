@@ -3,10 +3,19 @@
 int main(int argc, char *argv[]) {
 	system_init(argc, argv);
 
+	bool use_editor = true;
+	game.paused = use_editor;
+	on_level_load();
+	Save_File file;
+	save_open_read("data/levels/test.acp", &file);
+	entity_read(&file);
+	save_close(&file);
+
 	float last_time = SDL_GetTicks() / 1000.0f;
 	SDL_Event ev;
 	while(sys.running) {
 		while (SDL_PollEvent(&ev)) {
+			bool editor_handled = editor_gui_handle_event(&ev);
 			switch (ev.type) {
 			case SDL_QUIT:
 				sys.running = false;
@@ -21,14 +30,22 @@ int main(int argc, char *argv[]) {
 					} else if (ev.key.keysym.scancode == SDL_SCANCODE_GRAVE) {
 						console_toggle_open();
 					} else if (ev.key.keysym.scancode == SDL_SCANCODE_SPACE) {
-						Save_File file;
-						save_open_write("data/levels/test.acp", &file);
-						entity_write(&file);
-						save_close(&file);
-
-						save_open_read("data/levels/test.acp", &file);
-						entity_read(&file);
-						save_close(&file);
+						use_editor = !use_editor;
+						if(use_editor) {
+							game.paused = true;
+							on_level_load();
+							Save_File file;
+							save_open_read("data/levels/test.acp", &file);
+							entity_read(&file);
+							save_close(&file);
+						} else {
+							Save_File file;
+							save_open_write("data/levels/test.acp", &file);
+							entity_write(&file);
+							save_close(&file);
+							game.paused = false;
+							load_level();
+						}
 					}
 				}
 			} break;
@@ -41,17 +58,18 @@ int main(int argc, char *argv[]) {
 			case SDL_MOUSEMOTION:
 				sys.raw_cursor_position = Vec2((float)ev.motion.x, (float)ev.motion.y);
 				cursor_position = sys.raw_cursor_position - (sys.window_size * 0.5f);
+				cursor_position_world = to_world_pos(cursor_position);
 				cursor_position_tl = sys.raw_cursor_position;
-				input_handle_mouse_move(ev.motion.xrel, ev.motion.yrel);
+				if(!editor_handled) input_handle_mouse_move(ev.motion.xrel, ev.motion.yrel);
 				break;
 			case SDL_MOUSEBUTTONDOWN:
-				input_handle_mouse_press(ev.button.button, true, Vec2((float)ev.button.x, (float)ev.button.y), ev.button.clicks == 2);
+				if(!editor_handled) input_handle_mouse_press(ev.button.button, true, Vec2((float)ev.button.x, (float)ev.button.y), ev.button.clicks == 2);
 				break;
 			case SDL_MOUSEBUTTONUP:
-				input_handle_mouse_press(ev.button.button, false, Vec2((float)ev.button.x, (float)ev.button.y), ev.button.clicks == 2);
+				if(!editor_handled) input_handle_mouse_press(ev.button.button, false, Vec2((float)ev.button.x, (float)ev.button.y), ev.button.clicks == 2);
 				break;
 			case SDL_MOUSEWHEEL:
-				input_handle_mouse_wheel(ev.wheel.y);
+				if(!editor_handled) input_handle_mouse_wheel(ev.wheel.y);
 				break;
 			}
 		}
@@ -82,13 +100,13 @@ int main(int argc, char *argv[]) {
 		console_update();
 		game_update();
 		entity_update();
-		editor_update();
+		if(use_editor) editor_update();
 
 		// render
 		render_begin_frame();
 		game_render();
 		entity_render();
-		editor_render();
+		if(use_editor) editor_render();
 		console_render();
 		render_end_frame();
 	}
