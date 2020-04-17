@@ -4,13 +4,14 @@ Render renderer;
 
 internal bool should_clear = true;
 internal Vec4 clear_colour;
-internal bool debug_draw = true;
 internal Font *default_font = nullptr;
 internal float debug_string_start_y = 10.0f;
 internal Vec2 debug_string_position = Vec2(debug_string_start_y, 0.0f);
 internal bool centered = false;
 internal double z_near = 0.0;
 internal double z_far = 1.0;
+
+internal Array<Render_Texture> rt_list;
 
 internal void opengl_debug_callback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* userParam);
 
@@ -30,7 +31,8 @@ void render_init() {
 
 	register_var("clear_colour", &clear_colour);
 	register_var("should_clear_screen", &should_clear);
-	register_var("draw_debug", &debug_draw);
+	register_var("render_debug_strings", &renderer.render_debug_strings);
+	register_var("render_physics_debug", &renderer.render_physics_debug);
 	register_var("debug_string_start_y", &debug_string_start_y);
 	register_var("z_near", &z_near);
 	register_var("z_far", &z_far);
@@ -50,17 +52,6 @@ void render_shutdown() {
 void render_on_level_load() {
 	renderer.camera_position = Vec2(0, 0);
 	renderer.zoom_level = 0;
-}
-
-void render_begin_frame() {
-	if(should_clear) {
-		glClearColor(v4parms(clear_colour));
-		glClear(GL_COLOR_BUFFER_BIT);
-	}
-
-	glClear(GL_DEPTH_BUFFER_BIT);
-
-	debug_string_position = Vec2(debug_string_start_y, 10.0f);
 }
 
 // scissor means that everything outside of the box will not be rendered
@@ -108,8 +99,40 @@ void render_setup_for_ui() {
 	setup_camera_and_zoom(false, false);
 }
 
+void render_begin_frame() {
+	if(should_clear) {
+		glClearColor(v4parms(clear_colour));
+		glClear(GL_COLOR_BUFFER_BIT);
+	}
+
+	glClear(GL_DEPTH_BUFFER_BIT);
+
+	debug_string_position = Vec2(debug_string_start_y, 10.0f);
+	rt_list.num = 0;
+}
+
+int sort_rts(const void *a, const void *b) {
+   return ((Render_Texture *)a)->z - ((Render_Texture *)b)->z;
+}
+
 void render_end_frame() {
 	SDL_GL_SwapWindow(sys.window);
+}
+
+void render_deferred_textures() {
+	render_setup_for_world();
+
+	qsort(rt_list.data, rt_list.num, sizeof(Render_Texture), sort_rts);
+
+	for(int i = 0; i < rt_list.num; i++) {
+		render_texture(&rt_list[i]);
+	}
+
+	rt_list.num = 0;
+}
+
+Render_Texture *render_add_rt() {
+	return rt_list.alloc();
 }
 
 float render_scale_for_zoom_level() {
@@ -154,17 +177,10 @@ void render_texture(Render_Texture *rt) {
 	float w = rt->size.x;
 	float h = rt->size.y;
 
-	if (rt->size.x == 0) {
-		w = 1;
-	}
-	else if (rt->size.x < 0) {
+	if (rt->size.x <= 0) {
 		w = (float)rt->texture->width;
 	}
-
-	if (rt->size.y == 0) {
-		h = 1;
-	}
-	else if (rt->size.y < 0) {
+	if (rt->size.y <= 0) {
 		h = (float)rt->texture->height;
 	}
 
@@ -300,6 +316,8 @@ void render_string_format_lazy(Vec2 position, const char *text, ...) {
 // usually used to print out debug info that changes every frame.
 // won't draw if var renderer_draw_debug is false
 void debug_string(const char *text, ...) {
+	if(!renderer.render_debug_strings) return;
+
 	//@todo: make this better?
 	constexpr int max_string_length = 1024;
 
@@ -307,10 +325,6 @@ void debug_string(const char *text, ...) {
 	char message[max_string_length];
 
 	assert(strlen(text) < max_string_length);
-
-	if (!debug_draw) {
-		return;
-	}
 
 	va_start(argptr, text);
 	vsnprintf_s(message, 1024, text, argptr);

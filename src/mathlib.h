@@ -132,6 +132,8 @@ struct Vec2 {
 		this->y *= y;
 	}
 
+	inline Vec2 operator-() { return Vec2(-x, -y); }
+	
 	inline Vec2 operator +(Vec2 other) {
 		return Vec2(x + other.x, y + other.y);
 	}

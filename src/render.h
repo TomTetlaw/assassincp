@@ -12,11 +12,15 @@ struct Render_Texture {
 	float tl = -1;
 	float th = -1;
 	bool repeat = false;
+	int z = 0;
 };
 
 struct Render {
 	Vec2 camera_position;
 	int zoom_level = 0;
+
+	bool render_physics_debug = false;
+	bool render_debug_strings = false;
 };
 
 extern Render renderer;
@@ -29,6 +33,9 @@ void render_init();
 void render_shutdown();
 void render_begin_frame();
 void render_end_frame();
+
+Render_Texture *render_add_rt();
+void render_deferred_textures();
 
 // scissor means that everything outside of the box will not be rendered
 void render_start_scissor(float top, float left, float bottom, float right);

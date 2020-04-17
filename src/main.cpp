@@ -106,6 +106,8 @@ int main(int argc, char *argv[]) {
 		render_begin_frame();
 		game_render();
 		entity_render();
+		render_deferred_textures();
+		render_entity_physics_debug();
 		if(use_editor) editor_render();
 		console_render();
 		render_end_frame();

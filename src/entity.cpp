@@ -9,78 +9,94 @@ Entity_Manager entity_manager;
 void Entity::write(Save_File *file) {
 	save_write_bool(file, delete_me);
 
-	save_write_vec2(file, po->position);
-	save_write_vec2(file, po->velocity);
-	save_write_vec2(file, po->goal_velocity);
-	save_write_float(file, po->velocity_ramp_speed);
-	save_write_float(file, po->extents.top);
-    save_write_float(file, po->extents.left);
-    save_write_float(file, po->extents.bottom);
-    save_write_float(file, po->extents.right);
-	save_write_vec2(file, po->size);
-    save_write_float(file, po->hh);
-	save_write_float(file, po->hw);
-	for(int i = 0; i < 4; i++) {
-		save_write_vec2(file, po->edges[i].a);
-		save_write_vec2(file, po->edges[i].b);
+	save_write_bool(file, po != nullptr);
+	if(po) {
+		save_write_vec2(file, po->position);
+		save_write_vec2(file, po->velocity);
+		save_write_vec2(file, po->goal_velocity);
+		save_write_float(file, po->velocity_ramp_speed);
+		save_write_float(file, po->extents.top);
+    	save_write_float(file, po->extents.left);
+    	save_write_float(file, po->extents.bottom);
+    	save_write_float(file, po->extents.right);
+		save_write_vec2(file, po->size);
+    	save_write_float(file, po->hh);
+		save_write_float(file, po->hw);
+		for(int i = 0; i < 4; i++) {
+			save_write_vec2(file, po->edges[i].a);
+			save_write_vec2(file, po->edges[i].b);
+		}
+		save_write_float(file, po->mass);
+		save_write_float(file, po->inv_mass);
+		save_write_float(file, po->restitution);
+		save_write_bool(file, po->colliding);
+		save_write_uint(file, po->groups);
+		save_write_uint(file, po->mask);
+		save_write_bool(file, grid_aligned);
+		save_write_int(file, grid_size_x);
+		save_write_int(file, grid_size_y);
+		save_write_int(file, grid_x);
+		save_write_int(file, grid_y);
+		save_write_int(file, grid_w);
+		save_write_int(file, grid_h);
+	} else {
+		save_write_vec2(file, position);
+		save_write_vec2(file, size);
 	}
-	save_write_float(file, po->mass);
-	save_write_float(file, po->inv_mass);
-	save_write_float(file, po->restitution);
-	save_write_bool(file, po->colliding);
-	save_write_uint(file, po->groups);
-	save_write_uint(file, po->mask);
 
 	if(texture) save_write_string(file, texture->filename);
 	else save_write_string(file, "");
 	save_write_bool(file, texture_repeat);
-
-	save_write_bool(file, grid_aligned);
-	save_write_int(file, grid_size_x);
-	save_write_int(file, grid_size_y);
-	save_write_int(file, grid_x);
-	save_write_int(file, grid_y);
-	save_write_int(file, grid_w);
-	save_write_int(file, grid_h);
+	save_write_int(file, z);
 }
 
 void Entity::read(Save_File *file) {
 	save_read_bool(file, &delete_me);
 
-	save_read_vec2(file, &po->position);
-	save_read_vec2(file, &po->velocity);
-	save_read_vec2(file, &po->goal_velocity);
-	save_read_float(file, &po->velocity_ramp_speed);
-	save_read_float(file, &po->extents.top);
-    save_read_float(file, &po->extents.left);
-    save_read_float(file, &po->extents.bottom);
-    save_read_float(file, &po->extents.right);
-	save_read_vec2(file, &po->size);
-    save_read_float(file, &po->hh);
-	save_read_float(file, &po->hw);
-	for(int i = 0; i < 4; i++) {
-		save_read_vec2(file, &po->edges[i].a);
-		save_read_vec2(file, &po->edges[i].b);
+	bool has_po = false;
+	save_read_bool(file, &has_po);
+	if(has_po) po = physics_add_object();
+
+	if(po) {
+		save_read_vec2(file, &po->position);
+		save_read_vec2(file, &po->velocity);
+		save_read_vec2(file, &po->goal_velocity);
+		save_read_float(file, &po->velocity_ramp_speed);
+		save_read_float(file, &po->extents.top);
+    	save_read_float(file, &po->extents.left);
+    	save_read_float(file, &po->extents.bottom);
+    	save_read_float(file, &po->extents.right);
+		save_read_vec2(file, &po->size);
+    	save_read_float(file, &po->hh);
+		save_read_float(file, &po->hw);
+		for(int i = 0; i < 4; i++) {
+			save_read_vec2(file, &po->edges[i].a);
+			save_read_vec2(file, &po->edges[i].b);
+		}
+		save_read_float(file, &po->mass);
+		save_read_float(file, &po->inv_mass);
+		save_read_float(file, &po->restitution);
+		save_read_bool(file, &po->colliding);
+		save_read_uint(file, &po->groups);
+		save_read_uint(file, &po->mask);
+
+		save_read_bool(file, &grid_aligned);
+		save_read_int(file, &grid_size_x);
+		save_read_int(file, &grid_size_y);
+		save_read_int(file, &grid_x);
+		save_read_int(file, &grid_y);
+		save_read_int(file, &grid_w);
+		save_read_int(file, &grid_h);
+	} else {
+		save_read_vec2(file, &position);
+		save_read_vec2(file, &size);
 	}
-	save_read_float(file, &po->mass);
-	save_read_float(file, &po->inv_mass);
-	save_read_float(file, &po->restitution);
-	save_read_bool(file, &po->colliding);
-	save_read_uint(file, &po->groups);
-	save_read_uint(file, &po->mask);
 
 	char texture_file_name[1024] = {0};
 	save_read_string(file, texture_file_name);
 	if(texture_file_name[0]) texture = load_texture(texture_file_name);
 	save_read_bool(file, &texture_repeat);
-
-	save_read_bool(file, &grid_aligned);
-	save_read_int(file, &grid_size_x);
-	save_read_int(file, &grid_size_y);
-	save_read_int(file, &grid_x);
-	save_read_int(file, &grid_y);
-	save_read_int(file, &grid_w);
-	save_read_int(file, &grid_h);
+	save_read_int(file, &z);
 }
 
 Entity *get_new_entity() {
@@ -96,7 +112,7 @@ void add_entity(Entity *entity) {
 void remove_entity(Entity *entity) {
 	entity->outer->remove();
 	entity->outer->_remove();
-	physics_remove_object(entity->po);
+	if(entity->po) physics_remove_object(entity->po);
 	entity_manager.entities.remove(entity);
 	entity->handle.index = -1;
 	entity->handle.parity = -1;
@@ -130,16 +146,30 @@ void entity_render() {
 		if(game.current_level) entity->outer->render();
 
 		Physics_Object *po = entity_manager.entities[i]->po;
-		Render_Texture rt;
-		rt.size.x = po->size.x;
-		rt.size.y = po->size.y;
-		rt.position.x = po->position.x;
-		rt.position.y = po->position.y;
-		rt.texture = entity_manager.entities[i]->texture;
-		rt.repeat = entity_manager.entities[i]->texture_repeat;
-		render_texture(&rt);
+		Render_Texture *rt = render_add_rt();
+		if(po) {
+			rt->size.x = po->size.x;
+			rt->size.y = po->size.y;
+			rt->position.x = po->position.x;
+			rt->position.y = po->position.y;
+		} else {
+			rt->size = entity->size;
+			rt->position = entity->position;
+		}
+		rt->texture = entity_manager.entities[i]->texture;
+		rt->repeat = entity_manager.entities[i]->texture_repeat;
+		rt->z = entity->z;
+	}
+}
 
-		physics_render_debug(po);
+void render_entity_physics_debug() {
+	for(int i = 0; i < entity_manager.entities.max_index; i++) {
+		Entity *entity = entity_manager.entities[i];
+		if(!entity) continue;
+		
+		if(entity->po) {
+			physics_render_debug(entity->po);
+		}
 	}
 }
 
@@ -150,25 +180,27 @@ void entity_update() {
 		Entity *entity = entity_manager.entities[i];
 		if(!entity) continue;
 
-		if(entity->grid_aligned) {
-			entity->po->size.x = entity->grid_w * (float)entity->grid_size_x;
-			entity->po->size.y = entity->grid_h * (float)entity->grid_size_y;
-			entity->po->position.x = entity->grid_x * (float)entity->grid_size_x;
-			entity->po->position.y = entity->grid_y * (float)entity->grid_size_y;
-		} else {
-			entity->grid_w = (int)(entity->po->size.x / (float)entity->grid_size_x);
-			entity->grid_h = (int)(entity->po->size.y / (float)entity->grid_size_y);
-			entity->grid_x = (int)(entity->po->position.x / (float)entity->grid_size_x);
-			entity->grid_y = (int)(entity->po->position.y / (float)entity->grid_size_y);
-		}
+		if(entity->po) {
+			if(entity->grid_aligned) {
+				entity->po->size.x = entity->grid_w * (float)entity->grid_size_x;
+				entity->po->size.y = entity->grid_h * (float)entity->grid_size_y;
+				entity->po->position.x = entity->grid_x * (float)entity->grid_size_x;
+				entity->po->position.y = entity->grid_y * (float)entity->grid_size_y;
+			} else {
+				entity->grid_w = (int)(entity->po->size.x / (float)entity->grid_size_x);
+				entity->grid_h = (int)(entity->po->size.y / (float)entity->grid_size_y);
+				entity->grid_x = (int)(entity->po->position.x / (float)entity->grid_size_x);
+				entity->grid_y = (int)(entity->po->position.y / (float)entity->grid_size_y);
+			}
 
-		if(entity->grid_w <= 0) entity->grid_w = 1;
-		if(entity->grid_h <= 0) entity->grid_h = 1;
+			if(entity->grid_w <= 0) entity->grid_w = 1;
+			if(entity->grid_h <= 0) entity->grid_h = 1;
 
-		if(entity->po->mass == 0) {
-			entity->po->inv_mass = 0;
-		} else {
-			entity->po->inv_mass = 1 / entity->po->mass;
+			if(entity->po->mass == 0) {
+				entity->po->inv_mass = 0;
+			} else {
+				entity->po->inv_mass = 1 / entity->po->mass;
+			}
 		}
 
 		if(game.current_level) entity->outer->update();
@@ -225,7 +257,6 @@ void entity_write(Save_File *file) {
 		inner->_index = index; \
 		inner->handle.index = index; \
 		inner->handle.parity = parity; \
-		inner->po = physics_add_object(); \
 		inner->classify = etypes._classify_##x; \
 		inner->outer = etypes._##x.alloc(); \
 		inner->type_name = etypes._name_##x; \
@@ -259,6 +290,10 @@ void entity_read(Save_File *file) {
 				inner = create_entity_at(Wall, index, parity);
 			} else if(classify == etypes._classify_Player) {
 				inner = create_entity_at(Player, index, parity);
+			} else if(classify == etypes._classify_Parallax) {
+				inner = create_entity_at(Parallax, index, parity);
+			} else if(classify == etypes._classify_Floor) {
+				inner = create_entity_at(Floor, index, parity);
 			}
 
 			inner->read(file);

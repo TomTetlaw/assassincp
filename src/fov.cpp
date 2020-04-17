@@ -57,8 +57,8 @@ void fov_update(Field_Of_View *fov) {
 }
 
 void fov_shutdown(Field_Of_View *fov) {
-	delete[] fov->verts;
-	delete[] fov->sorted;
+	if(fov->verts) { delete fov->verts; }
+	if(fov->sorted) { delete fov->sorted; }
 }
 
 void fov_render(Field_Of_View *fov) {

@@ -287,6 +287,8 @@ void physics_step_world(float dt) {
 }
 
 void physics_render_debug(Physics_Object *po) {
+    if(!renderer.render_physics_debug) return;
+
     Vec4 colour = Vec4(1, 0, 0, 1);
     if(po->colliding) colour = Vec4(0, 1, 0, 1);
     render_box(po->position, po->size, false, colour);

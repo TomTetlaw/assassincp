@@ -15,6 +15,8 @@ void entity_write(Save_File *file);
 void entity_read(Save_File *file);
 void entity_spawn_all();
 
+void render_entity_physics_debug();
+
 struct Entity_Handle {
 	int index = -1;
 	int parity = -1;
@@ -44,6 +46,9 @@ struct Entity {
 
 	Texture *texture = nullptr;
 	bool texture_repeat = false;
+	int z = 0;
+	Vec2 position = Vec2(0, 0); // only used if the entity doesn't have a physics object.
+	Vec2 size = Vec2(0, 0); // only used if the entity doesn't have a physics object.
 
 	int classify = 0;
 	const char *type_name = nullptr;
@@ -77,23 +82,17 @@ void add_entity(Entity *entity);
 	Contiguous_Array<x, max_entities_by_type> *stored_in = nullptr;\
 	void _remove() { stored_in->remove(this); }
 
-// @todo: need to make this not use __LINE__ because if we add another
-// entity type and try to load an old file using an older entity type 
-// then the values will be wrong.
-#define declare_entity_type(x) \
-	Contiguous_Array<x, max_entities_by_type> _##x; \
-	const char *_name_##x = #x; \
-	const int _classify_##x = __COUNTER__ 
-
 struct Wall : Entity_Callbacks {
 	entity_stuff(Wall);
 
 	void add() {
 		inner->texture = load_texture("data/textures/wall.png");
 		inner->texture_repeat = true;
-
+		inner->z = 1;
+		
 		inner->grid_aligned = true;
 
+		inner->po = physics_add_object();
         inner->po->size = Vec2(32, 32);
 		inner->po->set_mass(0.0f);
 		inner->po->groups = phys_group_wall;
@@ -107,6 +106,9 @@ struct Player : Entity_Callbacks {
 
 	void add() {
 		inner->texture = load_texture("data/textures/player.png");
+		inner->z = 2;
+
+		inner->po = physics_add_object();
 		inner->po->size = Vec2(32, 32);
 		inner->po->set_mass(1);
 		inner->po->groups = phys_group_player;
@@ -117,6 +119,8 @@ struct Player : Entity_Callbacks {
 	}
 
 	void update() {
+		renderer.camera_position = inner->po->position;
+
 		inner->po->goal_velocity = Vec2(0, 0);
 		inner->po->velocity_ramp_speed = 300.0f;
 		if(input_get_key_state(SDL_SCANCODE_W)) {
@@ -141,7 +145,7 @@ struct Player : Entity_Callbacks {
 	}
 
 	void render() {
-		//fov_render(&fov);
+		//fov_render(&fov); // this won't work until we have z sorting for all rendering.
 	}
 
 	void remove() {
@@ -149,17 +153,38 @@ struct Player : Entity_Callbacks {
 	}
 };
 
-struct Badguy : Entity_Callbacks {
-	Nav_Path path;
+struct Parallax : Entity_Callbacks {
+	entity_stuff(Parallax);
+
+	void add() {
+		inner->z = 0;
+		inner->texture = load_texture("data/textures/parallax_test.png");
+	}
 
 	void update() {
-		
+		inner->position = -renderer.camera_position * 0.2f;
 	}
 };
+
+struct Floor : Entity_Callbacks {
+	entity_stuff(Floor);
+
+	void add() {
+		inner->z = 1;
+		inner->texture = load_texture("data/textures/floor.png");
+	}
+};
+
+#define declare_entity_type(x) \
+	Contiguous_Array<x, max_entities_by_type> _##x; \
+	const char *_name_##x = #x; \
+	const int _classify_##x = __COUNTER__ 
 
 struct Entity_Types {
 	declare_entity_type(Wall);
 	declare_entity_type(Player);
+	declare_entity_type(Parallax);
+	declare_entity_type(Floor);
 };
 
 extern Entity_Types etypes;
@@ -171,7 +196,6 @@ extern Entity_Types etypes;
 		x *ent = etypes._##x.alloc();\
 		ent->stored_in = &etypes._##x; \
 		ent->inner = inner; \
-		inner->po = physics_add_object(); \
 		inner->outer = ent; \
 		inner->classify = etypes._classify_##x; \
 		inner->type_name = etypes._name_##x; \
