@@ -29,6 +29,8 @@ struct Collision_Filter {
     uint mask = (uint)~0;
 };
 
+struct Entity_Callbacks;
+
 struct Physics_Object {
     bool _deleted = false;
     int _index = -1;
@@ -53,10 +55,12 @@ struct Physics_Object {
 
     uint groups = (uint)1;
     uint mask = (uint)~0;
+
+    Entity_Callbacks *owner = nullptr;
 };
 
 void physics_init();
-Physics_Object *physics_add_object();
+Physics_Object *physics_add_object(Entity_Callbacks *owner);
 void physics_remove_object(Physics_Object *po);
 void physics_step_world(float dt);
 

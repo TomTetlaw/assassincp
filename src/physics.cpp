@@ -1,6 +1,5 @@
 #include "precompiled.h"
 
-internal Contiguous_Array<Physics_Object, 1024> objects;
 internal int physics_fps = 60;
 internal float accumulator = 0.0f;
 
@@ -12,14 +11,6 @@ struct Intersection {
 };
 
 internal Array<Intersection> intersections;
-
-Physics_Object *physics_add_object() {
-    return objects.alloc();
-}
-
-void physics_remove_object(Physics_Object *po) {
-    objects.remove(po);
-}
 
 internal bool should_collide(uint a_groups, uint a_mask, uint b_groups, uint b_mask) {
     return (a_mask & b_groups) != 0 &&
@@ -90,14 +81,19 @@ internal void physics_step_object(Physics_Object *po, float dt) {
 }
 
 internal void check_for_intersects() {
-    for(int i = 0; i < objects.max_index; i++) {
-        if(!objects[i]) continue;
-        for(int j = 0; j < objects.max_index; j++) {
-            if(!objects[j]) continue;
+    for(int i = 0; i < entity_manager.entities.max_index; i++) {
+        Entity *entity_a = entity_manager.entities[i];
+        if(!entity_a) continue;
+        if(entity_a->flags & EFLAGS_NO_PHYSICS) continue;
+        for(int j = 0; j < entity_manager.entities.max_index; j++) {
+            Entity *entity_b = entity_manager.entities[j];
+            if(!entity_b) continue;
+            if(entity_b->flags & EFLAGS_NO_PHYSICS) continue;
+
             if(j == i) continue;
 
-            Physics_Object *a = objects[i];
-            Physics_Object *b = objects[j];
+            Physics_Object *a = &entity_a->po;
+            Physics_Object *b = &entity_b->po;
 
             if(!should_collide(a, b)) continue;
 
@@ -167,8 +163,11 @@ internal bool lines_intersect(Line_Intersection *intersection) {
 }
 
 internal void get_edges(Array<Edge> &edges, Collision_Filter filter) {
-    for(int i = 0; i < objects.max_index; i++) {
-        auto it = objects[i];
+    for(int i = 0; i < entity_manager.entities.max_index; i++) {
+        Entity *entity = entity_manager.entities[i];
+        if(!entity) continue;
+        if(entity->flags & EFLAGS_NO_PHYSICS) continue;
+        auto it = &entity->po;
         if(!it) continue;
         if(!should_collide(it, filter)) continue;
         // @todo: we do this here so that the raycasts in generate_nav_mesh in 
@@ -262,9 +261,12 @@ void physics_init() {
 }
 
 internal void integrate(float dt) {
-    for(int i = 0; i < objects.max_index; i++) {
-        auto it = objects[i];
-        if(it) { physics_step_object(it, dt); }
+    for(int i = 0; i < entity_manager.entities.max_index; i++) {
+        Entity *entity = entity_manager.entities[i];
+        if(!entity) continue;
+        if(entity->flags & EFLAGS_NO_PHYSICS) continue;
+
+        physics_step_object(&entity->po, dt);
     }
 
     intersections.num = 0;

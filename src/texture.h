@@ -16,13 +16,15 @@ void texture_end_level_load();
 // if never_unload is true, the file won't be unloaded after the level
 // finishes loading even if it wasn't used. Currently used for font glyphs
 // and ui images
-Texture *load_texture(const char *filename, bool never_unload = false);
+int load_texture(const char *filename, bool never_unload = false);
 
 // create texture from data you already have, for both of these, never_unload = true.
 
 // frees the surface after it creates the texture
-Texture *create_texture_from_surface(const char *name, SDL_Surface *surface);
+int create_texture_from_surface(const char *name, SDL_Surface *surface);
 
-Texture *create_texture(const char *name, const unsigned char *data, int width, int height);
+int create_texture(const char *name, const unsigned char *data, int width, int height);
+
+Texture *get_texture(int index);
 
 #endif

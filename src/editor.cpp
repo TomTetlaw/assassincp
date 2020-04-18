@@ -6,6 +6,7 @@
 #include "imgui/imgui_impl_opengl3.h"
 
 internal Array<Entity *> selected;
+internal Array<Entity *> copied;
 
 internal bool drag_select = false;
 internal bool dragging_entities = false;
@@ -59,16 +60,16 @@ void editor_update() {
     if(ImGui::BeginTabItem("Create")) {
         Entity *new_entity = nullptr;
         if(ImGui::Selectable("Wall")) {
-            new_entity = create_entity(Wall)->inner;
+            new_entity = create_entity(Wall, true)->inner;
         }
         if(ImGui::Selectable("Player")) {
-            new_entity = create_entity(Player)->inner;
+            new_entity = create_entity(Player, true)->inner;
         }
         if(ImGui::Selectable("Parallax")) {
-            new_entity = create_entity(Parallax)->inner;
+            new_entity = create_entity(Parallax, true)->inner;
         }
         if(ImGui::Selectable("Floor")) {
-            new_entity = create_entity(Floor)->inner;
+            new_entity = create_entity(Floor, true)->inner;
         }
         if(new_entity) {
             clear_selected();
@@ -78,8 +79,9 @@ void editor_update() {
     }
     if(ImGui::BeginTabItem("List")) {
         for(int i = 0; i < entity_manager.entities.max_index; i++) {
-            if(!entity_manager.entities[i]) continue;
             Entity *entity = entity_manager.entities[i];
+            if(!entity) continue;
+
             char string[1024] = {0};
             sprintf_s(string, 1024, "(%d) %s", entity->handle.parity, entity->type_name);
             if(ImGui::Selectable(string)) {
@@ -101,6 +103,16 @@ void editor_update() {
         }
         ImGui::EndTabItem();
     }
+    if(ImGui::BeginTabItem("Copied")) {
+        for(int i = 0; i < copied.num; i++) {
+            char string[1024] = {0};
+            sprintf_s(string, 1024, "(%d) %s", copied[i]->handle.parity, copied[i]->type_name);
+            if(ImGui::Selectable(string)) {
+                Entity *entity = copied[i];
+            }
+        }
+        ImGui::EndTabItem();
+    }
     ImGui::EndTabBar();
 
     ImGui::Begin("Properties");
@@ -108,7 +120,7 @@ void editor_update() {
         Entity *entity = selected[0];
         #define drag_float2(m) { float data[2] = { m.x, m.y }; ImGui::DragFloat2(#m, data); m.x = data[0]; m.y = data[1]; }
 
-        if(entity->po) {
+        if(!(entity->flags & EFLAGS_NO_PHYSICS)) {
             if(entity->grid_aligned) {
                 int data[2] = {entity->grid_x, entity->grid_y};
                 static int step = 1;
@@ -122,15 +134,15 @@ void editor_update() {
                 entity->grid_w = data[0];
                 entity->grid_h = data[1];
             } else {
-                drag_float2(entity->po->position);
-                drag_float2(entity->po->size);
+                drag_float2(entity->po.position);
+                drag_float2(entity->po.size);
             }
 
-            drag_float2(entity->po->velocity);
-            drag_float2(entity->po->goal_velocity);
-            ImGui::DragFloat("entity->po->velocity_ramp_speed", &entity->po->velocity_ramp_speed);
-            ImGui::DragFloat("entity->po->mass", &entity->po->mass);
-            ImGui::DragFloat("entity->po->restitution", &entity->po->restitution);
+            drag_float2(entity->po.velocity);
+            drag_float2(entity->po.goal_velocity);
+            ImGui::DragFloat("entity->po.velocity_ramp_speed", &entity->po.velocity_ramp_speed);
+            ImGui::DragFloat("entity->po.mass", &entity->po.mass);
+            ImGui::DragFloat("entity->po.restitution", &entity->po.restitution);
         } else {
             drag_float2(entity->position);
             drag_float2(entity->size);
@@ -139,12 +151,12 @@ void editor_update() {
         ImGui::Checkbox("entity->texture_repeat", &entity->texture_repeat);
         ImGui::InputInt("entity->z", &entity->z, 1, 2);
 
-        if(entity->po) {
+        if(!(entity->flags & EFLAGS_NO_PHYSICS)) {
             ImGui::Checkbox("entity->grid_aligned", &entity->grid_aligned);
 
             if(entity->grid_aligned) {
-                ImGui::LabelText("entity->po->position", "(%f, %f)", v2parms(entity->po->position));
-                ImGui::LabelText("entity->po->size", "(%f, %f)", v2parms(entity->po->size));
+                ImGui::LabelText("entity->po.position", "(%f, %f)", v2parms(entity->po.position));
+                ImGui::LabelText("entity->po.size", "(%f, %f)", v2parms(entity->po.size));
             } else {
                 ImGui::LabelText("entity->grid_position", "(%d, %d)", entity->grid_x, entity->grid_y);
                 ImGui::LabelText("entity->grid_w/h", "(%d, %d)", entity->grid_w, entity->grid_h);
@@ -152,14 +164,14 @@ void editor_update() {
 
             ImGui::LabelText("entity->grid_size", "(%d, %d)", entity->grid_size_x, entity->grid_size_y);
 
-            ImGui::LabelText("entity->po->inv_mass", "%f", entity->po->inv_mass);
-            ImGui::LabelText("entity->po->colliding", "%s", entity->po->colliding ? "true" : "false");
-            ImGui::LabelText("entity->po->extents", "(%f, %f, %f, %f)", entity->po->extents.top, entity->po->extents.left, entity->po->extents.bottom, entity->po->extents.right);
-            ImGui::LabelText("entity->po->hw/hh", "(%f, %f)", entity->po->hw, entity->po->hh);
-            ImGui::LabelText("entity->po->edges[0]", "(%f, %f) -> (%f, %f)", v2parms(entity->po->edges[0].a), v2parms(entity->po->edges[0].b));
-            ImGui::LabelText("entity->po->edges[1]", "(%f, %f) -> (%f, %f)", v2parms(entity->po->edges[1].a), v2parms(entity->po->edges[1].b));
-            ImGui::LabelText("entity->po->edges[2]", "(%f, %f) -> (%f, %f)", v2parms(entity->po->edges[2].a), v2parms(entity->po->edges[2].b));
-            ImGui::LabelText("entity->po->edges[3]", "(%f, %f) -> (%f, %f)", v2parms(entity->po->edges[3].a), v2parms(entity->po->edges[3].b));
+            ImGui::LabelText("entity->po.inv_mass", "%f", entity->po.inv_mass);
+            ImGui::LabelText("entity->po.colliding", "%s", entity->po.colliding ? "true" : "false");
+            ImGui::LabelText("entity->po.extents", "(%f, %f, %f, %f)", entity->po.extents.top, entity->po.extents.left, entity->po.extents.bottom, entity->po.extents.right);
+            ImGui::LabelText("entity->po.hw/hh", "(%f, %f)", entity->po.hw, entity->po.hh);
+            ImGui::LabelText("entity->po.edges[0]", "(%f, %f) -> (%f, %f)", v2parms(entity->po.edges[0].a), v2parms(entity->po.edges[0].b));
+            ImGui::LabelText("entity->po.edges[1]", "(%f, %f) -> (%f, %f)", v2parms(entity->po.edges[1].a), v2parms(entity->po.edges[1].b));
+            ImGui::LabelText("entity->po.edges[2]", "(%f, %f) -> (%f, %f)", v2parms(entity->po.edges[2].a), v2parms(entity->po.edges[2].b));
+            ImGui::LabelText("entity->po.edges[3]", "(%f, %f) -> (%f, %f)", v2parms(entity->po.edges[3].a), v2parms(entity->po.edges[3].b));
         } else {
             // @todo: resizing of entities that don't have physics.
         }
@@ -214,7 +226,7 @@ internal void check_for_selected() {
     for(int i = 0; i < entity_manager.entities.max_index; i++) {
         if(!entity_manager.entities[i]) continue;
         Entity *entity = entity_manager.entities[i];
-        if(entity->po && box_intersects_box(select_extents, entity->po->extents)) {
+        if(!(entity->flags & EFLAGS_NO_PHYSICS) && box_intersects_box(select_extents, entity->po.extents)) {
             selected.append(entity_manager.entities[i]);
         } else {
             // @todo: selection for entities that don't have physics.
@@ -236,8 +248,8 @@ bool editor_handle_mouse_press(int mouse_button, bool down, Vec2 position, bool 
         for(int i = 0; i < selected.num; i++) {
             if(!selected[i]) continue;
             Entity *entity = selected[i];
-            if(entity->po) {
-                if(point_intersects_box(cursor_position_world, entity->po->extents)) {
+            if(!(entity->flags & EFLAGS_NO_PHYSICS)) {
+                if(point_intersects_box(cursor_position_world, entity->po.extents)) {
                     selected_entities = true;
                 }
             } else {
@@ -277,8 +289,8 @@ void editor_handle_mouse_move(int relx, int rely) {
         for(int i = 0; i < selected.num; i++) {
             Entity *entity = selected[i];
             if(!entity) continue;
-            if(entity->po) {
-                entity->po->position = entity->po->position + Vec2(relx, rely);
+            if(!(entity->flags & EFLAGS_NO_PHYSICS)) {
+                entity->po.position = entity->po.position + Vec2(relx, rely);
             } else {
                 // @todo: dragging for entities without physics.
             }
@@ -322,6 +334,38 @@ bool editor_handle_key_press(SDL_Scancode scancode, bool down, int mods) {
         }
         clear_selected();
         return true;
+    }
+
+    if(scancode == SDL_SCANCODE_C && down && (mods & KEY_MOD_CTRL)) {
+        if(selected.num > 0) {
+            copied.num = 0;
+            for(int i = 0; i < selected.num; i++) copied.append(selected[i]);
+        }
+    }
+
+    if(scancode == SDL_SCANCODE_V && down && (mods & KEY_MOD_CTRL)) {
+        if(copied.num > 0) {
+            for(int i = 0; i < copied.num; i++) {
+                Entity *entity = copied[i];
+                Entity *new_entity = nullptr;
+                if(entity->classify == etypes._classify_Wall) {
+                    new_entity = create_entity(Wall, true)->inner;
+                }
+                if(entity->classify == etypes._classify_Player) {
+                    new_entity = create_entity(Player, true)->inner;
+                }
+                if(entity->classify == etypes._classify_Parallax) {
+                    new_entity = create_entity(Parallax, true)->inner;
+                }
+                if(entity->classify == etypes._classify_Floor) {
+                    new_entity = create_entity(Floor, true)->inner;
+                }
+
+                Entity_Handle old_handle = new_entity->handle;
+                memcpy(new_entity, entity, sizeof(Entity));
+                new_entity->handle = old_handle;
+            }
+        }
     }
 
     return false;

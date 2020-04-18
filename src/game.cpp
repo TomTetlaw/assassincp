@@ -65,10 +65,12 @@ internal void add_check_points() {
 	for(int i = 0; i < entity_manager.entities.max_index; i++) {
 		Entity *entity = entity_manager.entities[i];
         if(!entity) continue;
+		if(!(entity->flags & EFLAGS_NO_PHYSICS)) continue;
+		if(!entity->added) continue;
 		if(entity->classify != etypes._classify_Wall) continue;
 
 		for(int j = 0; j < 4; j++) {
-			game.current_level->fov_check_points.append(entity->po->edges[j].a);
+			game.current_level->fov_check_points.append(entity->po.edges[j].a);
 		}
 	}	
 }

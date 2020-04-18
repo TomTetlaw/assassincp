@@ -9,7 +9,7 @@ struct Glyph {
 	int min_y = 0;
 	int max_y = 0;
 	int advance = 0;
-	Texture *texture = nullptr;
+	int texture = -1;
 	int name_length = 32;
 	char name[32];
 };

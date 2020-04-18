@@ -25,7 +25,7 @@ struct Entity_Handle {
 struct Entity_Callbacks {
 	virtual void _remove() {}
 	// gets called when the entity is created. Do not put anything here that depends on game state.
-	virtual void add() {}
+	virtual void setup() {}
 	// gets called when the entity is live for the first time in the game world. Put things in here that depend on game state.
 	virtual void spawn() {}
 	virtual void remove() {}
@@ -35,23 +35,25 @@ struct Entity_Callbacks {
 	virtual void read(Save_File *file) {}
 };
 
+enum Entity_Flags {
+	EFLAGS_NO_PHYSICS = 1 << 0,
+};
+
 struct Entity {
 	bool _deleted = false;
 	int _index = -1;
 
 	Entity_Handle handle;
 	bool delete_me = false;
+	bool added = false;
+	int flags = 0;
 
-	Physics_Object *po = nullptr;
-
-	Texture *texture = nullptr;
 	bool texture_repeat = false;
 	int z = 0;
 	Vec2 position = Vec2(0, 0); // only used if the entity doesn't have a physics object.
 	Vec2 size = Vec2(0, 0); // only used if the entity doesn't have a physics object.
 
 	int classify = 0;
-	const char *type_name = nullptr;
 	Entity_Callbacks *outer = nullptr;
 
 	bool grid_aligned = false;
@@ -62,9 +64,18 @@ struct Entity {
 	int grid_size_x = 16;
 	int grid_size_y = 16;
 
-	void write(Save_File *file);
-	void read(Save_File *file);
+	const char *type_name = nullptr;
+	Physics_Object po;
+	int texture = -1;
+	char texture_filename[1024] = {0}; // for saving/loading of entity textures.
+
+	inline void set_texture(const char *filename) {
+		texture = load_texture(filename);
+		if(texture != -1) strcpy(texture_filename, filename);
+	}
 };
+
+void copy_entity(Entity *source, Entity *dest);
 
 struct Entity_Manager {
 	Contiguous_Array<Entity, max_entities> entities;
@@ -73,7 +84,7 @@ struct Entity_Manager {
 extern Entity_Manager entity_manager;
 
 Entity *get_new_entity();
-void add_entity(Entity *entity);
+void add_entity(Entity *entity, bool add);
 
 #define entity_stuff(x) \
 	bool _deleted = false;\
@@ -85,17 +96,16 @@ void add_entity(Entity *entity);
 struct Wall : Entity_Callbacks {
 	entity_stuff(Wall);
 
-	void add() {
-		inner->texture = load_texture("data/textures/wall.png");
+	void setup() {
+		inner->set_texture("data/textures/wall.png");
 		inner->texture_repeat = true;
 		inner->z = 1;
 		
 		inner->grid_aligned = true;
 
-		inner->po = physics_add_object();
-        inner->po->size = Vec2(32, 32);
-		inner->po->set_mass(0.0f);
-		inner->po->groups = phys_group_wall;
+        inner->po.size = Vec2(32, 32);
+		inner->po.set_mass(0.0f);
+		inner->po.groups = phys_group_wall;
 	}
 };
 
@@ -104,14 +114,13 @@ struct Player : Entity_Callbacks {
 
 	Field_Of_View fov;
 
-	void add() {
-		inner->texture = load_texture("data/textures/player.png");
+	void setup() {
+		inner->set_texture("data/textures/player.png");
 		inner->z = 2;
 
-		inner->po = physics_add_object();
-		inner->po->size = Vec2(32, 32);
-		inner->po->set_mass(1);
-		inner->po->groups = phys_group_player;
+		inner->po.size = Vec2(32, 32);
+		inner->po.set_mass(1);
+		inner->po.groups = phys_group_player;
 	}
 
 	void spawn() {
@@ -119,28 +128,28 @@ struct Player : Entity_Callbacks {
 	}
 
 	void update() {
-		renderer.camera_position = inner->po->position;
+		renderer.camera_position = inner->po.position;
 
-		inner->po->goal_velocity = Vec2(0, 0);
-		inner->po->velocity_ramp_speed = 300.0f;
+		inner->po.goal_velocity = Vec2(0, 0);
+		inner->po.velocity_ramp_speed = 300.0f;
 		if(input_get_key_state(SDL_SCANCODE_W)) {
-			inner->po->velocity_ramp_speed = 2000.0f;
-			inner->po->goal_velocity = inner->po->goal_velocity + Vec2(0.0f, -300.0f);
+			inner->po.velocity_ramp_speed = 2000.0f;
+			inner->po.goal_velocity = inner->po.goal_velocity + Vec2(0.0f, -300.0f);
 		}
 		if(input_get_key_state(SDL_SCANCODE_A)) {
-			inner->po->velocity_ramp_speed = 2000.0f;
-			inner->po->goal_velocity = inner->po->goal_velocity + Vec2(-300.0f, 0.0f);
+			inner->po.velocity_ramp_speed = 2000.0f;
+			inner->po.goal_velocity = inner->po.goal_velocity + Vec2(-300.0f, 0.0f);
 		}
 		if(input_get_key_state(SDL_SCANCODE_S)) {
-			inner->po->velocity_ramp_speed = 2000.0f;
-			inner->po->goal_velocity = inner->po->goal_velocity + Vec2(0.0f, 300.0f);
+			inner->po.velocity_ramp_speed = 2000.0f;
+			inner->po.goal_velocity = inner->po.goal_velocity + Vec2(0.0f, 300.0f);
 		}
 		if(input_get_key_state(SDL_SCANCODE_D)) {
-			inner->po->velocity_ramp_speed = 2000.0f;
-			inner->po->goal_velocity = inner->po->goal_velocity + Vec2(300.0f, 0.0f);
+			inner->po.velocity_ramp_speed = 2000.0f;
+			inner->po.goal_velocity = inner->po.goal_velocity + Vec2(300.0f, 0.0f);
 		}
 
-		fov.position = inner->po->position;
+		fov.position = inner->po.position;
 		//fov_update(&fov);
 	}
 
@@ -156,9 +165,10 @@ struct Player : Entity_Callbacks {
 struct Parallax : Entity_Callbacks {
 	entity_stuff(Parallax);
 
-	void add() {
+	void setup() {
 		inner->z = 0;
-		inner->texture = load_texture("data/textures/parallax_test.png");
+		inner->set_texture("data/textures/parallax_test.png");
+		inner->flags = EFLAGS_NO_PHYSICS;
 	}
 
 	void update() {
@@ -169,9 +179,10 @@ struct Parallax : Entity_Callbacks {
 struct Floor : Entity_Callbacks {
 	entity_stuff(Floor);
 
-	void add() {
+	void setup() {
 		inner->z = 1;
-		inner->texture = load_texture("data/textures/floor.png");
+		inner->set_texture("data/textures/floor.png");
+		inner->flags = EFLAGS_NO_PHYSICS;
 	}
 };
 
@@ -190,7 +201,7 @@ struct Entity_Types {
 extern Entity_Types etypes;
 
 // if anything gets added to this is should probably also be added to create_entity_at in entity.cpp.
-#define create_entity(x) \
+#define create_entity(x, add) \
 	([]() -> x* { \
 		Entity *inner = get_new_entity();\
 		x *ent = etypes._##x.alloc();\
@@ -199,8 +210,8 @@ extern Entity_Types etypes;
 		inner->outer = ent; \
 		inner->classify = etypes._classify_##x; \
 		inner->type_name = etypes._name_##x; \
-		add_entity(inner); \
-		ent->add(); \
+		add_entity(inner, add); \
+		ent->setup(); \
 		return ent;\
 	})()
 

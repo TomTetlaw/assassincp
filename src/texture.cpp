@@ -152,9 +152,9 @@ internal void texture_hotload_callback(const char *filename, void *data) {
 	load_texture_data(texture);
 }
 
-Texture *load_texture(const char *filename, bool never_unload) {
+int load_texture(const char *filename, bool never_unload) {
 	if (!filename || filename[0] == 0) {
-		return nullptr;
+		return -1;
 	}
 
 	For(textures) {
@@ -164,7 +164,7 @@ Texture *load_texture(const char *filename, bool never_unload) {
 			if (!it->api_object) {
 				load_texture_data(it);
 			}
-			return it;
+			return it_index;
 		}
 	}
 
@@ -173,39 +173,48 @@ Texture *load_texture(const char *filename, bool never_unload) {
 	if (load_texture_data(texture)) {
 		texture->used = true;
 		texture->never_unload = never_unload;
+		int index = textures.num;
 		textures.append(texture);
 
 		hotload_add_file(filename, texture, texture_hotload_callback);
 
-		return texture;
+		return index;
 	}
 	else {
 		console_printf("Failed to load texture %s: %s\n", filename, IMG_GetError());
 		delete texture;
-		return nullptr;
+		return -1;
 	}
 }
 
-Texture *create_texture(const char *name, const unsigned char *data, int width, int height) {
+int create_texture(const char *name, const unsigned char *data, int width, int height) {
 	Texture *texture = new Texture;
 	strcpy(texture->filename, name);
 	texture->used = true;
 	texture->never_unload = true;
+	int index = textures.num;
 	textures.append(texture);
 
 	create_texture_data(texture, data, width, height);
 
-	return texture;
+	return index;
 }
 
-Texture *create_texture_from_surface(const char *name, SDL_Surface *surface) {
+int create_texture_from_surface(const char *name, SDL_Surface *surface) {
 	Texture *texture = new Texture;
 	strcpy(texture->filename, name);
 	texture->used = true;
 	texture->never_unload = true;
+	int index = textures.num;
 	textures.append(texture);
 
 	create_texture_data_from_surface(texture, surface);
 
-	return texture;
+	return index;
+}
+
+Texture *get_texture(int index) {
+	if(index < 0) return nullptr;
+	if(index >= textures.num) return nullptr;
+	return textures[index];
 }

@@ -262,7 +262,7 @@ void render_string(Vec2 position, const char *text, Vec4 colour, Font *font, flo
 		}
 
 		if (font->glyphs[(int)text[i]].available) {
-			rt.texture = font->glyphs[(int)text[i]].texture;
+			rt.texture = get_texture(font->glyphs[(int)text[i]].texture);
 			rt.position = position;
 			rt.colour = colour;
 			rt.angle = 90.0f; //@todo: figure out why texture surfaces are rotated 90 degrees
