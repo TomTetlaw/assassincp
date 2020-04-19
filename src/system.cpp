@@ -76,6 +76,10 @@ void system_init(int argc, char *argv[]) {
 		system_error("Failed to initialize SDL_IMG: %s", IMG_GetError());
 	}
 
+	if(Mix_OpenAudio(22050, MIX_DEFAULT_FORMAT, 2, 4096) == -1) {
+		system_error("Failed to initialize SDL_mixer: %s", Mix_GetError());
+	}
+
 	register_command("quit", cmd_quit);
 
 	console_init();
@@ -89,6 +93,9 @@ void system_init(int argc, char *argv[]) {
 
 	config_load("data/config.txt");
 	hotload_add_file("data/config.txt", nullptr, hotload_config_file);
+
+	Mix_Chunk *test = Mix_LoadWAV("data/audio/test.mp3");
+	Mix_PlayChannel(-1, test, -1);
 }
 
 void system_quit() {
@@ -102,6 +109,7 @@ void system_quit() {
 	config_shutdown();
 	hotload_shutdown();
 
+	Mix_Quit();
 	TTF_Quit();
 	IMG_Quit();
 	SDL_GL_DeleteContext(sys.context);

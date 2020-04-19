@@ -134,19 +134,19 @@ struct Player : Entity_Callbacks {
 		inner->po.velocity_ramp_speed = 300.0f;
 		if(input_get_key_state(SDL_SCANCODE_W)) {
 			inner->po.velocity_ramp_speed = 2000.0f;
-			inner->po.goal_velocity = inner->po.goal_velocity + Vec2(0.0f, -300.0f);
+			inner->po.goal_velocity = inner->po.goal_velocity + Vec2(0.0f, -150.0f);
 		}
 		if(input_get_key_state(SDL_SCANCODE_A)) {
 			inner->po.velocity_ramp_speed = 2000.0f;
-			inner->po.goal_velocity = inner->po.goal_velocity + Vec2(-300.0f, 0.0f);
+			inner->po.goal_velocity = inner->po.goal_velocity + Vec2(-150.0f, 0.0f);
 		}
 		if(input_get_key_state(SDL_SCANCODE_S)) {
 			inner->po.velocity_ramp_speed = 2000.0f;
-			inner->po.goal_velocity = inner->po.goal_velocity + Vec2(0.0f, 300.0f);
+			inner->po.goal_velocity = inner->po.goal_velocity + Vec2(0.0f, 150.0f);
 		}
 		if(input_get_key_state(SDL_SCANCODE_D)) {
 			inner->po.velocity_ramp_speed = 2000.0f;
-			inner->po.goal_velocity = inner->po.goal_velocity + Vec2(300.0f, 0.0f);
+			inner->po.goal_velocity = inner->po.goal_velocity + Vec2(150.0f, 0.0f);
 		}
 
 		//fov.position = inner->po.position;
@@ -172,7 +172,7 @@ struct Parallax : Entity_Callbacks {
 	}
 
 	void update() {
-		inner->position = -renderer.camera_position * 0.2f;
+		inner->position = -renderer.camera_position * 0.05f;
 	}
 };
 

@@ -17,6 +17,7 @@
 #include "../include/sdl2/SDL_syswm.h"
 #include "../include/sdl2/SDL_image.h"
 #include "../include/sdl2/SDL_ttf.h"
+#include "../include/sdl2/SDL_mixer.h"
 #include "../include/glew/glew.h"
 
 #ifdef assert
