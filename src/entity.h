@@ -43,7 +43,7 @@ struct Entity {
 	bool _deleted = false;
 	int _index = -1;
 
-	Entity_Handle handle;
+	int parity = -1;
 	bool delete_me = false;
 	bool added = false;
 	int flags = 0;
@@ -64,7 +64,7 @@ struct Entity {
 	int grid_size_x = 16;
 	int grid_size_y = 16;
 
-	const char *type_name = nullptr;
+	char type_name[1024] = {0};
 	Physics_Object po;
 	int texture = -1;
 	char texture_filename[1024] = {0}; // for saving/loading of entity textures.
@@ -124,7 +124,7 @@ struct Player : Entity_Callbacks {
 	}
 
 	void spawn() {
-		fov_init(&fov);
+		//fov_init(&fov);
 	}
 
 	void update() {
@@ -149,7 +149,7 @@ struct Player : Entity_Callbacks {
 			inner->po.goal_velocity = inner->po.goal_velocity + Vec2(300.0f, 0.0f);
 		}
 
-		fov.position = inner->po.position;
+		//fov.position = inner->po.position;
 		//fov_update(&fov);
 	}
 
@@ -158,7 +158,7 @@ struct Player : Entity_Callbacks {
 	}
 
 	void remove() {
-		fov_shutdown(&fov);
+		//fov_shutdown(&fov);
 	}
 };
 
@@ -209,7 +209,7 @@ extern Entity_Types etypes;
 		ent->inner = inner; \
 		inner->outer = ent; \
 		inner->classify = etypes._classify_##x; \
-		inner->type_name = etypes._name_##x; \
+		strcpy(inner->type_name, etypes._name_##x); \
 		add_entity(inner, add); \
 		ent->setup(); \
 		return ent;\

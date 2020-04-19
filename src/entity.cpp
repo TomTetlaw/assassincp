@@ -11,22 +11,26 @@ Entity *get_new_entity() {
 }
 
 void add_entity(Entity *entity, bool add) {
-	entity->handle.parity = next_parity;
-	entity->handle.index = entity->_index;
+	entity->parity = next_parity;
 	next_parity++;
 	entity->added = add;
 }
 
 void copy_entity(Entity *source, Entity *dest) {
+	int parity = dest->parity;
+	int _index = dest->_index;
+	Entity_Callbacks *outer = dest->outer;
 	memcpy(dest, source, sizeof(Entity));
+	dest->parity = parity;
+	dest->_index = _index;
+	dest->outer = outer;
 }
 
 void remove_entity(Entity *entity) {
 	entity->outer->remove();
 	entity->outer->_remove();
 	entity_manager.entities.remove(entity);
-	entity->handle.index = -1;
-	entity->handle.parity = -1;
+	entity->parity = -1;
 }
 
 internal void cmd_list_entities(Array<Command_Argument> &args) {
@@ -34,7 +38,7 @@ internal void cmd_list_entities(Array<Command_Argument> &args) {
 		Entity *entity = entity_manager.entities[i];
 		if(!entity) continue;
 
-		console_printf("(%d, %d), %s\n", entity->handle.index, entity->handle.parity, entity->type_name);
+		console_printf("(%d, %d), %s\n", entity->_index, entity->parity, entity->type_name);
 	}
 }
 
@@ -149,7 +153,7 @@ void entity_write(Save_File *file) {
 			save_write_int(file, entity_manager.entities[i]->classify);
 			// entity's _index and needs to be fixed up after reading because it will be overrwritten.
 			save_write_int(file, entity_manager.entities[i]->parity);
-			save_write_int(file, entity_manager.entities[i]->handle.index);
+			save_write_int(file, entity_manager.entities[i]->_index);
 
 			save_write(file, entity_manager.entities[i], sizeof(Entity));
 
@@ -168,11 +172,10 @@ void entity_write(Save_File *file) {
 		Entity *inner = &entity_manager.entities.elements.data[index]; \
 		inner->_deleted = false; \
 		inner->_index = index; \
-		inner->handle.index = index; \
-		inner->handle.parity = parity; \
+		inner->parity = parity; \
 		inner->classify = etypes._classify_##x; \
 		inner->outer = etypes._##x.alloc(); \
-		inner->type_name = etypes._name_##x; \
+		strcpy(inner->type_name, etypes._name_##x); \
 		((x *)inner->outer)->stored_in = &etypes._##x; \
 		((x *)inner->outer)->inner = inner; \
 		return inner; \

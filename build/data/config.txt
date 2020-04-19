@@ -4,7 +4,7 @@ console_open_speed 2000.000000
 clear_colour (0.000000 0.000000 0.000000 0.000000)
 should_clear_screen true
 render_debug_strings false
-render_physics_debug true
+render_physics_debug false
 debug_string_start_y 400.000000
 z_near 0.000000
 z_far 1.000000

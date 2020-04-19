@@ -13,6 +13,7 @@ internal bool dragging_entities = false;
 internal Vec2 drag_start_point;
 internal Vec2 drag_size;
 internal bool middle_down = false;
+internal bool shift_down = false;
 
 ImGuiIO *io = nullptr;
 
@@ -48,7 +49,13 @@ void editor_render() {
         render_box(drag_start_point + (sys.window_size * 0.5f), drag_size);
     }
 
-    debug_string("dragging_entities = %d, drag_select = %d", dragging_entities, drag_select);
+    render_setup_for_world();
+
+    for(int i = 0; i < selected.num; i++) {
+        render_box2(selected[i]->po.extents.top, selected[i]->po.extents.left,
+            selected[i]->po.extents.bottom, selected[i]->po.extents.right, false, 
+            Vec4(1, sin(sys.current_time*10), sin(sys.current_time*10), 1));
+    }
 }
 
 void editor_update() {
@@ -83,7 +90,7 @@ void editor_update() {
             if(!entity) continue;
 
             char string[1024] = {0};
-            sprintf_s(string, 1024, "(%d) %s", entity->handle.parity, entity->type_name);
+            sprintf_s(string, 1024, "(%d) %s", entity->parity, entity->type_name);
             if(ImGui::Selectable(string)) {
                 clear_selected();
                 selected.append(entity);
@@ -94,7 +101,7 @@ void editor_update() {
     if(ImGui::BeginTabItem("Selected")) {
         for(int i = 0; i < selected.num; i++) {
             char string[1024] = {0};
-            sprintf_s(string, 1024, "(%d) %s", selected[i]->handle.parity, selected[i]->type_name);
+            sprintf_s(string, 1024, "(%d) %s", selected[i]->parity, selected[i]->type_name);
             if(ImGui::Selectable(string)) {
                 Entity *entity = selected[i];
                 clear_selected();
@@ -106,7 +113,7 @@ void editor_update() {
     if(ImGui::BeginTabItem("Copied")) {
         for(int i = 0; i < copied.num; i++) {
             char string[1024] = {0};
-            sprintf_s(string, 1024, "(%d) %s", copied[i]->handle.parity, copied[i]->type_name);
+            sprintf_s(string, 1024, "(%d) %s", copied[i]->parity, copied[i]->type_name);
             if(ImGui::Selectable(string)) {
                 Entity *entity = copied[i];
             }
@@ -270,7 +277,7 @@ bool editor_handle_mouse_press(int mouse_button, bool down, Vec2 position, bool 
                 dragging_entities = false;
             } else {
                 drag_select = false;
-                clear_selected();
+                if(!shift_down) clear_selected();
                 check_for_selected();
                 drag_start_point = Vec2(0, 0);
                 drag_size = Vec2(0, 0);
@@ -302,27 +309,45 @@ void editor_handle_mouse_move(int relx, int rely) {
 }
 
 bool editor_handle_key_press(SDL_Scancode scancode, bool down, int mods) {
-    if(selected.num == 1 && selected[0]->grid_aligned == true) {
+    if(mods & KEY_MOD_SHIFT) shift_down = down;
+
+    if(selected.num > 0 && selected[0]->grid_aligned == true) {
         if(down) {
-            if(mods & KEY_MOD_SHIFT) {
-                if(scancode == SDL_SCANCODE_LEFT) {
-                    selected[0]->grid_w -= 1;
-                } else if (scancode == SDL_SCANCODE_RIGHT) {
-                    selected[0]->grid_w += 1;
-                } else if (scancode == SDL_SCANCODE_UP) {
-                    selected[0]->grid_h += 1;
-                } else if (scancode == SDL_SCANCODE_DOWN) {
-                    selected[0]->grid_h -= 1;
+            if(mods & KEY_MOD_CTRL) {
+                for(int i = 0; i < selected.num; i++) {
+                    if(scancode == SDL_SCANCODE_LEFT) {
+                        selected[i]->grid_w -= 1;
+                    } else if (scancode == SDL_SCANCODE_RIGHT) {
+                        selected[i]->grid_w += 1;
+                    } else if (scancode == SDL_SCANCODE_UP) {
+                        selected[i]->grid_h += 1;
+                    } else if (scancode == SDL_SCANCODE_DOWN) {
+                        selected[i]->grid_h -= 1;
+                    }
                 }  
-            } else {              
-                if(scancode == SDL_SCANCODE_LEFT) {
-                    selected[0]->grid_x -= 1;
-                } else if (scancode == SDL_SCANCODE_RIGHT) {
-                    selected[0]->grid_x += 1;
-                } else if (scancode == SDL_SCANCODE_UP) {
-                    selected[0]->grid_y -= 1;
-                } else if (scancode == SDL_SCANCODE_DOWN) {
-                    selected[0]->grid_y += 1;
+            } else if(mods & KEY_MOD_SHIFT) {
+                for(int i = 0; i < selected.num; i++) {
+                    if(scancode == SDL_SCANCODE_LEFT) {
+                        int w = selected[i]->grid_w;
+                        selected[i]->grid_w = selected[i]->grid_h;
+                        selected[i]->grid_h = w;
+                    } else if (scancode == SDL_SCANCODE_RIGHT) {
+                        int h = selected[i]->grid_h;
+                        selected[i]->grid_h = selected[i]->grid_w;
+                        selected[i]->grid_w = h;
+                    }
+                }  
+            } else {      
+                for(int i = 0; i < selected.num; i++) {        
+                    if(scancode == SDL_SCANCODE_LEFT) {
+                        selected[i]->grid_x -= 1;
+                    } else if (scancode == SDL_SCANCODE_RIGHT) {
+                        selected[i]->grid_x += 1;
+                    } else if (scancode == SDL_SCANCODE_UP) {
+                        selected[i]->grid_y -= 1;
+                    } else if (scancode == SDL_SCANCODE_DOWN) {
+                        selected[i]->grid_y += 1;
+                    }
                 }
             }
         }
@@ -361,9 +386,7 @@ bool editor_handle_key_press(SDL_Scancode scancode, bool down, int mods) {
                     new_entity = create_entity(Floor, true)->inner;
                 }
 
-                Entity_Handle old_handle = new_entity->handle;
-                memcpy(new_entity, entity, sizeof(Entity));
-                new_entity->handle = old_handle;
+                copy_entity(entity, new_entity);
             }
         }
     }
