@@ -110,6 +110,7 @@ int main(int argc, char *argv[]) {
 		render_entity_physics_debug();
 		if(use_editor) editor_render();
 		console_render();
+		
 		render_end_frame();
 	}
 

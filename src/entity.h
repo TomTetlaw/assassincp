@@ -33,6 +33,8 @@ struct Entity_Callbacks {
 	virtual void render() {}
 	virtual void write(Save_File *file) {}
 	virtual void read(Save_File *file) {}
+
+	void handle_mouse_press(int mouse_button, bool down, Vec2 position, bool is_double_click) { }
 };
 
 enum Entity_Flags {
@@ -109,57 +111,63 @@ struct Wall : Entity_Callbacks {
 	}
 };
 
+struct Weapon {
+	float refire_time = 0.0f;
+	float last_fire_time = 0.0f;
+	int texture = -1;
+	Vec2 position;
+
+	virtual void fire() {}
+};
+
+enum Weapon_Type {
+	WEAPON_NONE = 0,
+	WEAPON_GUN = 1 << 0,
+};
+
+struct Gun : Weapon {
+	Gun() { 
+		refire_time = 1.0f;
+		texture = load_texture("data/textures/gun.png");
+		position = Vec2(30, 30);
+	}
+
+	void fire() {
+	}
+};
+
 struct Player : Entity_Callbacks {
 	entity_stuff(Player);
 
 	Field_Of_View fov;
 
-	void setup() {
-		inner->set_texture("data/textures/player.png");
-		inner->z = 2;
+	float last_fire_time = 0.0f;
+	bool firing = false;
 
-		inner->po.size = Vec2(32, 32);
-		inner->po.set_mass(1);
-		inner->po.groups = phys_group_player;
-	}
+	u8 weapons_in_inventory = 0;
+	u8 currently_equiped_weapon = 0;
+	Gun weapon_gun;
 
-	void spawn() {
-		//fov_init(&fov);
-	}
-
-	void update() {
-		renderer.camera_position = inner->po.position;
-
-		inner->po.goal_velocity = Vec2(0, 0);
-		inner->po.velocity_ramp_speed = 300.0f;
-		if(input_get_key_state(SDL_SCANCODE_W)) {
-			inner->po.velocity_ramp_speed = 2000.0f;
-			inner->po.goal_velocity = inner->po.goal_velocity + Vec2(0.0f, -150.0f);
-		}
-		if(input_get_key_state(SDL_SCANCODE_A)) {
-			inner->po.velocity_ramp_speed = 2000.0f;
-			inner->po.goal_velocity = inner->po.goal_velocity + Vec2(-150.0f, 0.0f);
-		}
-		if(input_get_key_state(SDL_SCANCODE_S)) {
-			inner->po.velocity_ramp_speed = 2000.0f;
-			inner->po.goal_velocity = inner->po.goal_velocity + Vec2(0.0f, 150.0f);
-		}
-		if(input_get_key_state(SDL_SCANCODE_D)) {
-			inner->po.velocity_ramp_speed = 2000.0f;
-			inner->po.goal_velocity = inner->po.goal_velocity + Vec2(150.0f, 0.0f);
+	inline Weapon *get_weapon() { 
+		if(weapons_in_inventory & currently_equiped_weapon) {
+			if(currently_equiped_weapon == 1) {
+				return &weapon_gun;
+			}
 		}
 
-		//fov.position = inner->po.position;
-		//fov_update(&fov);
+		return nullptr;
 	}
 
-	void render() {
-		//fov_render(&fov); // this won't work until we have z sorting for all rendering.
-	}
+	void handle_mouse_press(int mouse_button, bool down, Vec2 position, bool is_double_click);
 
-	void remove() {
-		//fov_shutdown(&fov);
-	}
+	void setup();
+	void spawn();
+	void update();
+	void render();
+	void remove();
+
+	void write(Save_File *file);
+	void read(Save_File *file);
 };
 
 struct Parallax : Entity_Callbacks {

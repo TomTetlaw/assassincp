@@ -229,3 +229,95 @@ void entity_spawn_all() {
 		entity->outer->spawn();
 	}
 }
+
+//========================================================
+
+void Player::setup() {
+	inner->set_texture("data/textures/player.png");
+	inner->z = 2;
+	inner->po.size = Vec2(32, 32);
+	inner->po.set_mass(1);
+	inner->po.groups = phys_group_player;
+
+	weapons_in_inventory = WEAPON_GUN;
+	currently_equiped_weapon = 1;
+}
+
+void Player::spawn() {
+	//fov_init(&fov);
+}
+
+void Player::update() {
+	renderer.camera_position = inner->po.position;
+	inner->po.goal_velocity = Vec2(0, 0);
+	inner->po.velocity_ramp_speed = 300.0f;
+	if(input_get_key_state(SDL_SCANCODE_W)) {
+		inner->po.velocity_ramp_speed = 2000.0f;
+		inner->po.goal_velocity = inner->po.goal_velocity + Vec2(0.0f, -150.0f);
+	}
+	if(input_get_key_state(SDL_SCANCODE_A)) {
+		inner->po.velocity_ramp_speed = 2000.0f;
+		inner->po.goal_velocity = inner->po.goal_velocity + Vec2(-150.0f, 0.0f);
+	}
+	if(input_get_key_state(SDL_SCANCODE_S)) {
+		inner->po.velocity_ramp_speed = 2000.0f;
+		inner->po.goal_velocity = inner->po.goal_velocity + Vec2(0.0f, 150.0f);
+	}
+	if(input_get_key_state(SDL_SCANCODE_D)) {
+		inner->po.velocity_ramp_speed = 2000.0f;
+		inner->po.goal_velocity = inner->po.goal_velocity + Vec2(150.0f, 0.0f);
+	}
+
+	//fov.position = inner->po.position;
+	//fov_update(&fov);
+}
+
+void Player::render() {
+	Raycast_Hit hit;
+	Vec2 end = Vec2::from_angle(inner->po.position.angle_to(to_world_pos(cursor_position))) * Vec2(10000, 10000);
+	Collision_Filter filter;
+	filter.mask = ~phys_group_player;
+	if(raycast(inner->po.position, end, &hit, filter)) {
+		end = hit.point;
+	}
+
+	Weapon *weapon = get_weapon();
+	if(weapon) {
+		Render_Texture *rt = render_add_rt();
+		rt->texture = get_texture(weapon->texture);
+		rt->z = inner->z;
+
+		float angle = inner->po.position.angle_to(to_world_pos(cursor_position));
+		rt->position = inner->po.position + (Vec2::from_angle(angle) * weapon->position);
+		rt->angle = angle;
+		
+		render_texture(rt);
+	}
+	//fov_render(&fov); // this won't work until we have z sorting for all rendering.
+}
+
+void Player::remove() {
+	//fov_shutdown(&fov);
+}
+
+void Player::handle_mouse_press(int mouse_button, bool down, Vec2 position, bool is_double_click) {
+	if(mouse_button == 1 && down) {
+		Weapon *weapon = get_weapon();
+		if(weapon) {
+			if(game.now - weapon->last_fire_time >= weapon->refire_time) {
+				weapon->fire();
+				weapon->last_fire_time = game.now;
+			}
+		}
+	}
+}
+
+void Player::write(Save_File *file) {
+	save_write_u8(file, weapons_in_inventory);
+	save_write_u8(file, currently_equiped_weapon);
+}
+
+void Player::read(Save_File *file) {
+	save_read_u8(file, &weapons_in_inventory);
+	save_read_u8(file, &currently_equiped_weapon);
+}

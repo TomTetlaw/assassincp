@@ -132,7 +132,9 @@ void render_deferred_textures() {
 }
 
 Render_Texture *render_add_rt() {
-	return rt_list.alloc();
+	Render_Texture *rt = rt_list.alloc();
+	*rt = Render_Texture();
+	return rt;
 }
 
 float render_scale_for_zoom_level() {
@@ -209,11 +211,15 @@ void render_texture(Render_Texture *rt) {
 	glEnable(GL_TEXTURE_2D);
 	glBindTexture(GL_TEXTURE_2D, rt->texture->api_object);
 
-	//@todo: fix rotation!
-	float angle = rt->angle - 90;
-	glTranslatef(x, y, 0);
-	//glRotatef(angle, 0, 0, 1);
-	glTranslatef(-x, -y, 0);
+	glMatrixMode(GL_MODELVIEW);
+	glPushMatrix();
+	
+	float angle = rt->angle;
+	if(centered) {
+		glTranslatef(x, y, 0);
+		glRotatef(angle, 0, 0, 1);
+		glTranslatef(-x, -y, 0);
+	}
 
 	glBegin(GL_QUADS);
 	if(centered) {
@@ -238,10 +244,7 @@ void render_texture(Render_Texture *rt) {
 		glEnd();
 	}
 
-	glTranslatef(x, y, 0);
-	//glRotatef(-angle, 0, 0, 1);
-	glTranslatef(-x, -y, 0);
-
+	glPopMatrix();
 	glDisable(GL_TEXTURE_2D);
 }
 

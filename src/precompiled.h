@@ -35,6 +35,7 @@
 #define internal static
 
 typedef unsigned int uint;
+typedef unsigned char u8;
 
 #include "mathlib.h"
 #include "common.h"

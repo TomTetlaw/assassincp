@@ -62,6 +62,7 @@ void save_close(Save_File *file);
 void save_write(Save_File *file, const void *data, int size);
 void save_write_int(Save_File *file, int value);
 void save_write_uint(Save_File *file, uint value);
+void save_write_u8(Save_File *file, u8 value);
 void save_write_float(Save_File *file, float value);
 void save_write_vec2(Save_File *file, Vec2 value);
 void save_write_vec4(Save_File *file, Vec4 value);
@@ -70,6 +71,7 @@ void save_write_bool(Save_File *file, bool value);
 
 void save_read(Save_File *file, void *data, int size);
 void save_read_int(Save_File *file, int *value);
+void save_read_u8(Save_File *file, u8 *value);
 void save_read_uint(Save_File *file, uint *value);
 void save_read_float(Save_File *file, float *value);
 void save_read_vec2(Save_File *file, Vec2 *value);

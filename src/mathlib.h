@@ -113,18 +113,20 @@ struct Vec2 {
 	}
 
 	static Vec2 from_angle(float angle) {
-		return Vec2(cos(deg2rad(angle)), -sin(deg2rad(angle)));
+		return Vec2(cos(deg2rad(angle)), sin(deg2rad(angle)));
 	}
 
 	inline float angle_to(Vec2 other) {
 		Vec2 delta = (other - *this).normalized();
-		float a = atan2f(-delta.y, delta.x);
-		return rad2deg(a);
+		float a = atan2f(delta.y, delta.x);
+		float d = rad2deg(a);
+		while(d < 0) d += 360;
+		return d;
 	}
 
 	inline float to_angle() {
 		Vec2 n = normalized();
-		return rad2deg(atan2f(-n.y, n.x));
+		return rad2deg(atan2f(n.y, n.x));
 	}
 
 	inline void scale(float x, float y) {

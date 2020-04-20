@@ -149,6 +149,10 @@ void save_write_uint(Save_File *file, uint value) {
 	save_write(file, (const void *)&value, sizeof(uint));
 }
 
+void save_write_u8(Save_File *file, u8 value) {
+	save_write(file, (const void *)&value, sizeof(u8));
+}
+
 void save_write_float(Save_File *file, float value) {
 	save_write(file, (const void *)&value, sizeof(float));
 }
@@ -189,6 +193,10 @@ void save_read_int(Save_File *file, int *value) {
 
 void save_read_uint(Save_File *file, uint *value) {
 	save_read(file, (void *)value, sizeof(uint));
+}
+
+void save_read_u8(Save_File *file, u8 *value) {
+	save_read(file, (void *)value, sizeof(u8));
 }
 
 void save_read_float(Save_File *file, float *value) {

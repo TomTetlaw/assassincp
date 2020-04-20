@@ -7,6 +7,10 @@ bool input_handle_mouse_press(int mouse_button, bool down, Vec2 position, bool i
 	if(editor_handle_mouse_press(mouse_button, down, position, is_double_click))
 		return true;
 
+	if(etypes._Player.max_index > 0) {
+		etypes._Player[0]->handle_mouse_press(mouse_button, down, position, is_double_click);
+	}
+	
 	return false;
 }
 
