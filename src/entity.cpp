@@ -333,3 +333,6 @@ void Gun::fire() {
 	b->inner->po.position = etypes._Player[0]->inner->po.position + (Vec2::from_angle(angle) * position);
 	b->inner->po.velocity = Vec2::from_angle(angle) * Vec2(2000, 2000);
 }
+
+void Bullet::update() {
+}
