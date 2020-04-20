@@ -3,19 +3,15 @@
 int main(int argc, char *argv[]) {
 	system_init(argc, argv);
 
-	bool use_editor = true;
-	game.paused = use_editor;
-	on_level_load();
-	Save_File file;
-	save_open_read("data/levels/test.acp", &file);
-	entity_read(&file);
-	save_close(&file);
+	editor.using_editor = true;
+	game.paused = editor.using_editor;
+	editor_load("data/levels/test.acp");
 
 	float last_time = SDL_GetTicks() / 1000.0f;
 	SDL_Event ev;
 	while(sys.running) {
 		while (SDL_PollEvent(&ev)) {
-			bool editor_handled = editor_gui_handle_event(&ev);
+			bool editor_handled = editor.using_editor ? editor_gui_handle_event(&ev) : false;
 			switch (ev.type) {
 			case SDL_QUIT:
 				sys.running = false;
@@ -30,21 +26,10 @@ int main(int argc, char *argv[]) {
 					} else if (ev.key.keysym.scancode == SDL_SCANCODE_GRAVE) {
 						console_toggle_open();
 					} else if (ev.key.keysym.scancode == SDL_SCANCODE_SPACE) {
-						use_editor = !use_editor;
-						if(use_editor) {
+						if(!editor.using_editor) {
+							editor.using_editor = true;
 							game.paused = true;
-							on_level_load();
-							Save_File file;
-							save_open_read("data/levels/test.acp", &file);
-							entity_read(&file);
-							save_close(&file);
-						} else {
-							Save_File file;
-							save_open_write("data/levels/test.acp", &file);
-							entity_write(&file);
-							save_close(&file);
-							game.paused = false;
-							load_level();
+							editor_load(editor.current_file);
 						}
 					}
 				}
@@ -100,7 +85,7 @@ int main(int argc, char *argv[]) {
 		console_update();
 		game_update();
 		entity_update();
-		if(use_editor) editor_update();
+		if(editor.using_editor) editor_update();
 
 		// render
 		render_begin_frame();
@@ -108,7 +93,7 @@ int main(int argc, char *argv[]) {
 		entity_render();
 		render_deferred_textures();
 		render_entity_physics_debug();
-		if(use_editor) editor_render();
+		if(editor.using_editor) editor_render();
 		console_render();
 		
 		render_end_frame();

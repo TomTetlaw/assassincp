@@ -5,6 +5,8 @@
 #include "imgui/imgui_impl_sdl.h"
 #include "imgui/imgui_impl_opengl3.h"
 
+Editor editor;
+
 internal Array<Entity *> selected;
 internal Array<Entity *> copied;
 
@@ -23,6 +25,7 @@ internal void clear_selected() {
 
 void editor_on_level_load() {
     clear_selected();
+    copied.num = 0;
 }
 
 void editor_init() {
@@ -31,6 +34,28 @@ void editor_init() {
     ImGui_ImplOpenGL3_Init();
 
     io = &ImGui::GetIO();
+}
+
+void editor_load(const char *file_name) {
+    if(!file_name[0]) {
+        on_level_load();
+        return;
+    }
+
+    strcpy_s(editor.current_file, 1024, file_name);
+
+    on_level_load();
+	Save_File file;
+	save_open_read(file_name, &file);
+	entity_read(&file);
+	save_close(&file);
+}
+
+void editor_save() {
+    Save_File file;
+	save_open_write(editor.current_file, &file);
+	entity_write(&file);
+	save_close(&file);
 }
 
 void editor_shutdown() {
@@ -62,6 +87,41 @@ void editor_update() {
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplSDL2_NewFrame(sys.window);
     ImGui::NewFrame();
+
+    if(ImGui::Begin("Editor")) {
+        ImGui::LabelText("Current file", editor.current_file);
+        if(ImGui::Button("New")) {
+            on_level_load();
+            editor.current_file[0] = 0;
+        }
+        if(ImGui::Button("Save")) {
+            if(editor.current_file[0]) editor_save();
+            else {
+                char file_name[1024] = {0};
+                system_open_file_dialogue("data/levels", "*.acp", file_name, FODM_SAVE);
+                strcpy_s(editor.current_file, 1024, file_name);
+                editor_save();
+            }
+        }
+        if(ImGui::Button("Load")) {
+            char file_name[1024] = {0};
+            system_open_file_dialogue("data/levels", "*.acp", file_name, FODM_OPEN);
+            editor_load(file_name);
+        }
+        if(ImGui::Button("Play")) {
+            editor_save();
+
+            Save_File file;
+            save_open_read(editor.current_file, &file);
+            entity_read(&file);
+            save_close(&file);
+            
+            editor.using_editor = false;
+            game.paused = false;
+	        load_level();
+        }
+        ImGui::End();
+    }
 
     ImGui::BeginTabBar("Entities");
     if(ImGui::BeginTabItem("Create")) {
@@ -192,6 +252,7 @@ void editor_update() {
     }
     ImGui::End();
 
+    ImGui::EndFrame();
     //static bool show_demo_window = true;
     //if(show_demo_window) ImGui::ShowDemoWindow(&show_demo_window);
 }

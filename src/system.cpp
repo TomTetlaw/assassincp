@@ -95,7 +95,7 @@ void system_init(int argc, char *argv[]) {
 	hotload_add_file("data/config.txt", nullptr, hotload_config_file);
 
 	Mix_Chunk *test = Mix_LoadWAV("data/audio/test.mp3");
-	Mix_PlayChannel(-1, test, -1);
+	//Mix_PlayChannel(-1, test, -1);
 }
 
 void system_quit() {

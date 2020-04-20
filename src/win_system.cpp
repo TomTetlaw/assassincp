@@ -2,7 +2,7 @@
 #include <Windows.h>
 #include <commdlg.h>
 
-void system_open_file_dialogue(const char *dir, const char *filters, char *out) {
+void system_open_file_dialogue(const char *dir, const char *filters, char *out, File_Open_Dialogue_Mode mode) {
 	char buffer[MAX_PATH] = { 0 };
 
 	OPENFILENAMEA file_name;
@@ -13,7 +13,7 @@ void system_open_file_dialogue(const char *dir, const char *filters, char *out) 
 	file_name.nFilterIndex = 1;
 	file_name.lpstrTitle = "Find file...";
 	file_name.nMaxFile = MAX_PATH;
-	file_name.Flags = OFN_FILEMUSTEXIST | OFN_NOCHANGEDIR;
+	file_name.Flags = (mode == FODM_OPEN) ? OFN_FILEMUSTEXIST | OFN_NOCHANGEDIR : OFN_NOCHANGEDIR;
 	file_name.lpstrFile = buffer;
 	if (!GetOpenFileNameA(&file_name)) {
 		DWORD err2 = GetLastError();
