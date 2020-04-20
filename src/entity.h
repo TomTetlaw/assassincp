@@ -141,9 +141,10 @@ struct Bullet : Entity_Callbacks {
 	}
 
 	void handle_collision(Entity_Callbacks *other) {
-		console_printf("I collided at %f.\n", sys.current_time);
 		inner->delete_me = true;
 	}
+
+	void update();
 };
 
 struct Gun : Weapon {
