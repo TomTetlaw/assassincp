@@ -132,9 +132,7 @@ void render_deferred_textures() {
 }
 
 Render_Texture *render_add_rt() {
-	Render_Texture *rt = rt_list.alloc();
-	*rt = Render_Texture();
-	return rt;
+	return rt_list.alloc();
 }
 
 float render_scale_for_zoom_level() {
@@ -268,7 +266,6 @@ void render_string(Vec2 position, const char *text, Vec4 colour, Font *font, flo
 			rt.texture = get_texture(font->glyphs[(int)text[i]].texture);
 			rt.position = position;
 			rt.colour = colour;
-			rt.angle = 90.0f; //@todo: figure out why texture surfaces are rotated 90 degrees
 
 			bool old_centered = centered;
 			centered = false;
@@ -354,7 +351,7 @@ void render_line2(Vec2 start, float length, float angle, Vec4 colour) {
 	angle = deg2rad(angle);
 	Vec2 end;
 	end.x = start.x + (length * cos(angle));
-	end.y = start.y + (length * -sin(angle)); // using -sin because +y is down in our coord system
+	end.y = start.y + (length * sin(angle));
 	render_line(start, end, colour);
 }
 

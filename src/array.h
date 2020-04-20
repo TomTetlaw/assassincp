@@ -83,6 +83,7 @@ template<typename T>
 T *Array<T>::alloc() {
 	ensure_size(num + 1);
 	T *out = &data[num];
+	*out = T();
 	num += 1;
 	return out;
 }
@@ -121,25 +122,28 @@ public:
 		if(elements.size < size) init();
 
         if(max_index > 0) {
-            T &last_freed = elements[last_freed_index];
+            T *last_freed = &elements[last_freed_index];
             // can be false if none have been freed yet.
-			if (last_freed._deleted) {
-				last_freed._deleted = false;
-				last_freed._index = last_freed_index;
-				return &last_freed;
+			if (last_freed->_deleted) {
+				*last_freed = T();
+				last_freed->_deleted = false;
+				last_freed->_index = last_freed_index;
+				return last_freed;
 			}
         }
 
         for(int i = last_freed_index; i < elements.num; i++) {
             if(elements[i]._deleted) {
+				*(&elements[i]) = T();
                 elements[i]._deleted = false;
 				elements[i]._index = i;
                 return &elements[i];
             }
         }
 
-		int index = elements.num;
         T *value = elements.alloc();
+		*value = T();
+		int index = elements.num - 1;
 		value->_deleted = false;
 		value->_index = index;
         max_index = elements.num;

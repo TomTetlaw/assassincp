@@ -34,6 +34,8 @@ struct Entity_Callbacks {
 	virtual void write(Save_File *file) {}
 	virtual void read(Save_File *file) {}
 
+	virtual void handle_collision(Entity_Callbacks *other) {}
+
 	void handle_mouse_press(int mouse_button, bool down, Vec2 position, bool is_double_click) { }
 };
 
@@ -54,6 +56,7 @@ struct Entity {
 	int z = 0;
 	Vec2 position = Vec2(0, 0); // only used if the entity doesn't have a physics object.
 	Vec2 size = Vec2(0, 0); // only used if the entity doesn't have a physics object.
+	float angle = 0.0f;
 
 	int classify = 0;
 	Entity_Callbacks *outer = nullptr;
@@ -104,7 +107,7 @@ struct Wall : Entity_Callbacks {
 		inner->z = 1;
 		
 		inner->grid_aligned = true;
-
+	
         inner->po.size = Vec2(32, 32);
 		inner->po.set_mass(0.0f);
 		inner->po.groups = phys_group_wall;
@@ -125,15 +128,32 @@ enum Weapon_Type {
 	WEAPON_GUN = 1 << 0,
 };
 
+struct Bullet : Entity_Callbacks {
+	entity_stuff(Bullet);
+
+	void setup() {
+		inner->texture = load_texture("data/textures/bullet.png");
+
+		inner->po.groups = phys_group_projectile;
+		inner->po.mask = UINT32_MAX & (~phys_group_projectile);
+		inner->po.size = Vec2(8,8);
+		inner->po.set_mass(1);
+	}
+
+	void handle_collision(Entity_Callbacks *other) {
+		console_printf("I collided at %f.\n", sys.current_time);
+		inner->delete_me = true;
+	}
+};
+
 struct Gun : Weapon {
 	Gun() { 
-		refire_time = 1.0f;
+		refire_time = 0.01f;
 		texture = load_texture("data/textures/gun.png");
 		position = Vec2(30, 30);
 	}
 
-	void fire() {
-	}
+	void fire();
 };
 
 struct Player : Entity_Callbacks {
@@ -194,16 +214,17 @@ struct Floor : Entity_Callbacks {
 	}
 };
 
-#define declare_entity_type(x) \
+#define declare_entity_type(x, classify) \
 	Contiguous_Array<x, max_entities_by_type> _##x; \
 	const char *_name_##x = #x; \
-	const int _classify_##x = __COUNTER__ 
+	const int _classify_##x = classify 
 
 struct Entity_Types {
-	declare_entity_type(Wall);
-	declare_entity_type(Player);
-	declare_entity_type(Parallax);
-	declare_entity_type(Floor);
+	declare_entity_type(Wall, 1);
+	declare_entity_type(Player, 2);
+	declare_entity_type(Parallax, 3);
+	declare_entity_type(Floor, 4);
+	declare_entity_type(Bullet, 5);
 };
 
 extern Entity_Types etypes;
@@ -219,6 +240,7 @@ extern Entity_Types etypes;
 		inner->classify = etypes._classify_##x; \
 		strcpy(inner->type_name, etypes._name_##x); \
 		add_entity(inner, add); \
+		inner->po.owner = ent; \
 		ent->setup(); \
 		return ent;\
 	})()

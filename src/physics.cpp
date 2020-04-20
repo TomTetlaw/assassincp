@@ -233,7 +233,7 @@ internal void resolve_intersections() {
         Physics_Object *a = it.a;
         Physics_Object *b = it.b;
         
-        if(a->inv_mass == 0.0f) continue;
+        //if(a->inv_mass == 0.0f) continue;
 
         Vec2 relative_velocity = b->velocity - a->velocity;
 
@@ -253,6 +253,9 @@ internal void resolve_intersections() {
         b->velocity = b->velocity + (impulse * b->inv_mass);
 
         correct_position(&it);
+
+        a->owner->handle_collision(b->owner);
+        b->owner->handle_collision(a->owner);
     }
 }
 

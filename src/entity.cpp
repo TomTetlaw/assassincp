@@ -72,6 +72,7 @@ void entity_render() {
 		rt->texture = get_texture(entity_manager.entities[i]->texture);
 		rt->repeat = entity_manager.entities[i]->texture_repeat;
 		rt->z = entity->z;
+		rt->angle = entity->angle;
 	}
 }
 
@@ -151,7 +152,6 @@ void entity_write(Save_File *file) {
 			save_write_int(file, 1);
 
 			save_write_int(file, entity_manager.entities[i]->classify);
-			// entity's _index and needs to be fixed up after reading because it will be overrwritten.
 			save_write_int(file, entity_manager.entities[i]->parity);
 			save_write_int(file, entity_manager.entities[i]->_index);
 
@@ -210,12 +210,15 @@ void entity_read(Save_File *file) {
 				inner = create_entity_at(Parallax, index, parity);
 			} else if(classify == etypes._classify_Floor) {
 				inner = create_entity_at(Floor, index, parity);
+			} else if(classify == etypes._classify_Bullet) {
+				inner = create_entity_at(Bullet, index, parity);
 			}
 
 			Entity_Callbacks *outer = inner->outer;
 			save_read(file, inner, sizeof(Entity));
 			inner->outer = outer;
 			if(inner->texture_filename[0]) inner->texture = load_texture(inner->texture_filename);
+			inner->po.owner = outer;
 
 			inner->outer->read(file);
 		}
@@ -320,4 +323,13 @@ void Player::write(Save_File *file) {
 void Player::read(Save_File *file) {
 	save_read_u8(file, &weapons_in_inventory);
 	save_read_u8(file, &currently_equiped_weapon);
+}
+
+void Gun::fire() {
+	Bullet *b = create_entity(Bullet, true);
+
+	float angle = etypes._Player[0]->inner->po.position.angle_to(to_world_pos(cursor_position));
+	b->inner->angle = angle;
+	b->inner->po.position = etypes._Player[0]->inner->po.position + (Vec2::from_angle(angle) * position);
+	b->inner->po.velocity = Vec2::from_angle(angle) * Vec2(2000, 2000);
 }
