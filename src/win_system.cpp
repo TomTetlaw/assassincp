@@ -31,3 +31,19 @@ void system_open_file_dialogue(const char *dir, const char *filters, char *out, 
 
 	strcpy(out, buffer);
 }
+
+bool system_search_dir(const char *dir, Array<Dir_Search_Entry> &entries) {
+	HANDLE handle;
+	WIN32_FIND_DATAA find_data;
+
+	handle = FindFirstFileA(dir, &find_data);
+	if(handle == INVALID_HANDLE_VALUE) return false;
+
+	do {
+		Dir_Search_Entry entry;
+		strcpy_s(entry.file_name, 1024, find_data.cFileName);
+		entries.append(entry);
+	} while(FindNextFileA(handle, &find_data) != 0);
+
+	return true;
+}

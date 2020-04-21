@@ -1,6 +1,11 @@
 #include "precompiled.h"
 
 int main(int argc, char *argv[]) {
+	//Array<Dir_Search_Entry> entries;
+	//if(system_search_dir("data/textures/*.png")) {
+	//	for(int i = 0; i < entries.num; i++) console_printf("entries[%d].file_name = %s\n", i, entries[i].file_name);
+	//}
+
 	system_init(argc, argv);
 
 	editor.using_editor = true;

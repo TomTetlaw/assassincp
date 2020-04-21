@@ -36,4 +36,10 @@ enum File_Open_Dialogue_Mode {
 
 void system_open_file_dialogue(const char *dir, const char *filters, char *out, File_Open_Dialogue_Mode mode);
 
+struct Dir_Search_Entry {
+	char file_name[1024] = {0};
+};
+
+bool system_search_dir(const char *dir, Array<Dir_Search_Entry> &entries);
+
 #endif
