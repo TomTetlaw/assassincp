@@ -7,8 +7,8 @@ set start=%time%
 
 set cl_flags=/Gm- /W1 /MP /MTd /Z7 /Od /EHsc /nologo
 set link_flags=/out:game.exe /incremental:no /debug:full /nologo
-set src_files=w:\src\all_files.cpp
-REM set src_files=W:\src\*.cpp W:\src\imgui\*.cpp
+REM set src_files=w:\src\all_files.cpp
+set src_files=W:\src\*.cpp W:\src\imgui\*.cpp
 set lib_files=comdlg32.lib ../lib/glew/glew32.lib opengl32.lib ../lib/sdl2/SDL2.lib ../lib/sdl2/SDL2_image.lib ../lib/sdl2/SDL2_ttf.lib ../lib/sdl2/SDL2_mixer.lib
 
 pushd w:\build

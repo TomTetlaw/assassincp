@@ -254,8 +254,8 @@ internal void resolve_intersections() {
 
         correct_position(&it);
 
-        a->owner->handle_collision(b->owner);
-        b->owner->handle_collision(a->owner);
+        a->owner->outer->handle_collision(b->owner);
+        b->owner->outer->handle_collision(a->owner);
     }
 }
 

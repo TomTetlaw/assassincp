@@ -34,7 +34,7 @@ struct Entity_Callbacks {
 	virtual void write(Save_File *file) {}
 	virtual void read(Save_File *file) {}
 
-	virtual void handle_collision(Entity_Callbacks *other) {}
+	virtual void handle_collision(Entity *other) {}
 
 	void handle_mouse_press(int mouse_button, bool down, Vec2 position, bool is_double_click) { }
 };
@@ -140,7 +140,7 @@ struct Bullet : Entity_Callbacks {
 		inner->po.set_mass(1);
 	}
 
-	void handle_collision(Entity_Callbacks *other) {
+	void handle_collision(Entity *other) {
 		inner->delete_me = true;
 	}
 
@@ -215,6 +215,16 @@ struct Floor : Entity_Callbacks {
 	}
 };
 
+struct Badguy : Entity_Callbacks {
+	entity_stuff(Badguy);
+
+	int health = 10;
+
+	void setup();
+	void render();
+	void handle_collision(Entity *other);
+};
+
 #define declare_entity_type(x, classify) \
 	Contiguous_Array<x, max_entities_by_type> _##x; \
 	const char *_name_##x = #x; \
@@ -226,6 +236,7 @@ struct Entity_Types {
 	declare_entity_type(Parallax, 3);
 	declare_entity_type(Floor, 4);
 	declare_entity_type(Bullet, 5);
+	declare_entity_type(Badguy, 6);
 };
 
 extern Entity_Types etypes;
@@ -241,7 +252,7 @@ extern Entity_Types etypes;
 		inner->classify = etypes._classify_##x; \
 		strcpy(inner->type_name, etypes._name_##x); \
 		add_entity(inner, add); \
-		inner->po.owner = ent; \
+		inner->po.owner = inner; \
 		ent->setup(); \
 		return ent;\
 	})()

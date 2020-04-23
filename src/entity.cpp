@@ -212,13 +212,15 @@ void entity_read(Save_File *file) {
 				inner = create_entity_at(Floor, index, parity);
 			} else if(classify == etypes._classify_Bullet) {
 				inner = create_entity_at(Bullet, index, parity);
+			} else if(classify == etypes._classify_Badguy) {
+				inner = create_entity_at(Badguy, index, parity);
 			}
 
 			Entity_Callbacks *outer = inner->outer;
 			save_read(file, inner, sizeof(Entity));
 			inner->outer = outer;
 			if(inner->texture_filename[0]) inner->texture = load_texture(inner->texture_filename);
-			inner->po.owner = outer;
+			inner->po.owner = inner;
 
 			inner->outer->read(file);
 		}
@@ -335,4 +337,25 @@ void Gun::fire() {
 }
 
 void Bullet::update() {
+}
+
+void Badguy::setup() {
+	inner->set_texture("data/textures/badguy.png");
+
+	inner->z = 2;
+	inner->po.size = Vec2(32, 32);
+	inner->po.set_mass(1);
+	inner->po.groups = phys_group_badguy;
+}
+
+void Badguy::render() {
+	render_box(inner->po.position + Vec2(0, -100), Vec2(100, 20), true, Vec4(1, 0, 0, 1));
+	render_box(inner->po.position + Vec2(0, -100), Vec2(10 * health, 20), true, Vec4(0, 1, 0, 1));
+}
+
+void Badguy::handle_collision(Entity *other) {
+	if(other->classify == etypes._classify_Bullet) {
+		health -= 1;
+		if(health <= 0) inner->delete_me = true;
+	}
 }

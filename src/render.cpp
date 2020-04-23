@@ -122,7 +122,7 @@ void render_end_frame() {
 void render_deferred_textures() {
 	render_setup_for_world();
 
-	qsort(rt_list.data, rt_list.num, sizeof(Render_Texture), sort_rts);
+	//qsort(rt_list.data, rt_list.num, sizeof(Render_Texture), sort_rts);
 
 	for(int i = 0; i < rt_list.num; i++) {
 		render_texture(&rt_list[i]);

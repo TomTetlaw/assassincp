@@ -45,6 +45,7 @@ void input_handle_mouse_wheel(int amount) {
 }
 
 bool input_get_key_state(SDL_Scancode scancode) {
+	if(editor.using_editor) return false;
 	return SDL_GetKeyboardState(nullptr)[scancode] == 1;
 }
 

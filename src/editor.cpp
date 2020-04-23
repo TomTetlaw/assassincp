@@ -138,6 +138,9 @@ void editor_update() {
         if(ImGui::Selectable("Floor")) {
             new_entity = create_entity(Floor, true)->inner;
         }
+        if(ImGui::Selectable("Badguy")) {
+            new_entity = create_entity(Badguy, true)->inner;
+        }
         if(new_entity) {
             clear_selected();
             selected.append(new_entity);
@@ -346,7 +349,7 @@ bool editor_handle_mouse_press(int mouse_button, bool down, Vec2 position, bool 
         }
     }
 
-    return false;
+    return editor.using_editor; // if editor is active, don't pass mouse presses to other things.
 }
 
 void editor_handle_mouse_move(int relx, int rely) {
@@ -445,6 +448,9 @@ bool editor_handle_key_press(SDL_Scancode scancode, bool down, int mods) {
                 }
                 if(entity->classify == etypes._classify_Floor) {
                     new_entity = create_entity(Floor, true)->inner;
+                }
+                if(entity->classify == etypes._classify_Badguy) {
+                    new_entity = create_entity(Badguy, true)->inner;
                 }
 
                 copy_entity(entity, new_entity);
