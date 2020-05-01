@@ -116,12 +116,16 @@ Save_File::~Save_File() {
 
 bool save_open_write(const char *file_name, Save_File *file) {
 	fopen_s(&file->handle, file_name, "w");
-	return file->handle != nullptr;
+	if(!file->handle) return false;
+
+	return true;
 }
 
 bool save_open_read(const char *file_name, Save_File *file) {
 	fopen_s(&file->handle, file_name, "r");
-	return file->handle != nullptr;
+	if(!file->handle) return false;
+
+	return true;
 }
 
 void save_close(Save_File *file) {
@@ -134,9 +138,7 @@ void save_close(Save_File *file) {
 }
 
 void save_write(Save_File *file, const void *data, int size) {
-	if (!file->handle) {
-		return;
-	}
+	assert(file->handle);
 
 	fwrite(data, 1, size, file->handle);
 }
@@ -180,9 +182,7 @@ void save_write_bool(Save_File *file, bool value) {
 }
 
 void save_read(Save_File *file, void *data, int size) {
-	if (!file->handle) {
-		return;
-	}
+	assert(file->handle);
 
 	fread(data, 1, size, file->handle);
 }

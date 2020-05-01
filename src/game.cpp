@@ -6,6 +6,8 @@ internal int nav_grid_width = 2000;
 internal int nav_grid_height = 2000;
 internal int nav_grid_size = 32.0f;
 
+internal int background_texture = -1;
+
 internal bool check_nav_point(Vec2 point) {
 	float offset = nav_grid_size / 2;
 	Vec2 offsets[8] = {
@@ -86,6 +88,8 @@ void game_init() {
 	register_var("nav_grid_width", &nav_grid_width, regen_nav_points);
 	register_var("nav_grid_height", &nav_grid_height, regen_nav_points);
 	register_var("nav_grid_size", &nav_grid_size, regen_nav_points);
+
+	background_texture = load_texture("data/textures/background.png");
 }
 
 void game_update() {
@@ -187,6 +191,13 @@ void game_render() {
 
 	render_setup_for_world();
 
+	Render_Texture rt;
+	rt.texture = get_texture(background_texture);
+	rt.size = screen_size;
+	rt.position = Vec2(0, 0);
+
+	render_texture(&rt);
+
 	For(game.current_level->nav_points) {
 		auto it = game.current_level->nav_points[it_index];
 		if (it.valid) {
@@ -198,14 +209,185 @@ void game_render() {
 void on_level_load() {
 	render_on_level_load();
 	entity_on_level_load();
-	editor_on_level_load();
 	delete game.current_level;
 	game.current_level = nullptr;
 }
 
 void load_level() {
 	game.current_level = new Level;
-	add_check_points();
-	generate_nav_points();
+	//add_check_points();
+	//generate_nav_points();
 	entity_spawn_all();
+}
+
+const char *level_0 = "\
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\
+x                                      x\
+x                                      x\
+x                                      x\
+x                                      x\
+x                                      x\
+x                                      x\
+x                                      x\
+x                                      x\
+x                                      x\
+x                                      x\
+x                                      x\
+x                                      x\
+x                                      x\
+x                                      x\
+x                                      x\
+x                                      x\
+x                                      x\
+x                                      x\
+x                                      x\
+x                                      x\
+x                                      x\
+x                                      x\
+x                                      x\
+x                                      x\
+x                                      x\
+x                p                     x\
+x                                      x\
+x                                      x\
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx";
+
+const char *level_1 = "\
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\
+x                                      x\
+x                                      x\
+x                                      x\
+x                                      x\
+x                                      x\
+x                                      x\
+x                                      x\
+x                                      x\
+x                                      x\
+x                                      x\
+x                                      x\
+x                                      x\
+x                                      x\
+x                                      x\
+x                                      x\
+x                                      x\
+x                                      x\
+x                                      x\
+x                                      x\
+x                                      x\
+x                                      x\
+x                                      x\
+x                                      x\
+x                                      x\
+x                                      x\
+x                                      x\
+x                                      x\
+x                                      x\
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx";
+
+const char *level_2 = "\
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\
+x                                      x\
+x                                      x\
+x                                      x\
+x                                      x\
+x                                      x\
+x                                      x\
+x                                      x\
+x                                      x\
+x                                      x\
+x                                      x\
+x                                      x\
+x                                      x\
+x                                      x\
+x                                      x\
+x                                      x\
+x                                      x\
+x                                      x\
+x                                      x\
+x                                      x\
+x                                      x\
+x                                      x\
+x                                      x\
+x                                      x\
+x                                      x\
+x                                      x\
+x                                      x\
+x                                      x\
+x                                      x\
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx";
+
+const char *level_3 = "\
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\
+x                                      x\
+x                                      x\
+x                                      x\
+x                                      x\
+x                                      x\
+x                                      x\
+x                                      x\
+x                                      x\
+x                                      x\
+x                                      x\
+x                                      x\
+x                                      x\
+x                                      x\
+x                                      x\
+x                                      x\
+x                                      x\
+x                                      x\
+x                                      x\
+x                                      x\
+x                                      x\
+x                                      x\
+x                                      x\
+x                                      x\
+x                                      x\
+x                                      x\
+x                                      x\
+x                                      x\
+x                                      x\
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx";
+
+struct Game_Level {
+	const char *level_text = nullptr;
+	int width = 0;
+	int height = 0;
+};
+
+Game_Level levels[] = {
+	{ level_0, 40, 30 },
+	{ level_1, 40, 30 },
+	{ level_2, 40, 30 },
+	{ level_3, 40, 30 },
+};
+
+void game_set_level(int index) {
+	if(index < 0 || index >= 4) return;
+
+	on_level_load();
+
+	int grid_size = 8;
+	Game_Level l = levels[index];
+	for(int y = 0; y < l.height; y++) {
+		for(int x = 0; x < l.width; x++) {
+			char c = l.level_text[(y * l.width) + x];
+			Vec2 pos = Vec2(l.width * grid_size, l.height * grid_size) - Vec2(x * grid_size, y * grid_size);
+			//console_printf("\"%c\" %f %f\n", c, pos.x, pos.y);
+			switch(c) {
+			case 'x': {
+				Entity *entity = create_entity(Wall, true)->inner;
+				entity->po.position = pos;
+				entity->po.size = Vec2(8, 8);
+				} break;
+			case 'p': {
+				Entity *entity = create_entity(Player, true)->inner;
+				entity->po.position = pos;
+				} break;
+			default:
+				break;
+			}
+		}
+	}
+
+	load_level();
 }

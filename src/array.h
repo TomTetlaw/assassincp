@@ -110,6 +110,7 @@ public:
     Array<T> elements;
     int last_freed_index = 0;
 	int max_index = 0;
+	
 
 	inline void init() {
 		elements.ensure_size(size);

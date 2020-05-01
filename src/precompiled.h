@@ -51,7 +51,6 @@ typedef unsigned char u8;
 #include "physics.h"
 #include "fov.h"
 #include "entity.h"
-#include "editor.h"
 #include "game.h"
 
 #endif

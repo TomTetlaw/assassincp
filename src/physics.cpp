@@ -85,15 +85,20 @@ internal void check_for_intersects() {
         Entity *entity_a = entity_manager.entities[i];
         if(!entity_a) continue;
         if(entity_a->flags & EFLAGS_NO_PHYSICS) continue;
+        if(entity_a->delete_me) continue;
+
         for(int j = 0; j < entity_manager.entities.max_index; j++) {
             Entity *entity_b = entity_manager.entities[j];
             if(!entity_b) continue;
             if(entity_b->flags & EFLAGS_NO_PHYSICS) continue;
+            if(entity_b->delete_me) continue;
 
             if(j == i) continue;
 
             Physics_Object *a = &entity_a->po;
             Physics_Object *b = &entity_b->po;
+
+            if(a->mass == 0.0f && b->mass == 0.0f) continue;
 
             if(!should_collide(a, b)) continue;
 
@@ -167,6 +172,8 @@ internal void get_edges(Array<Edge> &edges, Collision_Filter filter) {
         Entity *entity = entity_manager.entities[i];
         if(!entity) continue;
         if(entity->flags & EFLAGS_NO_PHYSICS) continue;
+        if(entity->delete_me) continue;
+
         auto it = &entity->po;
         if(!it) continue;
         if(!should_collide(it, filter)) continue;
@@ -249,8 +256,8 @@ internal void resolve_intersections() {
 
         // apply impulse
         Vec2 impulse = it.normal * j;
-        a->velocity = a->velocity - (impulse * a->inv_mass);
-        b->velocity = b->velocity + (impulse * b->inv_mass);
+        if(!b->is_sensor) a->velocity = a->velocity - (impulse * a->inv_mass);
+        if(!a->is_sensor) b->velocity = b->velocity + (impulse * b->inv_mass);
 
         correct_position(&it);
 
@@ -268,6 +275,7 @@ internal void integrate(float dt) {
         Entity *entity = entity_manager.entities[i];
         if(!entity) continue;
         if(entity->flags & EFLAGS_NO_PHYSICS) continue;
+        if(entity->delete_me) continue;
 
         physics_step_object(&entity->po, dt);
     }

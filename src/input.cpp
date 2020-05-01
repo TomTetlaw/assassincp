@@ -4,9 +4,6 @@ bool input_handle_mouse_press(int mouse_button, bool down, Vec2 position, bool i
 	if(console_handle_mouse_press(mouse_button, down, position, is_double_click))
 		return true;
 
-	if(editor_handle_mouse_press(mouse_button, down, position, is_double_click))
-		return true;
-
 	if(etypes._Player.max_index > 0) {
 		etypes._Player[0]->handle_mouse_press(mouse_button, down, position, is_double_click);
 	}
@@ -15,7 +12,6 @@ bool input_handle_mouse_press(int mouse_button, bool down, Vec2 position, bool i
 }
 
 void input_handle_mouse_move(int relx, int rely) {
-	editor_handle_mouse_move(relx, rely);
 	console_handle_mouse_move(relx, rely);
 }
 
@@ -34,9 +30,6 @@ bool input_handle_key_press(SDL_Scancode scancode, bool down, bool ctrl_pressed,
 	if(console_handle_key_press(scancode, down, mods))
 		return true;
 
-	if(editor_handle_key_press(scancode, down, mods))
-		return true;
-
 	return false;
 }
 
@@ -45,7 +38,6 @@ void input_handle_mouse_wheel(int amount) {
 }
 
 bool input_get_key_state(SDL_Scancode scancode) {
-	if(editor.using_editor) return false;
 	return SDL_GetKeyboardState(nullptr)[scancode] == 1;
 }
 

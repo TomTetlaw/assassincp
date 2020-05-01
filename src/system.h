@@ -15,6 +15,7 @@ struct System {
 // these are here instead of in System for convinience of typing
 extern float screen_width;
 extern float screen_height;
+extern Vec2 screen_size;
 
 extern Vec2 cursor_position;
 extern Vec2 cursor_position_tl;

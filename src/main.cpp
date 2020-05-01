@@ -1,22 +1,14 @@
 #include "precompiled.h"
 
 int main(int argc, char *argv[]) {
-	//Array<Dir_Search_Entry> entries;
-	//if(system_search_dir("data/textures/*.png")) {
-	//	for(int i = 0; i < entries.num; i++) console_printf("entries[%d].file_name = %s\n", i, entries[i].file_name);
-	//}
-
 	system_init(argc, argv);
 
-	editor.using_editor = true;
-	game.paused = editor.using_editor;
-	editor_load("data/levels/test.acp");
+	game_set_level(0);
 
 	float last_time = SDL_GetTicks() / 1000.0f;
 	SDL_Event ev;
 	while(sys.running) {
 		while (SDL_PollEvent(&ev)) {
-			bool editor_handled = editor.using_editor ? editor_gui_handle_event(&ev) : false;
 			switch (ev.type) {
 			case SDL_QUIT:
 				sys.running = false;
@@ -30,12 +22,6 @@ int main(int argc, char *argv[]) {
 						sys.running = false;
 					} else if (ev.key.keysym.scancode == SDL_SCANCODE_GRAVE) {
 						console_toggle_open();
-					} else if (ev.key.keysym.scancode == SDL_SCANCODE_SPACE) {
-						if(!editor.using_editor) {
-							editor.using_editor = true;
-							game.paused = true;
-							editor_load(editor.current_file);
-						}
 					}
 				}
 			} break;
@@ -50,16 +36,16 @@ int main(int argc, char *argv[]) {
 				cursor_position = sys.raw_cursor_position - (sys.window_size * 0.5f);
 				cursor_position_world = to_world_pos(cursor_position);
 				cursor_position_tl = sys.raw_cursor_position;
-				if(!editor_handled) input_handle_mouse_move(ev.motion.xrel, ev.motion.yrel);
+				input_handle_mouse_move(ev.motion.xrel, ev.motion.yrel);
 				break;
 			case SDL_MOUSEBUTTONDOWN:
-				if(!editor_handled) input_handle_mouse_press(ev.button.button, true, Vec2((float)ev.button.x, (float)ev.button.y), ev.button.clicks == 2);
+				input_handle_mouse_press(ev.button.button, true, Vec2((float)ev.button.x, (float)ev.button.y), ev.button.clicks == 2);
 				break;
 			case SDL_MOUSEBUTTONUP:
-				if(!editor_handled) input_handle_mouse_press(ev.button.button, false, Vec2((float)ev.button.x, (float)ev.button.y), ev.button.clicks == 2);
+				input_handle_mouse_press(ev.button.button, false, Vec2((float)ev.button.x, (float)ev.button.y), ev.button.clicks == 2);
 				break;
 			case SDL_MOUSEWHEEL:
-				if(!editor_handled) input_handle_mouse_wheel(ev.wheel.y);
+				input_handle_mouse_wheel(ev.wheel.y);
 				break;
 			}
 		}
@@ -90,7 +76,6 @@ int main(int argc, char *argv[]) {
 		console_update();
 		game_update();
 		entity_update();
-		if(editor.using_editor) editor_update();
 
 		// render
 		render_begin_frame();
@@ -98,7 +83,6 @@ int main(int argc, char *argv[]) {
 		entity_render();
 		render_deferred_textures();
 		render_entity_physics_debug();
-		if(editor.using_editor) editor_render();
 		console_render();
 		
 		render_end_frame();

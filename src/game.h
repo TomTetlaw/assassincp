@@ -40,6 +40,8 @@ void game_update();
 void game_render();
 void load_level();
 
+void game_set_level(int index);
+
 void on_level_load(); // the central function for changing level
 
 #endif

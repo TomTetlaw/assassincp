@@ -3,6 +3,7 @@
 System sys;
 float screen_width = 0.0f;
 float screen_height = 0.0f;
+Vec2 screen_size;
 Vec2 cursor_position = Vec2(0.0f, 0.0f);
 Vec2 cursor_position_world = Vec2(0.0f, 0.0f);
 Vec2 cursor_position_tl = Vec2(0.0f, 0.0f);
@@ -51,6 +52,7 @@ void system_init(int argc, char *argv[]) {
 
 	screen_width = sys.window_size.x;
 	screen_height = sys.window_size.y;
+	screen_size = Vec2(screen_width, screen_height);
 
 	SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 8);
 	SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 8);
@@ -87,21 +89,19 @@ void system_init(int argc, char *argv[]) {
 	hotload_init();
 	render_init();
 	entity_init();
-	editor_init();
 	game_init();
 	physics_init();
 
 	config_load("data/config.txt");
 	hotload_add_file("data/config.txt", nullptr, hotload_config_file);
 
-	Mix_Chunk *test = Mix_LoadWAV("data/audio/sunn.mp3");
-	Mix_PlayChannel(-1, test, -1);
+	//Mix_Chunk *test = Mix_LoadWAV("data/audio/sunn.mp3");
+	//Mix_PlayChannel(-1, test, -1);
 }
 
 void system_quit() {
 	config_write_file("data/config.txt");
 
-	editor_shutdown();
 	entity_shutdown();
 	font_shutdown();
 	texture_shutdown();

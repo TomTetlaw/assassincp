@@ -31,7 +31,7 @@ const char *parse_token(const char *text, char token[MAX_TOKEN_LENGTH]);
 
 struct Save_File {
 	FILE *handle = nullptr;
-
+	uint version = 0;
 	// doesn't close the handle, just checks if it is closed and warns if not
 	~Save_File();
 };

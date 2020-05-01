@@ -11,4 +11,4 @@ z_far 1.000000
 nav_grid_width 1000
 nav_grid_height 1000
 nav_grid_size 32
-physics_fps 60
+physics_fps 2000

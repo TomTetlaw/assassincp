@@ -97,21 +97,6 @@ void entity_update() {
 		if(!entity->added) continue;
 
 		if(!(entity->flags & EFLAGS_NO_PHYSICS)) {
-			if(entity->grid_aligned) {
-				entity->po.size.x = entity->grid_w * (float)entity->grid_size_x;
-				entity->po.size.y = entity->grid_h * (float)entity->grid_size_y;
-				entity->po.position.x = entity->grid_x * (float)entity->grid_size_x;
-				entity->po.position.y = entity->grid_y * (float)entity->grid_size_y;
-			} else {
-				entity->grid_w = (int)(entity->po.size.x / (float)entity->grid_size_x);
-				entity->grid_h = (int)(entity->po.size.y / (float)entity->grid_size_y);
-				entity->grid_x = (int)(entity->po.position.x / (float)entity->grid_size_x);
-				entity->grid_y = (int)(entity->po.position.y / (float)entity->grid_size_y);
-			}
-
-			if(entity->grid_w <= 0) entity->grid_w = 1;
-			if(entity->grid_h <= 0) entity->grid_h = 1;
-
 			if(entity->po.mass == 0) {
 				entity->po.inv_mass = 0;
 			} else {
@@ -357,5 +342,18 @@ void Badguy::handle_collision(Entity *other) {
 	if(other->classify == etypes._classify_Bullet) {
 		health -= 1;
 		if(health <= 0) inner->delete_me = true;
+		console_printf("Bullet hit me at %f.\n", game.now);
 	}
+}
+
+void Badguy::update() {
+	
+}
+
+void Badguy::write(Save_File *file) {
+	save_write_int(file, health);
+}
+
+void Badguy::read(Save_File *file) {
+	save_read_int(file, &health);
 }

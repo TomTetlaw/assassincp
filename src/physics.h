@@ -41,6 +41,8 @@ struct Physics_Object {
     Vec2 goal_velocity = Vec2(0, 0);
     float velocity_ramp_speed = 0.0f;
     
+    bool is_sensor = false;
+    
     Extents extents;
     Vec2 size = Vec2(0, 0);
     float hh = 0.0f;

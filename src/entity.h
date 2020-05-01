@@ -61,14 +61,6 @@ struct Entity {
 	int classify = 0;
 	Entity_Callbacks *outer = nullptr;
 
-	bool grid_aligned = false;
-	int grid_x = 0;
-	int grid_y = 0;
-	int grid_w = 1;
-	int grid_h = 1;
-	int grid_size_x = 16;
-	int grid_size_y = 16;
-
 	char type_name[1024] = {0};
 	Physics_Object po;
 	int texture = -1;
@@ -102,11 +94,9 @@ struct Wall : Entity_Callbacks {
 	entity_stuff(Wall);
 
 	void setup() {
-		inner->set_texture("data/textures/wall.png");
+		inner->set_texture("data/textures/wall_slim.png");
 		inner->texture_repeat = true;
 		inner->z = 1;
-		
-		inner->grid_aligned = true;
 	
         inner->po.size = Vec2(32, 32);
 		inner->po.set_mass(0.0f);
@@ -135,7 +125,8 @@ struct Bullet : Entity_Callbacks {
 		inner->texture = load_texture("data/textures/bullet.png");
 
 		inner->po.groups = phys_group_projectile;
-		inner->po.mask = UINT32_MAX & (~phys_group_projectile);
+		inner->po.mask = UINT32_MAX & (~phys_group_projectile) & (~phys_group_player);
+		inner->po.is_sensor = true;
 		inner->po.size = Vec2(8,8);
 		inner->po.set_mass(1);
 	}
@@ -222,7 +213,10 @@ struct Badguy : Entity_Callbacks {
 
 	void setup();
 	void render();
+	void update();
 	void handle_collision(Entity *other);
+	void write(Save_File *file);
+	void read(Save_File *file);
 };
 
 #define declare_entity_type(x, classify) \
